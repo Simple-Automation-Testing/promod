@@ -194,7 +194,7 @@ class PromodSeleniumElement {
 		return this.wdElement.isDisplayed().then((res) => res, () => false);
 	}
 
-	async callElementAction(action) {
+	private async callElementAction(action) {
 		await this.getElement();
 
 		return action();
@@ -221,8 +221,10 @@ class PromodSeleniumElement {
 	}
 }
 
+export type PromodSeleniumElementType = PromodSeleniumElement & WebElement
+export type PromodSeleniumElementsType = PromodSeleniumElements & WebElement
 
-const $ = (selector: string | By, root?: PromodSeleniumElement & WebElement): PromodSeleniumElement & WebElement => {
+const $ = (selector: string | By, root?: PromodSeleniumElementType): PromodSeleniumElementType => {
 	let getParent = null;
 	if (root) {
 		getParent = () => {
@@ -233,7 +235,8 @@ const $ = (selector: string | By, root?: PromodSeleniumElement & WebElement): Pr
 	return new PromodSeleniumElement(selector, null, getParent) as any;
 };
 
-const $$ = (selector: string | By, root?: PromodSeleniumElement & WebElement): PromodSeleniumElements => {
+
+const $$ = (selector: string | By, root?: PromodSeleniumElementType): PromodSeleniumElementsType => {
 	let getParent = null;
 	if (root) {
 		getParent = () => {
@@ -241,7 +244,8 @@ const $$ = (selector: string | By, root?: PromodSeleniumElement & WebElement): P
 		};
 	}
 
-	return new PromodSeleniumElements(selector, null, getParent);
+	return new PromodSeleniumElements(selector, null, getParent) as any;
 };
+
 
 export {$, $$, PromodSeleniumElement, PromodSeleniumElements};

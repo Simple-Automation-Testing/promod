@@ -1,7 +1,7 @@
 {
   "name": "promod",
-  "version": "0.0.2",
-  "description": "",
+  "version": "0.0.5",
+  "description": "Library for automation testing ",
   "main": "./built/index.js",
   "scripts": {
     "test": "mocha ./specs/**/*.spec.ts --require ts-node/register --timeout 30000",
@@ -40,7 +40,9 @@
     "selenium-webdriver",
     "protractor",
     "protractor mod",
-    "test automation"
+    "test automation",
+    "selenium",
+    "automation testing"
   ],
   "dependencies": {
     "@types/selenium-webdriver": "^4.0.15",

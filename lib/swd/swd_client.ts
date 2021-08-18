@@ -76,7 +76,6 @@ class Browser {
 
 	async executeScript(script: any, ...args: any[]) {
 		const recomposedArgs = await this.toSeleniumArgs(...args);
-
 		const res = await this.seleniumDriver.executeScript(script, ...recomposedArgs);
 
 		return res;
@@ -117,8 +116,8 @@ class Browser {
 					}
 				}
 				executeScriptArgs.push(arrayItems);
-			} else if (resolvedItem && resolvedItem.getSeleniumProtocolObj) {
-				executeScriptArgs.push(await resolvedItem.getSeleniumProtocolObj());
+			} else if (resolvedItem && resolvedItem.getSeleniumProtocolElementObj) {
+				executeScriptArgs.push(await resolvedItem.getSeleniumProtocolElementObj());
 			} else {
 				executeScriptArgs.push(item);
 			}

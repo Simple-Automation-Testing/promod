@@ -3,8 +3,8 @@ import {$, $$, PromodSeleniumElement, PromodSeleniumElements} from './swd_elemen
 import {browser} from './swd_client';
 
 const seleniumWD = {
-	browser,
 	getSeleniumDriver,
+	browser,
 	$,
 	$$,
 	PromodSeleniumElement,
