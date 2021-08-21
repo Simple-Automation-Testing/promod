@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center"> PROMODE </h1>
+  <h1 align="center"> PROMOD </h1>
   <img style="width:100%;" src="./docs/promod.png"/>
 </p>
 

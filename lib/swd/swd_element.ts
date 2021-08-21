@@ -197,6 +197,10 @@ class PromodSeleniumElement {
 		return this.wdElement.isDisplayed().then((res) => res, () => false);
 	}
 
+	async isPresent() {
+		return this.getElement().then(() => true).catch(() => false);
+	}
+
 	private async callElementAction(action) {
 		await this.getElement();
 

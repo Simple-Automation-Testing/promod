@@ -52,4 +52,9 @@ describe('Base', () => {
 			deepStrictEqual(await item.$$('a').count(), 0);
 		});
 	});
+
+	it('isPresent', async () => {
+		deepStrictEqual(await $('button.super.not.exist').$$('a').get(1).isPresent(), false);
+		deepStrictEqual(await $$('button').get(0).isPresent(), true);
+	});
 });

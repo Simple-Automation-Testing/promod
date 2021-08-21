@@ -11,6 +11,8 @@ Element has "lazy" interface (as it was in protractor)
 - [getRect](#getrect)
 - [isEnabled](#isenabled)
 - [isSelected](#isselected)
+- [isPresent](#ispresent)
+- [isDisplayed](#isdisplayed)
 - [submit](#submit)
 - [clear](#clear)
 - [takeScreenshot](#takescreenshot)
@@ -112,6 +114,28 @@ Element has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		const buttonAvailableToClick = await someButton.isEnabled() // true|false
+	})
+```
+
+## isPresent
+```js
+	const {seleniumWD} = require('promod');
+	const {$} = seleniumWD
+	const someButton = $('button')
+
+	;(async () => {
+		const buttonExistsInDOM = await someButton.isPresent() // true|false
+	})
+```
+
+## isDisplayed
+```js
+	const {seleniumWD} = require('promod');
+	const {$} = seleniumWD
+	const someButton = $('button')
+
+	;(async () => {
+		const buttonIsVisible = await someButton.isDisplayed() // true|false
 	})
 ```
 
