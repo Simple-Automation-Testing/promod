@@ -1,7 +1,7 @@
 {
   "name": "promod",
-  "version": "0.0.5",
-  "description": "Library for automation testing ",
+  "version": "0.0.10",
+  "description": "Library for automation testing",
   "main": "./built/index.js",
   "scripts": {
     "test": "mocha ./specs/**/*.spec.ts --require ts-node/register --timeout 30000",
@@ -46,7 +46,7 @@
   ],
   "dependencies": {
     "@types/selenium-webdriver": "^4.0.15",
-    "sat-utils": "0.0.16",
+    "sat-utils": "0.0.17",
     "selenium-standalone": "^7.1.0",
     "selenium-webdriver": "^4.0.0-beta.4"
   }

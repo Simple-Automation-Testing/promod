@@ -52,6 +52,10 @@ class Browser {
 		return await this.seleniumDriver.getAllWindowHandles();
 	}
 
+	async getCurrentTab() {
+		return await this.seleniumDriver.getWindowHandle();
+	}
+
 	async get(url: string) {
 		const getUrl = this.resolveUrl(url);
 
@@ -128,6 +132,10 @@ class Browser {
 
 	async quit() {
 		await this.seleniumDriver.quit();
+	}
+
+	async close() {
+		await this.seleniumDriver.close();
 	}
 
 	actions() {

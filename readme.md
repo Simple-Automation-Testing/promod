@@ -12,10 +12,12 @@
 <h2> API </h2>
 
 <p>
-  Browser and element APIs should work in same way (as it was in protractor) (as it was in protractor).
+  Browser and element APIs should work in same way (as it was in protractor).
   But this library does not have ExpectedConditions object - replacement for this is simple browser.wait with browser/element API.
 </p>
-
+<p><a href="/docs/element.md">Element</a></p>
+<p><a href="/docs/elements.md">Elements</a></p>
+<p><a href="/docs/client.md">Browser</a></p>
 
 <h3>
   Transition from protractor to promod. Mocha example.

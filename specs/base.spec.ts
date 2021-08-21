@@ -44,4 +44,12 @@ describe('Base', () => {
 			'Увійти'
 		]);
 	});
+
+	it('$$ each', async () => {
+		const btns = $$('button');
+		await browser.sleep(25000);
+		await btns.each(async (item) => {
+			deepStrictEqual(await item.$$('a').count(), 0);
+		});
+	});
 });

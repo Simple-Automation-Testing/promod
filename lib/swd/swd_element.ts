@@ -46,19 +46,23 @@ class PromodSeleniumElements {
 		this.seleniumDriver = client;
 	}
 
-	get(index) {
+	get(index): PromodSeleniumElementType {
 		const childElement = new PromodSeleniumElement(this.selector, this.seleniumDriver, this.getElement.bind(this, index), true);
 		if (this.parentSelector) {
 			childElement.parentSelector = this.parentSelector;
 		}
-		return childElement;
+		return childElement as any;
 	}
 
-	last() {
-		return this.get(-1);
+	last(): PromodSeleniumElementType {
+		return this.get(-1) as any;
 	}
 
-	async getElement(index?) {
+	first(): PromodSeleniumElementType {
+		return this.get(0) as any;
+	}
+
+	private async getElement(index?) {
 		if (!this.seleniumDriver) {
 			this.seleniumDriver = browser.currentClient();
 		}
@@ -98,16 +102,15 @@ class PromodSeleniumElements {
 	}
 
 
-	async each(cb) {
+	async each(cb: (item: PromodSeleniumElementType) => Promise<void>): Promise<any> {
 		await this.getElement(0);
 
 		for (const el of this.wdElements) {
-			await cb(el);
+			await cb(new PromodSeleniumElement(this.selector, this.seleniumDriver, () => el, true) as any);
 		}
 	}
 
-
-	async count() {
+	async count(): Promise<number> {
 		await this.getElement(0);
 		return this.wdElements.length;
 	}
@@ -117,7 +120,7 @@ class PromodSeleniumElement {
 	private seleniumDriver: WebDriver;
 	private selector: string;
 	private wdElement: WebElement;
-	private getParent: () => Promise<PromodSeleniumElement & WebElement>;
+	private getParent: () => Promise<PromodSeleniumElementType>;
 	private useParent: boolean;
 	public parentSelector: string;
 
@@ -142,16 +145,16 @@ class PromodSeleniumElement {
 		this.seleniumDriver = client;
 	}
 
-	$(selector) {
+	$(selector): PromodSeleniumElementType {
 		const childElement = new PromodSeleniumElement(selector, this.seleniumDriver, this.getElement.bind(this));
 		childElement.parentSelector = this.selector;
-		return childElement;
+		return childElement as any;
 	}
 
-	$$(selector) {
+	$$(selector): PromodSeleniumElementsType {
 		const childElements = new PromodSeleniumElements(selector, this.seleniumDriver, this.getElement.bind(this));
 		childElements.parentSelector = this.selector;
-		return childElements;
+		return childElements as any;
 	}
 
 	async getSeleniumProtocolElementObj() {
@@ -247,5 +250,4 @@ const $$ = (selector: string | By, root?: PromodSeleniumElementType): PromodSele
 	return new PromodSeleniumElements(selector, null, getParent) as any;
 };
 
-
-export {$, $$, PromodSeleniumElement, PromodSeleniumElements};
+export {$, $$, PromodSeleniumElement, PromodSeleniumElements, By};
