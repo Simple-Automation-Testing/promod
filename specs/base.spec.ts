@@ -1,11 +1,16 @@
 import {deepStrictEqual} from 'assert';
-import {seleniumWD} from '../lib/index';
+import {seleniumWD, BaseConf} from '../lib/index';
 
 describe('Base', () => {
 	const {$, $$, getSeleniumDriver, browser} = seleniumWD;
+	const conf: BaseConf = {
+		capabilities: {
+			browserName: 'firefox',
+		}
+	};
 
 	beforeEach(async () => {
-		await getSeleniumDriver(undefined, browser);
+		await getSeleniumDriver(conf, browser);
 		await browser.get('http://localhost:4000/');
 	});
 

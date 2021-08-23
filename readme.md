@@ -18,6 +18,7 @@
 <p><a href="/docs/element.md">Element</a></p>
 <p><a href="/docs/elements.md">Elements</a></p>
 <p><a href="/docs/client.md">Browser</a></p>
+<p><a href="/docs/init.md">Init driver</a></p>
 
 <h3>
   Transition from protractor to promod. Mocha example.
