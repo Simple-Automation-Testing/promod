@@ -1,4 +1,5 @@
-import {isBoolean} from 'sat-utils';
+/* eslint-disable max-len */
+import {isBoolean, isString, isFunction, isPromise} from 'sat-utils';
 import {By, WebElement, WebDriver} from 'selenium-webdriver';
 import {browser} from './swd_client';
 
@@ -10,15 +11,21 @@ function toSeleniumProtocolElement(webElId) {
 	return elementObj;
 }
 
-const buildBy = (selector: string | By): any => {
+const buildBy = (selector: string | By, getExecuteScriptArgs?: () => any[]): any => {
 	if (selector instanceof By) {
 		return selector;
 	}
 
-	if ((selector as string).includes('xpath=')) {
+	getExecuteScriptArgs = isFunction(getExecuteScriptArgs) ? getExecuteScriptArgs : () => ([]);
+
+	if (isString(selector) && (selector as string).includes('xpath=')) {
 		return By.xpath((selector as string).replace('xpath=', ''));
-	} if ((selector as string).includes('js=')) {
-		return By.js((selector as string).replace('js=', ''));
+	} else if (isString(selector) && (selector as string).includes('js=')) {
+		return By.js((selector as string).replace('js=', ''), ...getExecuteScriptArgs());
+	} else if (isPromise(selector)) {
+		return selector;
+	} else if (isFunction(selector)) {
+		return By.js(selector, ...getExecuteScriptArgs());
 	}
 
 	return By.css(selector);
@@ -34,12 +41,14 @@ class PromodSeleniumElements {
 	private selector: string;
 	private wdElements: WebElement[];
 	private getParent: () => Promise<PromodSeleniumElement & WebElement>;
+	private getExecuteScriptArgs: () => any;
 	public parentSelector: string;
 
-	constructor(selector, client, getParent?) {
+	constructor(selector, client, getParent?, getExecuteScriptArgs?) {
 		this.seleniumDriver = client;
 		this.selector = selector;
 		this.getParent = getParent;
+		this.getExecuteScriptArgs = getExecuteScriptArgs;
 	}
 
 	setseleniumDriver(client: WebDriver) {
@@ -76,9 +85,9 @@ class PromodSeleniumElements {
 				parent = await parent.getWebDriverElement();
 			}
 
-			this.wdElements = await parent.findElements(buildBy(this.selector));
+			this.wdElements = await parent.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
 		} else {
-			this.wdElements = await this.seleniumDriver.findElements(buildBy(this.selector));
+			this.wdElements = await this.seleniumDriver.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
 		}
 
 		if (index === -1) {
@@ -121,14 +130,20 @@ class PromodSeleniumElement {
 	private selector: string;
 	private wdElement: WebElement;
 	private getParent: () => Promise<PromodSeleniumElementType>;
+	private getExecuteScriptArgs: () => any;
 	private useParent: boolean;
 	public parentSelector: string;
 
-	constructor(selector, client, getParent?, useParent?) {
+	constructor(selector, client, getParent?, useParent?, getExecuteScriptArgs?) {
 		this.seleniumDriver = client;
 		this.selector = selector;
 		this.getParent = getParent;
-		this.useParent = useParent;
+		this.useParent = isFunction(useParent) ? null : useParent;
+		/**
+		 * @info
+		 * it is a temp solution for by.JS elements
+		 */
+		this.getExecuteScriptArgs = isFunction(useParent) ? useParent : getExecuteScriptArgs;
 
 		const self = this;
 
@@ -179,11 +194,11 @@ class PromodSeleniumElement {
 			if (this.useParent) {
 				this.wdElement = parent;
 			} else {
-				this.wdElement = await parent.findElement(buildBy(this.selector));
+				this.wdElement = await parent.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
 			}
 
 		} else {
-			this.wdElement = await this.seleniumDriver.findElement(buildBy(this.selector));
+			this.wdElement = await this.seleniumDriver.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
 		}
 
 		return this.wdElement;
@@ -198,7 +213,7 @@ class PromodSeleniumElement {
 	}
 
 	async isPresent() {
-		return this.getElement().then(() => true).catch(() => false);
+		return this.getElement().then(() => true).catch((r) => false);
 	}
 
 	private async callElementAction(action) {
@@ -231,27 +246,40 @@ class PromodSeleniumElement {
 export type PromodSeleniumElementType = PromodSeleniumElement & WebElement
 export type PromodSeleniumElementsType = PromodSeleniumElements & WebElement
 
-const $ = (selector: string | By, root?: PromodSeleniumElementType): PromodSeleniumElementType => {
+
+function getInitElementRest(selector: string | By | ((...args: any[]) => any) | Promise<any>, root?: PromodSeleniumElementType, ...rest: any[]) {
 	let getParent = null;
-	if (root) {
-		getParent = () => {
+	let getExecuteScriptArgs = null;
+
+	/**
+	 * @info
+	 * in case if selector is string with "js=" marker or selector is a function
+	 */
+
+	if ((isString(selector) && (selector as string).indexOf('js=') === 0) || isFunction(selector) || isPromise(selector)) {
+		getExecuteScriptArgs = function getExecuteScriptArgs() {
+			return [root, ...rest];
+		};
+	} else if (root && root instanceof PromodSeleniumElement) {
+		getParent = function getParent() {
 			return root;
 		};
 	}
 
-	return new PromodSeleniumElement(selector, null, getParent) as any;
+	return [getParent, getExecuteScriptArgs];
+}
+
+const $ = (selector: string | By | ((...args: any[]) => any) | Promise<any>, root?: PromodSeleniumElementType | any, ...rest: any[]): PromodSeleniumElementType => {
+	const restArgs = getInitElementRest(selector, root, ...rest);
+
+	return new PromodSeleniumElement(selector, null, ...restArgs) as any;
 };
 
 
-const $$ = (selector: string | By, root?: PromodSeleniumElementType): PromodSeleniumElementsType => {
-	let getParent = null;
-	if (root) {
-		getParent = () => {
-			return root;
-		};
-	}
+const $$ = (selector: string | By | ((...args: any[]) => any) | Promise<any>, root?: PromodSeleniumElementType | any, ...rest: any[]): PromodSeleniumElementsType => {
+	const restArgs = getInitElementRest(selector, root, ...rest);
 
-	return new PromodSeleniumElements(selector, null, getParent) as any;
+	return new PromodSeleniumElements(selector, null, ...restArgs) as any;
 };
 
 export {$, $$, PromodSeleniumElement, PromodSeleniumElements, By};

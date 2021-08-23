@@ -143,7 +143,7 @@
 	const {seleniumWD} = require('promod');
 	const {browser} = seleniumWD
 
-	const switchToObj = browser.navigate() // returns selenium switchTo interface
+	const navigateToObj = browser.navigate() // returns selenium navigate interface
 ```
 
 ## getCurrentTab
@@ -151,7 +151,7 @@
 	const {seleniumWD} = require('promod');
 	const {browser} = seleniumWD
 
-	const switchToObj = await browser.getCurrentTab() // returns current browser tab item
+	const CurrentTabObj = await browser.getCurrentTab() // returns current browser tab item
 ```
 
 ## getCurrentTab
@@ -159,5 +159,5 @@
 	const {seleniumWD} = require('promod');
 	const {browser} = seleniumWD
 
-	const switchToObj = await browser.close() // close current browser tab (if one close window)
+	await browser.close() // close current browser tab (if one close window)
 ```

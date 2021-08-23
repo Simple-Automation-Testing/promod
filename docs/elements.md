@@ -27,7 +27,7 @@ Elements has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		await someInput.sendKeys('some value')
-	})
+	})()
 ```
 
 ## first
@@ -38,7 +38,7 @@ Elements has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		await someButton.click()
-	})
+	})()
 ```
 
 ## last
@@ -49,10 +49,10 @@ Elements has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		await someButton.click()
-	})
+	})()
 ```
 
-## last
+## each
 ```js
 	const {seleniumWD} = require('promod');
 	const {$$} = seleniumWD
@@ -62,6 +62,6 @@ Elements has "lazy" interface (as it was in protractor)
 		await someButtons.each((someButton) => {
 			await someButton.click()
 		})
-	})
+	})()
 ```
 

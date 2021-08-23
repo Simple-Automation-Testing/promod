@@ -114,7 +114,7 @@ Element has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		const buttonAvailableToClick = await someButton.isEnabled() // true|false
-	})
+	})()
 ```
 
 ## isPresent
@@ -125,7 +125,7 @@ Element has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		const buttonExistsInDOM = await someButton.isPresent() // true|false
-	})
+	})()
 ```
 
 ## isDisplayed
@@ -136,7 +136,7 @@ Element has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		const buttonIsVisible = await someButton.isDisplayed() // true|false
-	})
+	})()
 ```
 
 ## isSelected
@@ -147,7 +147,7 @@ Element has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		const buttonIsSelected = await someButton.isSelected() // true|false
-	})
+	})()
 ```
 
 ## submit
@@ -158,7 +158,7 @@ Element has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		await someButton.submit()
-	})
+	})()
 ```
 
 ## clear
@@ -169,7 +169,7 @@ Element has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		await someInput.clear()
-	})
+	})()
 ```
 
 ## takeScreenshot
@@ -180,5 +180,5 @@ Element has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		await someForm.takeScreenshot()
-	})
+	})()
 ```

@@ -1,16 +1,11 @@
 import {deepStrictEqual} from 'assert';
-import {seleniumWD, BaseConf} from '../lib/index';
+import {seleniumWD} from '../lib/index';
 
 describe('Base', () => {
 	const {$, $$, getSeleniumDriver, browser} = seleniumWD;
-	const conf: BaseConf = {
-		capabilities: {
-			browserName: 'firefox',
-		}
-	};
 
 	beforeEach(async () => {
-		await getSeleniumDriver(conf, browser);
+		await getSeleniumDriver({}, browser);
 		await browser.get('http://localhost:4000/');
 	});
 
@@ -52,7 +47,6 @@ describe('Base', () => {
 
 	it('$$ each', async () => {
 		const btns = $$('button');
-		await browser.sleep(25000);
 		await btns.each(async (item) => {
 			deepStrictEqual(await item.$$('a').count(), 0);
 		});
@@ -61,5 +55,24 @@ describe('Base', () => {
 	it('isPresent', async () => {
 		deepStrictEqual(await $('button.super.not.exist').$$('a').get(1).isPresent(), false);
 		deepStrictEqual(await $$('button').get(0).isPresent(), true);
+	});
+
+	it('by js function with argument', async () => {
+		deepStrictEqual(await $((selector) => {
+			return document.querySelector(selector);
+		}, 'button').isPresent(), true);
+	});
+
+	it('by js as string function with argument', async () => {
+		deepStrictEqual(await $(`js=return ((selector) => {
+			return document.querySelector(selector);
+		})(arguments[0])`, 'button').isPresent(), true);
+	});
+
+	it('by js as string function with argument with parent', async () => {
+		const body = $('body');
+		deepStrictEqual(await $(`js=return ((selector, root) => {
+			return root.querySelector(selector);
+		})(arguments[0], arguments[1])`, 'button', body.getWebDriverElement()).isPresent(), true);
 	});
 });

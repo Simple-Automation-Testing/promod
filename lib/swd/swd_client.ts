@@ -78,14 +78,14 @@ class Browser {
 		return this.seleniumDriver.manage();
 	}
 
-	async executeScript(script: any, ...args: any[]) {
+	async executeScript(script: any, ...args: any[]): Promise<any> {
 		const recomposedArgs = await this.toSeleniumArgs(...args);
 		const res = await this.seleniumDriver.executeScript(script, ...recomposedArgs);
 
 		return res;
 	}
 
-	async executeAsyncScript(script: any, ...args: any[]) {
+	async executeAsyncScript(script: any, ...args: any[]): Promise<any> {
 		const recomposedArgs = await this.toSeleniumArgs(...args);
 
 		const res = await this.seleniumDriver.executeAsyncScript(script, ...recomposedArgs);
