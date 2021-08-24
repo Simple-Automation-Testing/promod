@@ -1,5 +1,32 @@
-import {isPromise, waitForCondition} from 'sat-utils';
+import {isPromise, waitForCondition, isFunction, isAsyncFunction} from 'sat-utils';
 import {WebDriver, Key} from 'selenium-webdriver';
+
+function validateBrowserCallMethod(browserClass) {
+	const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
+	for (const key of protKeys) {
+		const descriptor = Object.getOwnPropertyDescriptor(browserClass.prototype, key);
+		if (isAsyncFunction(descriptor.value)) {
+			const originalMethod: (...args: any[]) => Promise<any> = descriptor.value;
+
+			// eslint-disable-next-line no-inner-declarations
+			async function decoratedWithChecker(...args) {
+				if (!this.seleniumDriver) {
+					throw new Error(`
+Seems like driver was not initialized, please check how or where did you call getSeleniumDriver function
+or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/init.md#getseleniumdriver
+					`);
+				}
+
+				return originalMethod.call(this, ...args);
+			}
+
+			Object.defineProperty(decoratedWithChecker, 'name', {value: key});
+
+			descriptor.value = decoratedWithChecker;
+			Object.defineProperty(browserClass.prototype, key, descriptor);
+		}
+	}
+}
 
 class Browser {
 	public seleniumDriver: WebDriver;
@@ -177,6 +204,8 @@ class Browser {
 		return resolved;
 	}
 }
+
+validateBrowserCallMethod(Browser);
 
 const browser = new Browser();
 

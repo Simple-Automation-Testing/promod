@@ -56,7 +56,7 @@ class PromodSeleniumElements {
 	}
 
 	get(index): PromodSeleniumElementType {
-		const childElement = new PromodSeleniumElement(this.selector, this.seleniumDriver, this.getElement.bind(this, index), true);
+		const childElement = new PromodSeleniumElement(this.selector, this.seleniumDriver, this.getElement.bind(this, index), null, true);
 		if (this.parentSelector) {
 			childElement.parentSelector = this.parentSelector;
 		}
@@ -115,7 +115,7 @@ class PromodSeleniumElements {
 		await this.getElement(0);
 
 		for (const el of this.wdElements) {
-			await cb(new PromodSeleniumElement(this.selector, this.seleniumDriver, () => el, true) as any);
+			await cb(new PromodSeleniumElement(this.selector, this.seleniumDriver, () => el, null, true) as any);
 		}
 	}
 
@@ -134,16 +134,12 @@ class PromodSeleniumElement {
 	private useParent: boolean;
 	public parentSelector: string;
 
-	constructor(selector, client, getParent?, useParent?, getExecuteScriptArgs?) {
+	constructor(selector, client, getParent?, getExecuteScriptArgs?, useParent?) {
 		this.seleniumDriver = client;
 		this.selector = selector;
 		this.getParent = getParent;
-		this.useParent = isFunction(useParent) ? null : useParent;
-		/**
-		 * @info
-		 * it is a temp solution for by.JS elements
-		 */
-		this.getExecuteScriptArgs = isFunction(useParent) ? useParent : getExecuteScriptArgs;
+		this.getExecuteScriptArgs = getExecuteScriptArgs;
+		this.useParent = useParent;
 
 		const self = this;
 

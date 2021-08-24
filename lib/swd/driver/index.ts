@@ -1,13 +1,30 @@
 import {WebDriver} from 'selenium-webdriver';
 import {getDriver} from './remote';
 import {BaseConf} from '../config/config';
+import {Browser} from '../swd_client';
+import {validateSeleniumConf} from '../config';
 
-async function getSeleniumDriver(config: BaseConf = {}, browser): Promise<WebDriver> {
-	const driver = await getDriver(config);
-	browser.setClient(driver);
-	if (config.baseUrl) {
-		browser.baseUrl = config.baseUrl;
+async function getSeleniumDriver(config: BaseConf | Browser = {}, browser?: Browser): Promise<WebDriver> {
+	let _config;
+	let _browser;
+
+	if (config instanceof Browser && arguments.length === 1) {
+		_browser = config;
+		_config = {};
+	} else {
+		_browser = browser;
+		_config = config;
 	}
+
+	// validate config
+	validateSeleniumConf(_config);
+
+	const driver = await getDriver(_config);
+	_browser.setClient(driver);
+	if (config.baseUrl) {
+		_browser.baseUrl = config.baseUrl;
+	}
+
 	return driver;
 }
 
