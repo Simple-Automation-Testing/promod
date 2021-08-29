@@ -30,8 +30,8 @@ or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/in
 }
 
 
-interface ITab {
-	index: number;
+interface IBrowserTab {
+	index?: number;
 	waitTabs?: boolean;
 	expectedQuantity?: number;
 	title?: string;
@@ -74,7 +74,7 @@ class Browser {
 		this.initialTab = null;
 	}
 
-	public async switchToTab(tabObject: ITab) {
+	public async switchToTab(tabObject: IBrowserTab) {
 		if (!this.initialTab) {
 			this.initialTab = await this.getCurrentTab();
 		}
@@ -95,7 +95,7 @@ class Browser {
 		}
 	}
 
-	private async switchToBrowserTab(tabObject: ITab) {
+	private async switchToBrowserTab(tabObject: IBrowserTab) {
 		const {index, waitTabs = true, expectedQuantity = index + 1, title, timeout = 5000} = tabObject;
 		let tabs = await this.getTabs();
 		if (waitTabs) {

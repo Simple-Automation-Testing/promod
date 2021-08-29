@@ -7,7 +7,6 @@ describe('Base', () => {
 	beforeEach(async () => {
 		await getSeleniumDriver({seleniumAddress: 'http://localhost:4444/wd/hub'}, browser);
 		await browser.get('http://localhost:4000/');
-		await browser.Key.ENTER
 	});
 
 	afterEach(async () => {

@@ -20,7 +20,7 @@
 <p><a href="/docs/init.md">Init driver</a></p>
 
 - [Usage](#usage)
-- [Transition from protractor to promod. Mocha example.](#transitionfromprotractortopromod.mochaexample.)
+- [Transition from protractor to promod. Mocha example.](#transition-from-protractor-to-promod-mocha-example)
 
 ## Usage
 ```js

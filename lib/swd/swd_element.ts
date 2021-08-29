@@ -111,11 +111,11 @@ class PromodSeleniumElements {
 	}
 
 
-	async each(cb: (item: PromodSeleniumElementType) => Promise<void>): Promise<any> {
+	async each(cb: (item: PromodSeleniumElementType, index?: number) => Promise<void>): Promise<any> {
 		await this.getElement(0);
 
-		for (const el of this.wdElements) {
-			await cb(new PromodSeleniumElement(this.selector, this.seleniumDriver, () => el, null, true) as any);
+		for (let i = 0; i < this.wdElements.length; i++) {
+			await cb(new PromodSeleniumElement(this.selector, this.seleniumDriver, () => this.wdElements[i], null, true) as any, i);
 		}
 	}
 
