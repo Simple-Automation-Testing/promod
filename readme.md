@@ -10,7 +10,6 @@
 <h3>
 
 <h2> API </h2>
-
 <p>
   Browser and element APIs should work in same way (as it was in protractor).
   But this library does not have ExpectedConditions object - replacement for this is simple browser.wait with browser/element API.
@@ -20,9 +19,26 @@
 <p><a href="/docs/client.md">Browser</a></p>
 <p><a href="/docs/init.md">Init driver</a></p>
 
-<h3>
-  Transition from protractor to promod. Mocha example.
-</h3>
+- [Usage](#usage)
+- [Transition from protractor to promod. Mocha example.](#transitionfromprotractortopromod.mochaexample.)
+
+## Usage
+```js
+  const {seleniumWD} = require('promod');
+  const {$, $$, getSeleniumDriver, browser} = seleniumWD;
+
+  ;(async () => {
+    const searchInput = $('input[name="q"]');
+    const sections = $$('section');
+    await getSeleniumDriver({seleniumAddress: 'http://localhost:4444/wd/hub'}, browser);
+    await browser.get('https://www.npmjs.com/');
+    await searchInput.sendKeys(`promod${browser.Key.ENTER}`);
+    console.log(await sections.get(0).$('a').getText());
+  })()
+
+```
+
+## Transition from protractor to promod. Mocha example.
 
 <p>Current test command</p>
 

@@ -1,7 +1,7 @@
 import {isPromise, waitForCondition, isFunction, isAsyncFunction} from 'sat-utils';
 import {WebDriver, Key} from 'selenium-webdriver';
 
-function validateBrowserCallMethod(browserClass) {
+function validateBrowserCallMethod(browserClass): Browser {
 	const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
 	for (const key of protKeys) {
 		const descriptor = Object.getOwnPropertyDescriptor(browserClass.prototype, key);
@@ -26,12 +26,24 @@ or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/in
 			Object.defineProperty(browserClass.prototype, key, descriptor);
 		}
 	}
+	return new browserClass();
+}
+
+
+interface ITab {
+	index: number;
+	waitTabs?: boolean;
+	expectedQuantity?: number;
+	title?: string;
+	timeout?: number;
 }
 
 class Browser {
 	public seleniumDriver: WebDriver;
-	private appBaseUrl;
 	public wait = waitForCondition;
+	private appBaseUrl: string;
+	private initialTab: any;
+
 
 	constructor() {
 		/**
@@ -51,12 +63,79 @@ class Browser {
 		this.appBaseUrl = url;
 	}
 
+	public async returnToInitialTab() {
+		// there was no switching in test
+		if (!this.initialTab) {
+			return;
+		}
+		await this.closeAllTabsExceptInitial();
+		await this.switchTo().window(this.initialTab);
+		// set initialTab to null for further "it" to use
+		this.initialTab = null;
+	}
+
+	public async switchToTab(tabObject: ITab) {
+		if (!this.initialTab) {
+			this.initialTab = await this.getCurrentTab();
+		}
+		await this.switchToBrowserTab(tabObject);
+	}
+
+	private async closeAllTabsExceptInitial() {
+		const handles = await this.getTabs();
+		handles.splice(handles.indexOf(this.initialTab), 1);
+		await this.makeActionAtEveryTab(async () => this.close(), handles);
+	}
+
+	public async makeActionAtEveryTab(action: (...args: any) => Promise<any>, handles?: string[]) {
+		handles = handles || await this.getTabs();
+		for (const windowHandle of handles) {
+			await this.switchTo().window(windowHandle);
+			await action();
+		}
+	}
+
+	private async switchToBrowserTab(tabObject: ITab) {
+		const {index, waitTabs = true, expectedQuantity = index + 1, title, timeout = 5000} = tabObject;
+		let tabs = await this.getTabs();
+		if (waitTabs) {
+			await waitForCondition(async () => {
+				tabs = await this.getTabs();
+				return tabs.length === expectedQuantity;
+			},
+				{message: `Couldn't wait for ${expectedQuantity} tab(s) to appear. Probably you should pass expectedQuantity`, timeout}
+			);
+		}
+
+		if (tabs.length > 1) {
+			if (title) {
+				await waitForCondition(async () => {
+					tabs = await this.getTabs();
+					for (const tab of tabs) {
+						await this.switchTo().window(tab);
+						if (await this.getTitle() === title) {
+							return true;
+						}
+					}
+				}, {message: `Window with ${title} title was not found during ${timeout}.`, timeout});
+			} else {
+				await this.switchTo().window(tabs[index]);
+			}
+		} else {
+			await this.switchTo().window(tabs[0]);
+		}
+	}
+
 	currentClient() {
 		return this.seleniumDriver;
 	}
 
 	setClient(client) {
 		this.seleniumDriver = client;
+	}
+
+	async getTitle() {
+		return await this.seleniumDriver.getTitle();
 	}
 
 	async getCurrentUrl() {
@@ -205,9 +284,7 @@ class Browser {
 	}
 }
 
-validateBrowserCallMethod(Browser);
-
-const browser = new Browser();
+const browser = validateBrowserCallMethod(Browser);
 
 export {
 	browser,

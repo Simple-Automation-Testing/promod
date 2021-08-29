@@ -18,6 +18,9 @@
 - [navigate](#navigate)
 - [switchTo](#switchto)
 - [quit](#quit)
+- [getTitle](#gettitle)
+- [switchToTab](#switchtotab)
+- [returnToInitialTab](#returntoinitialtab)
 - [actions](#actions)
 
 ## Key
@@ -160,4 +163,30 @@
 	const {browser} = seleniumWD
 
 	await browser.close() // close current browser tab (if one close window)
+```
+
+## getTitle
+```js
+	const {seleniumWD} = require('promod');
+	const {browser} = seleniumWD
+
+	const browserWindowTabTitle = await browser.getTitle();
+```
+
+## switchToTab
+```js
+	const {seleniumWD} = require('promod');
+	const {browser} = seleniumWD
+
+	await browser.switchToTab({index: 2}); // will switch context to third browser tab (second tab in tabs array)
+	await browser.switchToTab({title: 'Some title'}); // will switch context to browser tab where tab title equals 'Some title'
+```
+
+## returnToInitialTab
+```js
+	const {seleniumWD} = require('promod');
+	const {browser} = seleniumWD
+
+	await browser.switchToTab({index: 2}); // will switch context to third browser tab (second tab in tabs array)
+	await browser.returnToInitialTab(); // will switch first opened tab and close all other tabs
 ```
