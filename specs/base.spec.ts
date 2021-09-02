@@ -75,4 +75,18 @@ describe('Base', () => {
 			return root.querySelector(selector);
 		})(arguments[0], arguments[1])`, 'button', body.getWebDriverElement()).isPresent()).toEqual(true);
 	});
+
+	it('scrollIntoView', async () => {
+		const email = $('input[placeholder="Ім\'я користувача"]');
+		const pass = $('input[placeholder="пароль"]');
+		const signIn = $('.login_form .btn-primary');
+		await email.sendKeys('admin');
+		await pass.sendKeys('admin');
+		await signIn.click();
+		const lastRow = $$('tr').last();
+		const beforeScroll = await lastRow.getRect();
+		await lastRow.scrollIntoView();
+		const afterScroll = await lastRow.getRect();
+		expect(beforeScroll).toNotDeepEqual(afterScroll);
+	});
 });

@@ -1,4 +1,4 @@
-import {isPromise, waitForCondition, isFunction, isAsyncFunction} from 'sat-utils';
+import {isPromise, waitForCondition, isNumber, isAsyncFunction} from 'sat-utils';
 import {WebDriver, Key} from 'selenium-webdriver';
 
 function validateBrowserCallMethod(browserClass): Browser {
@@ -32,7 +32,6 @@ or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/in
 
 interface IBrowserTab {
 	index?: number;
-	waitTabs?: boolean;
 	expectedQuantity?: number;
 	title?: string;
 	timeout?: number;
@@ -96,9 +95,9 @@ class Browser {
 	}
 
 	private async switchToBrowserTab(tabObject: IBrowserTab) {
-		const {index, waitTabs = true, expectedQuantity = index + 1, title, timeout = 5000} = tabObject;
+		const {index, expectedQuantity, title, timeout = 5000} = tabObject;
 		let tabs = await this.getTabs();
-		if (waitTabs) {
+		if (isNumber(expectedQuantity)) {
 			await waitForCondition(async () => {
 				tabs = await this.getTabs();
 				return tabs.length === expectedQuantity;

@@ -32,7 +32,7 @@ const buildBy = (selector: string | By, getExecuteScriptArgs?: () => any[]): any
 };
 
 const SELENIUM_API_METHODS = [
-	'click', 'sendKeys', 'getTagName', 'getCssValue', 'getAttribute', 'getText', 'getRect',
+	'sendKeys', 'getTagName', 'getCssValue', 'getAttribute', 'getText', 'getRect',
 	'isEnabled', 'isSelected', 'submit', 'clear', 'getId', 'takeScreenshot',
 ];
 
@@ -58,7 +58,7 @@ class PromodSeleniumElements {
 	get(index): PromodSeleniumElementType {
 		const childElement = new PromodSeleniumElement(this.selector, this.seleniumDriver, this.getElement.bind(this, index), null, true);
 		if (this.parentSelector) {
-			childElement.parentSelector = this.parentSelector;
+			childElement.parentSelector = this.parentSelector || this.selector;
 		}
 		return childElement as any;
 	}
@@ -174,14 +174,47 @@ class PromodSeleniumElement {
 		return toSeleniumProtocolElement(id);
 	}
 
-	async getElement() {
-		if (!this.seleniumDriver) {
-			this.seleniumDriver = browser.currentClient();
-		}
+	async click(withScroll?) {
+		await this.getElement();
+		if (withScroll) {
+			const scrollableClickResult = await this.wdElement.click()
+				.catch((err) => (this.isInteractionIntercepted(err) ? this.scrollIntoView('end').then(() => this.wdElement.click()) : err))
+				.catch((err) => (this.isInteractionIntercepted(err) ? this.scrollIntoView('start').then(() => this.wdElement.click()) : err))
+				.then((err) => err)
+				.catch((err) => err);
 
+			if (scrollableClickResult) {
+				throw scrollableClickResult;
+			}
+		} else {
+			return this.wdElement.click();
+		}
+	}
+
+	async scrollIntoView(position?: 'end' | 'start') {
+		await this.getElement();
+		await this.seleniumDriver.executeScript(`
+      let position = true;
+      if(arguments[1] ==='end') {
+        position = {block: 'end'}
+      } else if(arguments[1] ==='start') {
+        position = {block: 'start'}
+      }
+      arguments[0].scrollIntoView(position)
+    `, this.getWebDriverElement(), position);
+	}
+
+	async getElement() {
+		this.seleniumDriver = browser.currentClient();
 		if (this.getParent) {
 			let parent = await this.getParent();
-
+			if (!parent) {
+				throw new Error(
+					this.useParent
+						? `Any element with selector ${this.selector} was not found`
+						: `Parent element with selector ${this.parentSelector} was not found`
+				);
+			}
 			if (parent.getWebDriverElement) {
 				// @ts-ignore
 				parent = await parent.getWebDriverElement();
@@ -236,6 +269,10 @@ class PromodSeleniumElement {
 			locatorValue += ` Parent: ${this.parentSelector} `;
 		}
 		return {value: `${locatorValue}${this.selector}`};
+	}
+
+	private isInteractionIntercepted(err) {
+		return err.toString().includes('element click intercepted');
 	}
 }
 

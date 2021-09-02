@@ -16,6 +16,7 @@ Element has "lazy" interface (as it was in protractor)
 - [submit](#submit)
 - [clear](#clear)
 - [takeScreenshot](#takescreenshot)
+- [scrollIntoView](#scrollintoview)
 
 
 ## searchStragegy
@@ -180,5 +181,18 @@ Element has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		await someForm.takeScreenshot()
+	})()
+```
+
+## takeScreenshot
+```js
+	const {seleniumWD} = require('promod');
+	const {$} = seleniumWD
+	const someForm = $('form')
+
+	;(async () => {
+		await someForm.scrollIntoView() // default scroll into view
+		await someForm.scrollIntoView('end') // move element to the bottom of the view port
+		await someForm.scrollIntoView('start') // move element to the top of the view port
 	})()
 ```
