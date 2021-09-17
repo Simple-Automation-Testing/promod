@@ -1,4 +1,4 @@
-import {isPromise, waitForCondition, isNumber, isAsyncFunction} from 'sat-utils';
+import {isArray, isPromise, waitForCondition, isNumber, isAsyncFunction, isString} from 'sat-utils';
 import {WebDriver, Key} from 'selenium-webdriver';
 
 function validateBrowserCallMethod(browserClass): Browser {
@@ -12,7 +12,7 @@ function validateBrowserCallMethod(browserClass): Browser {
 			async function decoratedWithChecker(...args) {
 				if (!this.seleniumDriver) {
 					throw new Error(`
-Seems like driver was not initialized, please check how or where did you call getSeleniumDriver function
+${key}(): Seems like driver was not initialized, please check how or where did you call getSeleniumDriver function
 or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/init.md#getseleniumdriver
 					`);
 				}
@@ -38,17 +38,60 @@ interface IBrowserTab {
 }
 
 class Browser {
-	public seleniumDriver: WebDriver;
 	public wait = waitForCondition;
+	public seleniumDriver: WebDriver;
 	private appBaseUrl: string;
 	private initialTab: any;
-
+	private drivers: WebDriver[];
+	private _createNewDriver: () => Promise<WebDriver>;
 
 	constructor() {
-		/**
-		 *
-		 */
+		this.wait = waitForCondition;
 	}
+
+	currentClient() {
+		return this.seleniumDriver;
+	}
+
+	async runNewBrowser() {
+		if (!isArray(this.drivers)) {
+			this.drivers = [];
+		}
+		this.drivers.push(this.seleniumDriver);
+		if (!this._createNewDriver) {
+			throw new Error('createNewDriver(): seems like create driver method was not inited');
+		}
+
+		const newDriver = await this._createNewDriver();
+		this.drivers.push(newDriver);
+		this.seleniumDriver = newDriver;
+	}
+
+	async switchToBrowser({index, tabTitle}: {index?: number; tabTitle?: string;} = {}) {
+		if (isNumber(index) && isArray(this.drivers) && this.drivers.length > index) {
+			this.seleniumDriver = this.drivers[index];
+			return;
+		} if (isString(tabTitle)) {
+			for (const driver of this.drivers) {
+				const result = await this.switchToBrowserTab({title: tabTitle}).then(() => true, () => false).catch(() => false);
+				if (result) {
+					this.seleniumDriver = driver;
+					return;
+				}
+			}
+		}
+
+		throw new Error(`switchToBrowser(): required browser was not found`);
+	}
+
+	set setCreateNewDriver(driverCreator) {
+		this._createNewDriver = driverCreator;
+	}
+
+	setClient(client) {
+		this.seleniumDriver = client;
+	}
+
 
 	get Key() {
 		return Key;
@@ -94,6 +137,10 @@ class Browser {
 		}
 	}
 
+	/**
+	 * switchToBrowserTab
+	 * @private
+	 */
 	private async switchToBrowserTab(tabObject: IBrowserTab) {
 		const {index, expectedQuantity, title, timeout = 5000} = tabObject;
 		let tabs = await this.getTabs();
@@ -123,14 +170,6 @@ class Browser {
 		} else {
 			await this.switchTo().window(tabs[0]);
 		}
-	}
-
-	currentClient() {
-		return this.seleniumDriver;
-	}
-
-	setClient(client) {
-		this.seleniumDriver = client;
 	}
 
 	async getTitle() {
@@ -237,9 +276,30 @@ class Browser {
 
 	async quit() {
 		await this.seleniumDriver.quit();
+		this.seleniumDriver = null;
+	}
+
+	async quitAll() {
+		if (isArray(this.drivers) && this.drivers.length) {
+			for (const driver of this.drivers) {
+				if (this.seleniumDriver === driver) {
+					this.seleniumDriver = null;
+				}
+				await driver.quit();
+			}
+		}
+		this.drivers = [];
+		if (this.seleniumDriver) {
+			await this.seleniumDriver.quit();
+			this.seleniumDriver = null;
+		}
 	}
 
 	async close() {
+		if (this.drivers.length) {
+			const index = this.drivers.findIndex((driver) => driver === this.seleniumDriver);
+			if (index !== -1) this.drivers.splice(index, 1);
+		}
 		await this.seleniumDriver.close();
 	}
 

@@ -20,7 +20,16 @@ async function getSeleniumDriver(config: BaseConf | Browser = {}, browser?: Brow
 	validateSeleniumConf(_config);
 
 	const driver = await getDriver(_config);
+
+	/**
+	 * @info
+	 * init creations of the new driver
+	 * and init current driver
+	 */
+
+	_browser.setCreateNewDriver = () => getDriver(_config);
 	_browser.setClient(driver);
+
 	if (config.baseUrl) {
 		_browser.baseUrl = config.baseUrl;
 	}

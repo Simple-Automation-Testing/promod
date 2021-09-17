@@ -33,7 +33,7 @@ const buildBy = (selector: string | By, getExecuteScriptArgs?: () => any[]): any
 
 const SELENIUM_API_METHODS = [
 	'sendKeys', 'getTagName', 'getCssValue', 'getAttribute', 'getText', 'getRect',
-	'isEnabled', 'isSelected', 'submit', 'clear', 'getId', 'takeScreenshot',
+	'isEnabled', 'isSelected', 'submit', 'clear', 'getId', 'takeScreenshot', 'getLocation',
 ];
 
 class PromodSeleniumElements {
@@ -72,14 +72,11 @@ class PromodSeleniumElements {
 	}
 
 	private async getElement(index?) {
-		if (!this.seleniumDriver) {
-			this.seleniumDriver = browser.currentClient();
-		}
+		this.seleniumDriver = browser.currentClient();
 
 		if (this.getParent) {
 			let parent = await this.getParent();
 
-			// @ts-ignore
 			if (parent.getWebDriverElement) {
 				// @ts-ignore
 				parent = await parent.getWebDriverElement();
@@ -102,7 +99,6 @@ class PromodSeleniumElements {
 		// @ts-ignore
 		return this.wdElements.map((item) => item.id_);
 	}
-
 
 	async getSeleniumProtocolElementObj() {
 		const ids = await this.getIds();
@@ -174,7 +170,11 @@ class PromodSeleniumElement {
 		return toSeleniumProtocolElement(id);
 	}
 
-	async click(withScroll?) {
+	/**
+	 * @param {boolean} [withScroll] try to prevent intercept error by scoll to bottom/to
+	 * @returns {Promise<void>}
+	 */
+	async click(withScroll?: boolean) {
 		await this.getElement();
 		if (withScroll) {
 			const scrollableClickResult = await this.wdElement.click()
@@ -207,7 +207,7 @@ class PromodSeleniumElement {
 	async getElement() {
 		this.seleniumDriver = browser.currentClient();
 		if (this.getParent) {
-			let parent = await this.getParent();
+			let parent = await this.getParent() as any;
 			if (!parent) {
 				throw new Error(
 					this.useParent
@@ -216,7 +216,6 @@ class PromodSeleniumElement {
 				);
 			}
 			if (parent.getWebDriverElement) {
-				// @ts-ignore
 				parent = await parent.getWebDriverElement();
 			}
 
@@ -233,6 +232,12 @@ class PromodSeleniumElement {
 		return this.wdElement;
 	}
 
+	/**
+	 * @returns {Promise<boolean>} button is present
+	 * @example
+	 * const button = $('button')
+	 * const buttonIsDisplayed = await button.isDisplayed();
+	 */
 	async isDisplayed() {
 		const result = await this.getElement().catch(() => false);
 		if (isBoolean(result) && !result) {
@@ -241,6 +246,12 @@ class PromodSeleniumElement {
 		return this.wdElement.isDisplayed().then((res) => res, () => false);
 	}
 
+	/**
+	 * @returns {Promise<boolean>} button is present
+	 * @example
+	 * const button = $('button')
+	 * const buttonIsPresent = await button.isPresent();
+	 */
 	async isPresent() {
 		return this.getElement().then(() => true).catch((r) => false);
 	}
@@ -275,9 +286,6 @@ class PromodSeleniumElement {
 		return err.toString().includes('element click intercepted');
 	}
 }
-
-export type PromodSeleniumElementType = PromodSeleniumElement & WebElement
-export type PromodSeleniumElementsType = PromodSeleniumElements & WebElement
 
 
 function getInitElementRest(selector: string | By | ((...args: any[]) => any) | Promise<any>, root?: PromodSeleniumElementType, ...rest: any[]) {
@@ -316,3 +324,74 @@ const $$ = (selector: string | By | ((...args: any[]) => any) | Promise<any>, ro
 };
 
 export {$, $$, PromodSeleniumElement, PromodSeleniumElements, By};
+
+export interface PromodSeleniumElementsType {
+	wdElements: WebElement[];
+
+	get(index: number): PromodSeleniumElementType;
+
+	last(): PromodSeleniumElementType;
+
+	first(): PromodSeleniumElementType;
+
+	each(cb: (item: PromodSeleniumElementType, index?: number) => Promise<void>): Promise<void>;
+
+	count(): Promise<number>;
+}
+
+export interface PromodSeleniumElementType {
+
+	wdElement: WebElement;
+
+	getId(): Promise<string>;
+
+	click(withScroll?: boolean): Promise<void>;
+
+	sendKeys(...keys: Array<string | number | Promise<string | number>>): Promise<void>;
+
+	getTagName(): Promise<string>;
+
+	getCssValue(cssStyleProperty: string): Promise<string>;
+
+	getAttribute(attributeName: string): Promise<string>;
+
+	getText(): Promise<string>;
+
+	getSize(): Promise<{
+		width: number;
+		height: number;
+	}>;
+
+	getRect(): Promise<{
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+	}>;
+
+	getLocation(): Promise<{
+		x: number;
+		y: number;
+	}>;
+
+	$(selector: string | By | ((...args: any[]) => any) | Promise<any>): PromodSeleniumElementType;
+	$$(selector: string | By | ((...args: any[]) => any) | Promise<any>): PromodSeleniumElementsType;
+
+	isEnabled(): Promise<boolean>;
+
+	isSelected(): Promise<boolean>;
+
+	isPresent(): Promise<boolean>;
+
+	submit(): Promise<void>;
+
+	clear(): Promise<void>;
+
+	isDisplayed(): Promise<boolean>;
+
+	takeScreenshot(opt_scroll?: boolean): Promise<string>;
+
+	getWebDriverElement(): Promise<WebElement>;
+
+	scrollIntoView(position?: boolean | string): Promise<void>;
+}

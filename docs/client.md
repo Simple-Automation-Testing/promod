@@ -22,6 +22,8 @@
 - [switchToTab](#switchtotab)
 - [returnToInitialTab](#returntoinitialtab)
 - [actions](#actions)
+- [runNewBrowser](#runnewbrowser)
+- [switchToBrowser](#switchtobrowser)
 
 ## Key
 ```js
@@ -189,4 +191,23 @@
 
 	await browser.switchToTab({index: 2}); // will switch context to third browser tab (second tab in tabs array)
 	await browser.returnToInitialTab(); // will switch first opened tab and close all other tabs
+```
+
+## runNewBrowser
+```js
+	const {seleniumWD} = require('promod');
+	const {browser} = seleniumWD
+
+	await browser.runNewBrowser(); // will runNewBrowser new browser
+```
+
+## switchToBrowser
+
+```js
+	const {seleniumWD} = require('promod');
+	const {browser} = seleniumWD
+
+	await browser.switchToBrowser({index: 0}); // will switch to browser (not tab) which was started first
+	await browser.switchToBrowser({tabTitle: 'Simple-Automation-Testing/promod: Library for browser manipulation'});
+	// will switch to browser (not tab) which has "Simple-Automation-Testing/promod: Library for browser manipulation" title
 ```

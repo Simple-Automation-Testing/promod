@@ -10,7 +10,30 @@ describe('Base', () => {
 	});
 
 	afterEach(async () => {
-		await browser.quit();
+		await browser.quitAll();
+	});
+
+	it('several browsers', async () => {
+		const email = $('input[placeholder="Ім\'я користувача"]');
+		const pass = $('input[placeholder="пароль"]');
+
+		await browser.runNewBrowser();
+		await browser.get('https://google.com');
+
+		expect(await email.isDisplayed()).toEqual(false);
+		expect(await pass.isDisplayed()).toEqual(false);
+		await browser.switchToBrowser({index: 0});
+
+		expect(await email.isDisplayed()).toEqual(true);
+		expect(await pass.isDisplayed()).toEqual(true);
+		await email.sendKeys('A');
+		await pass.sendKeys('B');
+		await browser.switchToBrowser({index: 1});
+		expect(await email.isDisplayed()).toEqual(false);
+		expect(await pass.isDisplayed()).toEqual(false);
+		await browser.switchToBrowser({index: 0});
+		expect(await email.isDisplayed()).toEqual(true);
+		expect(await pass.isDisplayed()).toEqual(true);
 	});
 
 	it('element click/sendKeys', async () => {
@@ -19,7 +42,7 @@ describe('Base', () => {
 		const signIn = $('.login_form .btn-primary');
 		await email.sendKeys('admin');
 		await pass.sendKeys('admin');
-		await signIn.click();
+		await signIn.click(true);
 	});
 
 	it('execute script str', async () => {
@@ -86,6 +109,7 @@ describe('Base', () => {
 		const lastRow = $$('tr').last();
 		const beforeScroll = await lastRow.getRect();
 		await lastRow.scrollIntoView();
+		await browser.sleep(2500);
 		const afterScroll = await lastRow.getRect();
 		expect(beforeScroll).toNotDeepEqual(afterScroll);
 	});

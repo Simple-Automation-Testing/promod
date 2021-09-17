@@ -49,7 +49,6 @@ module.exports = {
     'semi': [2, 'always'],
     'no-multiple-empty-lines': [2, {'max': 2}],
     'quotes': ['error', 'single', {'allowTemplateLiterals': true}],
-    'valid-jsdoc': ['error', {'requireParamDescription': false, 'requireReturnDescription': false}],
     'no-shadow': 'off',
     'space-before-function-paren': ['error', {'anonymous': 'never', 'named': 'never', 'asyncArrow': 'always'}],
     'require-jsdoc': 'off', //['error', {'require': {'FunctionDeclaration': true, 'MethodDefinition': true}}],
