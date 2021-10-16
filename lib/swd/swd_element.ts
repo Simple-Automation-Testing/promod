@@ -239,11 +239,7 @@ class PromodSeleniumElement {
 	 * const buttonIsDisplayed = await button.isDisplayed();
 	 */
 	async isDisplayed() {
-		const result = await this.getElement().catch(() => false);
-		if (isBoolean(result) && !result) {
-			return false;
-		}
-		return this.wdElement.isDisplayed().then((res) => res, () => false);
+		return this.getElement().then(() => this.wdElement.isDisplayed()).catch(() => false);
 	}
 
 	/**

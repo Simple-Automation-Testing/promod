@@ -13,6 +13,13 @@ describe('Base', () => {
 		await browser.quitAll();
 	});
 
+	it('isDisplayed', async () => {
+		const email = $('input[placeholder="Ім\'я lol"]');
+
+		expect(await email.isDisplayed()).toEqual(false);
+		expect(await email.isPresent()).toEqual(false);
+	});
+
 	it('several browsers', async () => {
 		const email = $('input[placeholder="Ім\'я користувача"]');
 		const pass = $('input[placeholder="пароль"]');
