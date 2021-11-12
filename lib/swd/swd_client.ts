@@ -275,6 +275,10 @@ class Browser {
 	}
 
 	async quit() {
+		if (this.drivers && this.drivers.length) {
+			const index = this.drivers.findIndex((driver) => driver === this.seleniumDriver);
+			if (index !== -1) this.drivers.splice(index, 1);
+		}
 		await this.seleniumDriver.quit();
 		this.seleniumDriver = null;
 	}
@@ -296,10 +300,6 @@ class Browser {
 	}
 
 	async close() {
-		if (this.drivers.length) {
-			const index = this.drivers.findIndex((driver) => driver === this.seleniumDriver);
-			if (index !== -1) this.drivers.splice(index, 1);
-		}
 		await this.seleniumDriver.close();
 	}
 

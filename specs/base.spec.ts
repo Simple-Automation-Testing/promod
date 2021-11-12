@@ -1,3 +1,4 @@
+import {By, WebDriver, until, Key} from 'selenium-webdriver';
 import {expect} from 'assertior';
 import {seleniumWD} from '../lib/index';
 
@@ -5,7 +6,7 @@ describe('Base', () => {
 	const {$, $$, getSeleniumDriver, browser} = seleniumWD;
 
 	beforeEach(async () => {
-		await getSeleniumDriver({seleniumAddress: 'http://localhost:4444/wd/hub'}, browser);
+		await getSeleniumDriver(browser);
 		await browser.get('http://localhost:4000/');
 	});
 
@@ -43,12 +44,13 @@ describe('Base', () => {
 		expect(await pass.isDisplayed()).toEqual(true);
 	});
 
-	it('element click/sendKeys', async () => {
+	it.only('element click/sendKeys', async () => {
 		const email = $('input[placeholder="Ім\'я користувача"]');
 		const pass = $('input[placeholder="пароль"]');
 		const signIn = $('.login_form .btn-primary');
-		await email.sendKeys('admin');
-		await pass.sendKeys('admin');
+		await browser.actions().keyDown(Key.SHIFT).perform();
+		await email.sendKeys(`${Key.SHIFT}a`);
+		await browser.sleep(12000);
 		await signIn.click(true);
 	});
 
