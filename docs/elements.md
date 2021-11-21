@@ -6,6 +6,7 @@ Elements has "lazy" interface (as it was in protractor)
 - [first](#first)
 - [last](#last)
 - [each](#each)
+- [map](#map)
 
 
 ## searchStragegy
@@ -59,9 +60,22 @@ Elements has "lazy" interface (as it was in protractor)
 	const someButtons = $$('button');
 
 	;(async () => {
-		await someButtons.each((someButton) => {
-			await someButton.click()
+		await someButtons.each(async (button) => {
+			await button.click()
 		})
+	})()
+```
+
+## map
+```js
+	const {seleniumWD} = require('promod');
+	const {$$} = seleniumWD
+	const someButtons = $$('button');
+
+	;(async () => {
+		const buttonsTexts = await someButtons.each((button) => {
+			return button.getText()
+		});
 	})()
 ```
 

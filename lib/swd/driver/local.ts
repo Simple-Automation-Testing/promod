@@ -1,8 +1,26 @@
 import * as fs from 'fs';
+import {isMap} from 'sat-utils';
+import {Builder, Capabilities} from 'selenium-webdriver';
 import * as computeFsPaths from 'selenium-standalone/lib/compute-fs-paths';
 import * as standAloneDefaultConfig from 'selenium-standalone/lib/default-config';
 
-import {SeleniumServer} from 'selenium-webdriver/remote';
+import * as chrome from 'selenium-webdriver/chrome';
+import * as firefox from 'selenium-webdriver/firefox';
+/*
+import * as ie from 'selenium-webdriver/ie';
+import * as edge from 'selenium-webdriver/edge';
+*/
+
+const browsers = {
+	chrome: {
+		getService: (pathToDriver) => new chrome.ServiceBuilder(pathToDriver),
+		method: 'setChromeService',
+	},
+	firefox: {
+		getService: (pathToDriver) => new firefox.ServiceBuilder(pathToDriver),
+		method: 'setFirefoxService',
+	},
+};
 
 function getOptsData(opts: {[k: string]: any} = {}) {
 	const defaultConfig = standAloneDefaultConfig();
@@ -25,6 +43,7 @@ function getOptsData(opts: {[k: string]: any} = {}) {
 		drivers: opts.drivers,
 		basePath: opts.basePath,
 	});
+
 	return fsPaths;
 }
 
@@ -61,82 +80,43 @@ const checkIfDriverOrServerExists = (pathTo) => {
 const getCombinedConfig = (config: any = {}) => {
 	const combinedConfig = config;
 
-	if (!config.seleniumServerStartTimeout) {
-		config.seleniumServerStartTimeout = 30000;
-	}
+	if (!config.capabilities) config.capabilities = Capabilities.chrome();
 
-	combinedConfig.capabilities =
-		combinedConfig.capabilities.map_ instanceof Map
-			? Object.fromEntries(combinedConfig.capabilities.map_)
-			: combinedConfig.capabilities;
+	if (isMap(combinedConfig.capabilities.map_)) combinedConfig.capabilities = Object.fromEntries(combinedConfig.capabilities.map_);
 
-	if (!combinedConfig.seleniumServerJar) {
-		checkIfUpdateRequired('selenium', config.selenium);
-		const pathToServer = getOptsData(config.selenium).selenium.installPath;
-
-		checkIfDriverOrServerExists(pathToServer);
-		combinedConfig.seleniumServerJar = pathToServer;
-	}
-
-	if (!combinedConfig.chromeDriver && combinedConfig.capabilities.browserName === 'chrome') {
+	if (!combinedConfig.chrome && combinedConfig.capabilities.browserName === 'chrome') {
 		checkIfUpdateRequired('chrome', config.selenium);
 		const pathToChromedriver = getOptsData(config.selenium).chrome.installPath;
 
 		checkIfDriverOrServerExists(pathToChromedriver);
-		combinedConfig.chromeDriver = pathToChromedriver;
+		combinedConfig.chrome = pathToChromedriver;
 	}
 
-	if (!combinedConfig.geckoDriver && combinedConfig.capabilities.browserName === 'firefox') {
+	if (!combinedConfig.firefox && combinedConfig.capabilities.browserName === 'firefox') {
 		checkIfUpdateRequired('firefox', config.selenium);
 		const pathTogeckoDriver = getOptsData(config.selenium).firefox.installPath;
 
 		checkIfDriverOrServerExists(pathTogeckoDriver);
-		combinedConfig.geckoDriver = pathTogeckoDriver;
+		combinedConfig.firefox = pathTogeckoDriver;
 	}
 
 	return combinedConfig;
 };
 
-const runLocalEnv = async (config) => {
-	if (config.seleniumAddress) {
-		return config;
-	}
+const getLocalDriver = async (config) => {
 	const combinedConfig = getCombinedConfig(config);
+	const requiredBrowser = combinedConfig.capabilities.browserName;
 
-	const serverConf = combinedConfig.localSeleniumStandaloneOpts || {};
+	const browserService = browsers[requiredBrowser].getService(combinedConfig[requiredBrowser]);
+	const serviceCall = browsers[requiredBrowser].method;
 
-	if (!serverConf.args) {
-		serverConf.args = combinedConfig.seleniumArgs || [];
-	}
-	if (!serverConf.jvmArgs) {
-		serverConf.jvmArgs = combinedConfig.jvmArgs || [];
-	} else if (!Array.isArray(serverConf.jvmArgs)) {
-		throw new TypeError('jvmArgs should be an array.');
-	}
-	if (!serverConf.port) {
-		serverConf.port = combinedConfig.seleniumPort;
-	}
+	const driver = await new Builder()[serviceCall](browserService)
+		.forBrowser(requiredBrowser)
+		.build();
 
-	if (combinedConfig.chromeDriver) {
-		serverConf.jvmArgs.push(`-Dwebdriver.chrome.driver=${combinedConfig.chromeDriver}`);
-	}
-	if (combinedConfig.geckoDriver) {
-		serverConf.jvmArgs.push(`-Dwebdriver.gecko.driver=${combinedConfig.geckoDriver}`);
-	}
-
-	const server = new SeleniumServer(combinedConfig.seleniumServerJar, serverConf);
-
-	await server.start(combinedConfig.seleniumServerStartTimeout);
-
-	const address = await server.address();
-
-	return {
-		server,
-		seleniumAddress: address,
-		capabilities: combinedConfig.capabilities,
-	};
+	return driver;
 };
 
 export {
-	runLocalEnv,
+	getLocalDriver,
 };

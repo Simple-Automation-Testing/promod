@@ -1,20 +1,15 @@
 import {isString, isUndefined} from 'sat-utils';
 import * as fs from 'fs';
 
-const checkPathes = ['seleniumServerJar', 'chromeDriver', 'geckoDriver'];
+const checkPathes = ['seleniumServerJar', 'chrome', 'firefox'];
 const checkString = ['seleniumAddress', 'seleniumSessionId', 'baseUrl'];
 
 export type BaseConf = {
 	[key: string]: any;
-	localSeleniumStandaloneOpts?: {
-		port?: number | string;
-		args?: string[];
-		jvmArgs?: string[];
-	};
 	// Selenium drivers options
 	seleniumServerJar?: string;
-	chromeDriver?: string;
-	geckoDriver?: string;
+	chrome?: string;
+	firefox?: string;
 
 	seleniumAddress?: string;
 	seleniumSessionId?: string;

@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import {isBoolean, isString, isFunction, isPromise} from 'sat-utils';
+import {isString, isFunction, isPromise} from 'sat-utils';
 import {By, WebElement, WebDriver} from 'selenium-webdriver';
 import {browser} from './swd_client';
 
@@ -113,6 +113,15 @@ class PromodSeleniumElements {
 		for (let i = 0; i < this.wdElements.length; i++) {
 			await cb(new PromodSeleniumElement(this.selector, this.seleniumDriver, () => this.wdElements[i], null, true) as any, i);
 		}
+	}
+
+	async map(cb: (item: PromodSeleniumElementType, index?: number) => Promise<void>): Promise<any[]> {
+		await this.getElement(0);
+		const results = [];
+		for (let i = 0; i < this.wdElements.length; i++) {
+			results.push(await cb(new PromodSeleniumElement(this.selector, this.seleniumDriver, () => this.wdElements[i], null, true) as any, i));
+		}
+		return results;
 	}
 
 	async count(): Promise<number> {
@@ -331,6 +340,8 @@ export interface PromodSeleniumElementsType {
 	first(): PromodSeleniumElementType;
 
 	each(cb: (item: PromodSeleniumElementType, index?: number) => Promise<void>): Promise<void>;
+
+	map(cb: (item: PromodSeleniumElementType, index?: number) => Promise<any>): Promise<any[]>;
 
 	count(): Promise<number>;
 }

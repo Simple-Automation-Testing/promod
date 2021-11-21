@@ -1,5 +1,6 @@
 import {WebDriver} from 'selenium-webdriver';
-import {getDriver} from './remote';
+import {getRemoteDriver} from './remote';
+import {getLocalDriver} from './local';
 import {BaseConf} from '../config/config';
 import {Browser} from '../swd_client';
 import {validateSeleniumConf} from '../config';
@@ -19,7 +20,9 @@ async function getSeleniumDriver(config: BaseConf | Browser = {}, browser?: Brow
 	// validate config
 	validateSeleniumConf(_config);
 
-	const driver = await getDriver(_config);
+	const _getDriver = (config as BaseConf).seleniumAddress ? getRemoteDriver : getLocalDriver;
+
+	const driver = await _getDriver(_config);
 
 	/**
 	 * @info
@@ -27,7 +30,7 @@ async function getSeleniumDriver(config: BaseConf | Browser = {}, browser?: Brow
 	 * and init current driver
 	 */
 
-	_browser.setCreateNewDriver = () => getDriver(_config);
+	_browser.setCreateNewDriver = () => _getDriver(_config);
 	_browser.setClient(driver);
 
 	if (config.baseUrl) {
