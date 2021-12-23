@@ -295,7 +295,9 @@ function getInitElementRest(selector: string | By | ((...args: any[]) => any) | 
 
 	if ((isString(selector) && (selector as string).indexOf('js=') === 0) || isFunction(selector) || isPromise(selector)) {
 		getExecuteScriptArgs = function getExecuteScriptArgs() {
-			return [root, ...rest];
+			const localRest = rest.map((item) => item && item.getWebDriverElement ? item.getWebDriverElement() : item);
+			const rootPromiseIfRequired = root && root.getWebDriverElement ? root.getWebDriverElement() : root;
+			return [rootPromiseIfRequired, ...localRest];
 		};
 	} else if (root && root instanceof PromodSeleniumElement) {
 		getParent = function getParent() {

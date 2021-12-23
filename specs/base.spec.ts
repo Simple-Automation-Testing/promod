@@ -44,13 +44,12 @@ describe('Base', () => {
 		expect(await pass.isDisplayed()).toEqual(true);
 	});
 
-	it.only('element click/sendKeys', async () => {
+	it('element click/sendKeys', async () => {
 		const email = $('input[placeholder="Ім\'я користувача"]');
 		const pass = $('input[placeholder="пароль"]');
 		const signIn = $('.login_form .btn-primary');
 		await browser.actions().keyDown(Key.SHIFT).perform();
 		await email.sendKeys(`${Key.SHIFT}a`);
-		await browser.sleep(12000);
 		await signIn.click(true);
 	});
 

@@ -1,6 +1,6 @@
 {
   "name": "promod",
-  "version": "0.0.30",
+  "version": "0.0.32",
   "description": "Library for automation testing",
   "main": "./built/index.js",
   "scripts": {
@@ -47,9 +47,9 @@
     "automation testing"
   ],
   "dependencies": {
-    "@types/selenium-webdriver": "^4.0.15",
-    "sat-utils": "^0.0.25",
+    "@types/selenium-webdriver": "4.0.16",
+    "sat-utils": "0.0.34",
     "selenium-standalone": "^7.1.0",
-    "selenium-webdriver": "^4.0.0"
+    "selenium-webdriver": "4.1.0"
   }
 }
