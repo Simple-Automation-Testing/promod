@@ -245,35 +245,6 @@ class Browser {
 		return this.seleniumDriver.switchTo();
 	}
 
-	private async toSeleniumArgs(...args) {
-		const executeScriptArgs = [];
-
-		for (const item of args) {
-			const resolvedItem = isPromise(item) ? await item : item;
-
-			if (Array.isArray(resolvedItem)) {
-				const arrayItems = [];
-
-				for (const itemArr of resolvedItem) {
-					if (item && item.getId) {
-						const elementObj = await this.getSeleniumProtocolElement(itemArr);
-
-						arrayItems.push(elementObj);
-					} else {
-						arrayItems.push(itemArr);
-					}
-				}
-				executeScriptArgs.push(arrayItems);
-			} else if (resolvedItem && resolvedItem.getSeleniumProtocolElementObj) {
-				executeScriptArgs.push(await resolvedItem.getSeleniumProtocolElementObj());
-			} else {
-				executeScriptArgs.push(item);
-			}
-		}
-
-		return executeScriptArgs;
-	}
-
 	async quit() {
 		if (this.drivers && this.drivers.length) {
 			const index = this.drivers.findIndex((driver) => driver === this.seleniumDriver);
@@ -305,6 +276,35 @@ class Browser {
 
 	actions() {
 		return this.seleniumDriver.actions({async: true});
+	}
+
+	private async toSeleniumArgs(...args) {
+		const executeScriptArgs = [];
+
+		for (const item of args) {
+			const resolvedItem = isPromise(item) ? await item : item;
+
+			if (Array.isArray(resolvedItem)) {
+				const arrayItems = [];
+
+				for (const itemArr of resolvedItem) {
+					if (item && item.getId) {
+						const elementObj = await this.getSeleniumProtocolElement(itemArr);
+
+						arrayItems.push(elementObj);
+					} else {
+						arrayItems.push(itemArr);
+					}
+				}
+				executeScriptArgs.push(arrayItems);
+			} else if (resolvedItem && resolvedItem.getSeleniumProtocolElementObj) {
+				executeScriptArgs.push(await resolvedItem.getSeleniumProtocolElementObj());
+			} else {
+				executeScriptArgs.push(item);
+			}
+		}
+
+		return executeScriptArgs;
 	}
 
 	private async getSeleniumProtocolElement(item) {

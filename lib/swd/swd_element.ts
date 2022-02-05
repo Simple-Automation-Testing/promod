@@ -148,7 +148,7 @@ class PromodSeleniumElement {
 		});
 	}
 
-	setseleniumDriver(client) {
+	setseleniumDriver(client: WebDriver) {
 		this.seleniumDriver = client;
 	}
 
@@ -313,7 +313,6 @@ const $ = (selector: string | By | ((...args: any[]) => any) | Promise<any>, roo
 
 	return new PromodSeleniumElement(selector, null, ...restArgs) as any;
 };
-
 
 const $$ = (selector: string | By | ((...args: any[]) => any) | Promise<any>, root?: PromodSeleniumElementType | any, ...rest: any[]): PromodSeleniumElementsType => {
 	const restArgs = getInitElementRest(selector, root, ...rest);
