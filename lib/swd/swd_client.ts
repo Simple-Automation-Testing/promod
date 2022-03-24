@@ -32,6 +32,7 @@ or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/in
 
 interface IBrowserTab {
 	index?: number;
+	tabId?: string;
 	expectedQuantity?: number;
 	title?: string;
 	timeout?: number;
@@ -142,7 +143,10 @@ class Browser {
 	 * @private
 	 */
 	private async switchToBrowserTab(tabObject: IBrowserTab) {
-		const {index, expectedQuantity, title, timeout = 5000} = tabObject;
+		const {index, expectedQuantity, title, timeout = 5000, tabId} = tabObject;
+		if (tabId) {
+			return await this.switchTo().window(tabId);
+		}
 		let tabs = await this.getTabs();
 		if (isNumber(expectedQuantity)) {
 			await waitForCondition(async () => {
