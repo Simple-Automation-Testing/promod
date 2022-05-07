@@ -3,3 +3,4 @@
 ./lib
 .eslin*
 lib
+.prettierrc
