@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import { isBoolean, isString, isFunction, isPromise } from 'sat-utils';
+import { isString, isFunction, isPromise } from 'sat-utils';
 import { By, WebElement, WebDriver } from 'selenium-webdriver';
 import { browser } from './swd_client';
 
@@ -132,8 +132,7 @@ class PromodSeleniumElements {
   }
 
   async count(): Promise<number> {
-    await this.getElement(0);
-    return this.wdElements.length;
+    return this.getElement().then(() => this.wdElements.length);
   }
 }
 
@@ -212,6 +211,24 @@ class PromodSeleniumElement {
     }
   }
 
+  async hover() {
+    console.log(this.seleniumDriver);
+    await browser
+      .currentClient()
+      .actions()
+      .move({ origin: await this.getWebDriverElement() })
+      .perform();
+  }
+
+  async focus() {
+    await browser
+      .currentClient()
+      .actions()
+      .move({ origin: await this.getWebDriverElement() })
+      .press()
+      .perform();
+  }
+
   async scrollIntoView(position?: 'end' | 'start') {
     await this.getElement();
     await this.seleniumDriver.executeScript(
@@ -277,7 +294,7 @@ class PromodSeleniumElement {
   async isPresent() {
     return this.getElement()
       .then(() => true)
-      .catch((r) => false);
+      .catch(() => false);
   }
 
   private async callElementAction(action) {
@@ -385,6 +402,10 @@ export interface PromodSeleniumElementType {
   getId(): Promise<string>;
 
   click(withScroll?: boolean): Promise<void>;
+
+  hover(): Promise<void>;
+
+  focus(): Promise<void>;
 
   sendKeys(...keys: Array<string | number | Promise<string | number>>): Promise<void>;
 

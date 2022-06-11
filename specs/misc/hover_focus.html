@@ -1,0 +1,25 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <button id="hover">blur</button>
+    <button id="focus">focus</button>
+  </body>
+
+  <script>
+    const blurItem = document.getElementById('hover');
+    const focusItem = document.getElementById('focus');
+
+    focusItem.addEventListener('focus', (event) => {
+      event.target.style.background = 'pink';
+    });
+
+    blurItem.addEventListener('mouseenter', (event) => {
+      event.target.style.background = 'red';
+    });
+  </script>
+</html>

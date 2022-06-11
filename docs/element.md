@@ -4,6 +4,8 @@ Element has "lazy" interface (as it was in protractor)
 - [searchStragegy](#searchstragegy)
 - [sendKeys](#sendkeys)
 - [click](#click)
+- [hover](#hover)
+- [focus](#focus)
 - [getTagName](#gettagname)
 - [getCssValue](#getcssvalue)
 - [getAttribute](#getattribute)
@@ -49,6 +51,28 @@ Element has "lazy" interface (as it was in protractor)
 
 	;(async () => {
 		await someButton.click()
+	})
+```
+
+## hover
+```js
+	const {seleniumWD} = require('promod');
+	const {$} = seleniumWD
+	const someButton = $('button')
+
+	;(async () => {
+		await someButton.hover()
+	})
+```
+
+## focus
+```js
+	const {seleniumWD} = require('promod');
+	const {$} = seleniumWD
+	const someButton = $('button')
+
+	;(async () => {
+		await someButton.focus()
 	})
 ```
 
@@ -184,7 +208,7 @@ Element has "lazy" interface (as it was in protractor)
 	})()
 ```
 
-## takeScreenshot
+## scrollIntoView
 ```js
 	const {seleniumWD} = require('promod');
 	const {$} = seleniumWD

@@ -1,6 +1,6 @@
 {
   "name": "promod",
-  "version": "0.0.37",
+  "version": "0.0.39",
   "description": "Library for automation testing",
   "main": "./built/index.js",
   "scripts": {
@@ -34,8 +34,14 @@
     "eslint-plugin-chai-friendly": "^0.6.0",
     "eslint-plugin-mocha": "^8.2.0",
     "mocha": "^8.4.0",
+    "prettier": "^2.6.2",
     "ts-node": "^9.1.1",
     "typescript": "^4.3.4"
+  },
+  "dependencies": {
+    "sat-utils": "0.0.42",
+    "selenium-standalone": "^7.1.0",
+    "selenium-webdriver": "4.2.0"
   },
   "keywords": [
     "promod",
@@ -45,12 +51,5 @@
     "test automation",
     "selenium",
     "automation testing"
-  ],
-  "dependencies": {
-    "@types/selenium-webdriver": "4.0.19",
-    "prettier": "^2.6.2",
-    "sat-utils": "0.0.42",
-    "selenium-standalone": "^7.1.0",
-    "selenium-webdriver": "4.1.1"
-  }
+  ]
 }
