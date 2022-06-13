@@ -212,7 +212,6 @@ class PromodSeleniumElement {
   }
 
   async hover() {
-    console.log(this.seleniumDriver);
     await browser
       .currentClient()
       .actions()
