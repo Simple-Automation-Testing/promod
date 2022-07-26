@@ -1,6 +1,6 @@
 {
   "name": "promod",
-  "version": "0.0.40",
+  "version": "0.0.41",
   "description": "Library for automation testing",
   "main": "./built/index.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "test:units": "mocha $(find units -name '*.test.*') --require ts-node/register --timeout 500000",
     "test:debug": "mocha ./specs/async.child.methods.spec.ts --require ts-node/register --timeout 300000",
     "lint": "eslint --ext .ts ./",
-    "build": "rm -rf ./built && tsc"
+    "tsc": "rm -rf ./built && tsc"
   },
   "repository": {
     "type": "git",
@@ -39,9 +39,10 @@
     "typescript": "^4.3.4"
   },
   "dependencies": {
-    "sat-utils": "0.0.42",
+    "sat-utils": "0.1.2",
+    "selenium-webdriver": "4.3.1",
     "selenium-standalone": "^7.1.0",
-    "selenium-webdriver": "4.2.0"
+    "yargs": "^17.5.1"
   },
   "keywords": [
     "promod",

@@ -151,4 +151,10 @@ describe('Base', () => {
     const data = await browser.executeScript("return document.querySelector('#hover').style.background");
     expect(data).toEqual('red');
   });
+
+  it('screenshot', async () => {
+    const file = path.resolve(__dirname, './misc/hover_focus.html');
+    await browser.get(`file://${file}`);
+    await browser.takeScreenshot();
+  });
 });
