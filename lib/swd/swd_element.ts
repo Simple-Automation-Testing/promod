@@ -195,10 +195,13 @@ class PromodSeleniumElement {
       const scrollableClickResult = await this.wdElement
         .click()
         .catch((err) =>
-          this.isInteractionIntercepted(err) ? this.scrollIntoView('end').then(() => this.wdElement.click()) : err,
+          this.isInteractionIntercepted(err) ? this.scrollIntoView('center').then(() => this.wdElement.click()) : err,
         )
         .catch((err) =>
           this.isInteractionIntercepted(err) ? this.scrollIntoView('start').then(() => this.wdElement.click()) : err,
+        )
+        .catch((err) =>
+          this.isInteractionIntercepted(err) ? this.scrollIntoView('end').then(() => this.wdElement.click()) : err,
         )
         .then((err) => err)
         .catch((err) => err);
@@ -228,15 +231,15 @@ class PromodSeleniumElement {
       .perform();
   }
 
-  async scrollIntoView(position?: 'end' | 'start') {
+  async scrollIntoView(position?: 'end' | 'start' | 'center') {
     await this.getElement();
     await this.seleniumDriver.executeScript(
       `
       let position = true;
-      if(arguments[1] ==='end') {
-        position = {block: 'end'}
-      } else if(arguments[1] ==='start') {
-        position = {block: 'start'}
+
+      const scrollBlock = ['end', 'start', 'center', 'nearest']
+      if(scrollBlock.includes(arguments[1])) {
+        position = {block: arguments[1]}
       }
       arguments[0].scrollIntoView(position)
     `,
