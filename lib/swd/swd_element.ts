@@ -132,7 +132,9 @@ class PromodSeleniumElements {
   }
 
   async count(): Promise<number> {
-    return this.getElement().then(() => this.wdElements.length);
+    return this.getElement()
+      .then(() => this.wdElements.length)
+      .catch(() => 0);
   }
 }
 

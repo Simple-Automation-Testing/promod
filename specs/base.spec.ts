@@ -80,6 +80,11 @@ describe('Base', () => {
     });
   });
 
+  it('count', async () => {
+    const notExistingElements = $('.not_existing_item0').$('.not_existing_item1').$$('button');
+    expect(await notExistingElements.count()).toEqual(0);
+  });
+
   it('isPresent', async () => {
     expect(await $('button.super.not.exist').$$('a').get(1).isPresent()).toEqual(false);
     expect(await $$('button').get(0).isPresent()).toEqual(true);
