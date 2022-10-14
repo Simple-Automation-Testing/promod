@@ -4,30 +4,25 @@ import * as fs from 'fs';
 const checkPathes = ['seleniumServerJar', 'chromeDriver', 'geckoDriver'];
 const checkString = ['seleniumAddress', 'seleniumSessionId', 'baseUrl'];
 
-export type BaseConfSWD = {
+export type BaseConfPW = {
   [key: string]: any;
   localSeleniumStandaloneOpts?: {
     port?: number | string;
     args?: string[];
     jvmArgs?: string[];
   };
-  // Selenium drivers options
-  seleniumServerJar?: string;
-  chromeDriver?: string;
-  geckoDriver?: string;
-
   seleniumAddress?: string;
   seleniumSessionId?: string;
   // Browser capabilities
   capabilities?: {
     [key: string]: any;
-    browserName?: string;
+    browserName?: 'chromium' | '';
   };
   // Opts
   baseUrl?: string;
 };
 
-function validateSeleniumConf(configObj: BaseConfSWD) {
+function validatePWConf(configObj: BaseConfPW) {
   const configKeys = Object.keys(configObj);
   for (const key of configKeys) {
     if (
@@ -55,4 +50,8 @@ please use BaseConf type or visit https://github.com/Simple-Automation-Testing/p
   }
 }
 
-export { validateSeleniumConf };
+function validatePlaywrightConf(configObj) {
+  return configObj;
+}
+
+export { validatePWConf, validatePlaywrightConf };

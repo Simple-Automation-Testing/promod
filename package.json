@@ -4,7 +4,7 @@
   "description": "Library for automation testing",
   "main": "./built/index.js",
   "scripts": {
-    "test": "mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
+    "test": "mocha $(find specs/swd -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:units": "mocha $(find units -name '*.test.*') --require ts-node/register --timeout 500000",
     "test:debug": "mocha ./specs/async.child.methods.spec.ts --require ts-node/register --timeout 300000",
     "lint": "eslint --ext .ts ./",
@@ -33,15 +33,16 @@
     "eslint-plugin-chai-expect": "^2.2.0",
     "eslint-plugin-chai-friendly": "^0.6.0",
     "eslint-plugin-mocha": "^8.2.0",
-    "mocha": "^8.4.0",
+    "mocha": "10.0.0",
     "prettier": "^2.6.2",
-    "ts-node": "^9.1.1",
-    "typescript": "^4.3.4"
+    "ts-node": "10.9.1",
+    "typescript": "4.8.4",
+    "playwright": "^1.27.1"
   },
   "dependencies": {
     "sat-utils": "0.3.2",
-    "selenium-webdriver": "4.5.0",
     "selenium-standalone": "^7.1.0",
+    "selenium-webdriver": "4.5.0",
     "yargs": "^17.5.1"
   },
   "keywords": [

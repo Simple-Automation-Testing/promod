@@ -4,3 +4,4 @@
 .eslin*
 lib
 .prettierrc
+playground.*

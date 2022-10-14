@@ -1,6 +1,6 @@
 import { Key } from 'selenium-webdriver';
 import { expect } from 'assertior';
-import { seleniumWD } from '../lib/index';
+import { seleniumWD } from '../../lib/index';
 import * as path from 'path';
 
 describe('Base', () => {

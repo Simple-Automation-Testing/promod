@@ -1,10 +1,10 @@
 import { WebDriver } from 'selenium-webdriver';
 import { getDriver } from './remote';
-import { BaseConf } from '../config/config';
+import { BaseConfSWD } from '../config/config';
 import { Browser } from '../swd_client';
 import { validateSeleniumConf } from '../config';
 
-async function getSeleniumDriver(config: BaseConf | Browser = {}, browser?: Browser): Promise<WebDriver> {
+async function getSeleniumDriver(config: BaseConfSWD | Browser = {}, browser?: Browser): Promise<WebDriver> {
   let _config;
   let _browser;
 
