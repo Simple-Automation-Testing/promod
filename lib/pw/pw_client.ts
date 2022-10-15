@@ -55,6 +55,17 @@ class PageWrapper {
     this.context = context;
   }
 
+  async updateContext(context: BrowserContext) {
+    this.context = context;
+    const contextPages = await context.pages();
+
+    if (contextPages.length) {
+      this.currentPage = contextPages[0];
+    } else {
+      this.currentPage = await this.context.newPage();
+    }
+  }
+
   async getCurrentPage() {
     if (!this.currentPage) {
       const page = await this.context.newPage();
@@ -62,6 +73,7 @@ class PageWrapper {
       this.initialPage = page;
     }
 
+    console.log(await this.currentPage.title(), 'GET CURRENT PAGE TITLE');
     return this.currentPage;
   }
 
@@ -84,8 +96,7 @@ class PageWrapper {
 }
 
 class ContextWrapper {
-  private server: PWBrowser;
-  private contexts: BrowserContext[];
+  public server: PWBrowser;
   private currentContext: BrowserContext;
   private currentPage: PageWrapper;
 
@@ -94,10 +105,13 @@ class ContextWrapper {
   }
 
   async runNewContext() {
-    if (this.currentContext) {
-      this.contexts.push(this.currentContext);
-    }
     this.currentContext = await this.server.newContext();
+
+    if (!this.currentPage) {
+      this.currentPage = new PageWrapper(this.currentContext);
+    } else {
+      await this.currentPage.updateContext(this.currentContext);
+    }
   }
 
   async getCurrentContext() {
@@ -105,6 +119,15 @@ class ContextWrapper {
       await this.runNewContext();
     }
     return this.currentContext;
+  }
+
+  // TODO implement with tab - page title
+  async changeContext({ index, tabTitle }) {
+    if (isNumber(index)) {
+      const contexts = await this.server.contexts();
+      this.currentContext = contexts[index];
+      await this.currentPage.updateContext(this.currentContext);
+    }
   }
 
   async getCurrentPage() {
@@ -119,19 +142,17 @@ class ContextWrapper {
 
   async closeAllContexts() {
     await this.currentContext.close();
-    if (this.contexts) {
-      for (const context of this.contexts) {
-        await context.close();
-      }
+    const contexts = await this.server.contexts();
+    for (const context of contexts) {
+      await context.close();
     }
-    this.contexts = [];
   }
 }
 
 class Browser {
   public wait = waitForCondition;
   public _engineDriver: PWBrowser;
-  private _contextWrapper: ContextWrapper;
+  public _contextWrapper: ContextWrapper;
   private _pageWrapper: PageWrapper;
   private _server: BrowserServer;
 
@@ -153,42 +174,34 @@ class Browser {
   }
 
   async runNewBrowser() {
-    if (!isArray(this._engineDrivers)) {
-      this._engineDrivers = [];
-    }
-    this._engineDrivers.push(this._engineDriver);
-    if (!this._createNewDriver) {
-      throw new Error('createNewDriver(): seems like create driver method was not inited');
-    }
-
-    const newEngine = await this._createNewDriver();
-
-    this._engineDrivers.push(newEngine);
-    this._engineDriver = newEngine;
+    await this._contextWrapper.runNewContext();
   }
 
   // TODO - refactor
   async switchToBrowser({ index, tabTitle }: { index?: number; tabTitle?: string } = {}) {
-    if (isNumber(index) && isArray(this._engineDrivers) && this._engineDrivers.length > index) {
-      this._engineDriver = this._engineDrivers[index];
-      return;
-    }
-    if (isString(tabTitle)) {
-      for (const driver of this._engineDrivers) {
-        const result = await this.switchToBrowserTab({ title: tabTitle })
-          .then(
-            () => true,
-            () => false,
-          )
-          .catch(() => false);
-        if (result) {
-          this._engineDriver = driver;
-          return;
-        }
-      }
-    }
+    await this._contextWrapper.changeContext({ index, tabTitle });
 
-    throw new Error(`switchToBrowser(): required browser was not found`);
+    // if (isNumber(index) && isArray(this._engineDrivers) && this._engineDrivers.length > index) {
+    //   this._contextWrapper = this._engineDrivers[index];
+    //   return;
+    // }
+
+    // if (isString(tabTitle)) {
+    //   for (const driver of this._engineDrivers) {
+    //     const result = await this.switchToBrowserTab({ title: tabTitle })
+    //       .then(
+    //         () => true,
+    //         () => false,
+    //       )
+    //       .catch(() => false);
+    //     if (result) {
+    //       this._engineDriver = driver;
+    //       return;
+    //     }
+    //   }
+    // }
+
+    // throw new Error(`switchToBrowser(): required browser was not found`);
   }
 
   set setCreateNewDriver(driverCreator) {
@@ -378,6 +391,8 @@ class Browser {
         executeScriptArgs.push(arrayItems);
       } else if (resolvedItem && resolvedItem.getEngineElement) {
         executeScriptArgs.push(await resolvedItem.getEngineElement());
+      } else if (resolvedItem && resolvedItem.getEngineElements) {
+        executeScriptArgs.push(...(await resolvedItem.getEngineElements()));
       } else {
         executeScriptArgs.push(item);
       }

@@ -131,7 +131,6 @@ describe('Base', () => {
     await signIn.click();
     const lastRow = $$('tr').last();
     const beforeScroll = await lastRow.getRect();
-    console.log(beforeScroll);
     await browser.sleep(5500);
     await lastRow.scrollIntoView();
     await browser.sleep(5500);
@@ -141,7 +140,7 @@ describe('Base', () => {
 
   it('focus', async () => {
     const focus = $('#focus');
-    const file = path.resolve(__dirname, './misc/hover_focus.html');
+    const file = path.resolve(__dirname, '../misc/hover_focus.html');
     await browser.get(`file://${file}`);
     await focus.focus();
     const data = await browser.executeScript("return document.querySelector('#focus').style.background");
@@ -150,7 +149,7 @@ describe('Base', () => {
 
   it('hover', async () => {
     const hover = $('#hover');
-    const file = path.resolve(__dirname, './misc/hover_focus.html');
+    const file = path.resolve(__dirname, '../misc/hover_focus.html');
     await browser.get(`file://${file}`);
     await hover.hover();
     const data = await browser.executeScript("return document.querySelector('#hover').style.background");
@@ -158,7 +157,7 @@ describe('Base', () => {
   });
 
   it('screenshot', async () => {
-    const file = path.resolve(__dirname, './misc/hover_focus.html');
+    const file = path.resolve(__dirname, '../misc/hover_focus.html');
     await browser.get(`file://${file}`);
     await browser.takeScreenshot();
   });

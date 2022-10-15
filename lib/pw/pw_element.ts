@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import { isString, isFunction, isPromise } from 'sat-utils';
+import { isString, isFunction, isAsyncFunction, isPromise } from 'sat-utils';
 import { ElementHandle, Page } from 'playwright';
 import { browser } from './pw_client';
 
@@ -13,7 +13,7 @@ const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
   } else if (isPromise(selector)) {
     return selector;
   } else if (isFunction(selector)) {
-    return [selector, ...getExecuteScriptArgs()];
+    return [selector, getExecuteScriptArgs()];
   }
 
   return selector;
@@ -78,6 +78,11 @@ class PromodElements {
     }
 
     return this._driverElements[index];
+  }
+
+  async getEngineElements() {
+    await this.getElement();
+    return this._driverElements;
   }
 
   async getIds() {
@@ -239,6 +244,8 @@ class PromodElement {
 
   async getElement() {
     this._driver = await browser.getCurrentPage();
+    const getElementArgs = buildBy(this.selector, this.getExecuteScriptArgs);
+
     if (this.getParent) {
       let parent = (await this.getParent()) as any;
       if (!parent) {
@@ -255,10 +262,12 @@ class PromodElement {
       if (this.useParent) {
         this._driverElement = parent;
       } else {
-        this._driverElement = await parent.$(buildBy(this.selector, this.getExecuteScriptArgs));
+        this._driverElement = await parent.$(getElementArgs);
       }
+    } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
+      this._driverElement = await this._driver.evaluateHandle(getElementArgs[0], getElementArgs[1]);
     } else {
-      this._driverElement = await this._driver.$(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElement = await this._driver.$(getElementArgs);
     }
 
     return this._driverElement;
