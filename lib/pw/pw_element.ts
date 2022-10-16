@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import { isString, isFunction, isAsyncFunction, isPromise } from 'sat-utils';
+import { toArray, isString, isFunction, isAsyncFunction, isPromise } from 'sat-utils';
 import { browser } from './pw_client';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
@@ -275,7 +275,6 @@ class PromodElement {
   async getElement() {
     this._driver = await browser.getCurrentPage();
     const getElementArgs = buildBy(this.selector, this.getExecuteScriptArgs);
-
     if (this.getParent) {
       let parent = (await this.getParent()) as any;
       if (!parent) {
@@ -295,8 +294,16 @@ class PromodElement {
         this._driverElement = await parent.$(getElementArgs);
       }
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
-      this._driverElement = await this._driver.evaluateHandle(getElementArgs[0], getElementArgs[1]);
+      const resolved = [];
+      const callArgs = toArray(getElementArgs[1]);
+
+      for (const item of callArgs) {
+        // TODO refactor resolver
+        resolved.push(await item);
+      }
+      this._driverElement = await this._driver.evaluateHandle(getElementArgs[0], resolved);
     } else {
+      console.log(getElementArgs, '~~~~~~____~~~~~~~~~');
       this._driverElement = await this._driver.$(getElementArgs);
     }
 

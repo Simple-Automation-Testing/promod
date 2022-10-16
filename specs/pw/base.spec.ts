@@ -15,6 +15,34 @@ describe('Base', () => {
     await browser.quitAll();
   });
 
+  it('by js function', async () => {
+    const email = $(() => document.querySelector('input[placeholder="Ім\'я користувача"]'));
+
+    expect(await email.isDisplayed()).toEqual(true);
+    expect(await email.isPresent()).toEqual(true);
+
+    const email1 = $(() => document.querySelector('input[placeholder="Ім\'ssssя користувача"]'));
+
+    expect(await email1.isDisplayed()).toEqual(false);
+    expect(await email1.isPresent()).toEqual(false);
+  });
+
+  it.only('by js function with parent', async () => {
+    try {
+      const body = $(() => document.querySelector('body'));
+      const email = $(([parent]) => {
+        console.log(parent);
+        return parent.querySelector('input[placeholder="Ім\'я користувача"]');
+      }, body.getEngineElement());
+
+      expect(await email.isDisplayed()).toEqual(true);
+      expect(await email.isPresent()).toEqual(true);
+    } catch (error) {
+      console.log(error);
+      await browser.sleep(2500000);
+    }
+  });
+
   it('isDisplayed', async () => {
     const email = $('input[placeholder="Ім\'я lol"]');
 
@@ -125,7 +153,7 @@ describe('Base', () => {
     ).toEqual(true);
   });
 
-  it.only('scrollIntoView', async () => {
+  it('scrollIntoView', async () => {
     const email = $('input[placeholder="Ім\'я користувача"]');
     const pass = $('input[placeholder="пароль"]');
     const signIn = $('.login_form .btn-primary');

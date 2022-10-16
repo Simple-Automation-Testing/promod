@@ -22,12 +22,18 @@ const buildBy = (selector: string | By, getExecuteScriptArgs?: () => any[]): any
 
   if (isString(selector) && (selector as string).includes('xpath=')) {
     return By.xpath((selector as string).replace('xpath=', ''));
+    /**
+     * @depreacted
+     */
   } else if (isString(selector) && (selector as string).includes('js=')) {
+    /**
+     * @depreacted
+     */
     return By.js((selector as string).replace('js=', ''), ...getExecuteScriptArgs());
   } else if (isPromise(selector)) {
     return selector;
   } else if (isFunction(selector)) {
-    return By.js(selector, ...getExecuteScriptArgs());
+    return By.js(selector, getExecuteScriptArgs());
   }
 
   return By.css(selector);

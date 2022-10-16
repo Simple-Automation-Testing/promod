@@ -1,4 +1,4 @@
-import { chromium, firefox, Browser } from 'playwright-core';
+import { chromium, firefox } from 'playwright-core';
 
 const browserNameMapping = {
   chrome: chromium,

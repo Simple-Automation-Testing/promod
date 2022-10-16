@@ -1,4 +1,12 @@
-import { toArray, isPromise, waitForCondition, isNumber, isAsyncFunction } from 'sat-utils';
+import {
+  isEmptyObject,
+  isNotEmptyObject,
+  toArray,
+  isPromise,
+  waitForCondition,
+  isNumber,
+  isAsyncFunction,
+} from 'sat-utils';
 import { Key } from 'selenium-webdriver';
 import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
 import { ExecuteScriptFn } from '../interface';
@@ -33,7 +41,6 @@ or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/in
 
 interface IBrowserTab {
   index?: number;
-  tabId?: string;
   expectedQuantity?: number;
   title?: string;
   timeout?: number;
@@ -69,18 +76,55 @@ class PageWrapper {
     return this.currentPage;
   }
 
-  // TODO
-  async switchToNextPage() {
-    const pages = await this.context.pages();
-    // only one page is available for this context
-    if (pages.length === 1) {
-      return this.currentPage;
-    } else {
-      for (const availablePage of pages) {
-        if (availablePage !== this.currentPage) {
-          this.currentPage = availablePage;
+  async switchToNextPage(data: IBrowserTab = {}) {
+    if (isNotEmptyObject(data)) {
+      const { index, expectedQuantity, title, timeout } = data;
 
-          return this.currentPage;
+      let pages;
+      if (isNumber(expectedQuantity)) {
+        await waitForCondition(
+          async () => {
+            pages = await this.context.pages();
+            return pages.length === expectedQuantity;
+          },
+          {
+            message: `Couldn't wait for ${expectedQuantity} tab(s) to appear. Probably you should pass expectedQuantity`,
+            timeout,
+          },
+        );
+      }
+
+      if (pages.length > 1) {
+        if (title) {
+          await waitForCondition(
+            async () => {
+              pages = await this.context.pages();
+              for (const tab of pages) {
+                if ((await tab.title()) === title) {
+                  this.currentPage = tab;
+                  return true;
+                }
+              }
+            },
+            { message: `Window with ${title} title was not found during ${timeout}.`, timeout },
+          );
+        } else {
+          this.currentPage = pages[index];
+        }
+      } else {
+        this.currentPage = pages[0];
+      }
+    } else {
+      const pages = await this.context.pages();
+      if (pages.length === 1) {
+        return this.currentPage;
+      } else {
+        for (const availablePage of pages) {
+          if (availablePage !== this.currentPage) {
+            this.currentPage = availablePage;
+
+            return this.currentPage;
+          }
         }
       }
     }
@@ -94,6 +138,10 @@ class ContextWrapper {
 
   constructor(serverBrowser: PWBrowser) {
     this.server = serverBrowser;
+  }
+
+  async switchPage(data: IBrowserTab) {
+    await this.currentPage.switchToNextPage(data);
   }
 
   async runNewContext() {
@@ -172,28 +220,6 @@ class Browser {
   // TODO - refactor
   async switchToBrowser({ index, tabTitle }: { index?: number; tabTitle?: string } = {}) {
     await this._contextWrapper.changeContext({ index, tabTitle });
-
-    // if (isNumber(index) && isArray(this._engineDrivers) && this._engineDrivers.length > index) {
-    //   this._contextWrapper = this._engineDrivers[index];
-    //   return;
-    // }
-
-    // if (isString(tabTitle)) {
-    //   for (const driver of this._engineDrivers) {
-    //     const result = await this.switchToBrowserTab({ title: tabTitle })
-    //       .then(
-    //         () => true,
-    //         () => false,
-    //       )
-    //       .catch(() => false);
-    //     if (result) {
-    //       this._engineDriver = driver;
-    //       return;
-    //     }
-    //   }
-    // }
-
-    // throw new Error(`switchToBrowser(): required browser was not found`);
   }
 
   set setCreateNewDriver(driverCreator) {
@@ -223,7 +249,7 @@ class Browser {
     if (!this.initialTab) {
       return;
     }
-    await this.closeAllTabsExceptInitial();
+    await this.closeAllpagesExceptInitial();
     // set initialTab to null for further "it" to use
     this.initialTab = null;
   }
@@ -235,7 +261,7 @@ class Browser {
     await this.switchToBrowserTab(tabObject);
   }
 
-  private async closeAllTabsExceptInitial() {}
+  private async closeAllpagesExceptInitial() {}
 
   public async makeActionAtEveryTab(action: (...args: any) => Promise<any>, handles?: string[]) {}
 
@@ -244,16 +270,14 @@ class Browser {
    * @private
    */
   private async switchToBrowserTab(tabObject: IBrowserTab) {
-    // const { index, expectedQuantity, title, timeout = 5000, tabId } = tabObject;
-    // if (tabId) {
-    //   return await this.switchTo().window(tabId);
-    // }
-    // let tabs = await this.getTabs();
+    await this._contextWrapper.switchPage(tabObject);
+
+    // let pages = await this.getpages();
     // if (isNumber(expectedQuantity)) {
     //   await waitForCondition(
     //     async () => {
-    //       tabs = await this.getTabs();
-    //       return tabs.length === expectedQuantity;
+    //       pages = await this.getpages();
+    //       return pages.length === expectedQuantity;
     //     },
     //     {
     //       message: `Couldn't wait for ${expectedQuantity} tab(s) to appear. Probably you should pass expectedQuantity`,
@@ -261,12 +285,12 @@ class Browser {
     //     },
     //   );
     // }
-    // if (tabs.length > 1) {
+    // if (pages.length > 1) {
     //   if (title) {
     //     await waitForCondition(
     //       async () => {
-    //         tabs = await this.getTabs();
-    //         for (const tab of tabs) {
+    //         pages = await this.getpages();
+    //         for (const tab of pages) {
     //           await this.switchTo().window(tab);
     //           if ((await this.getTitle()) === title) {
     //             return true;
@@ -276,10 +300,10 @@ class Browser {
     //       { message: `Window with ${title} title was not found during ${timeout}.`, timeout },
     //     );
     //   } else {
-    //     await this.switchTo().window(tabs[index]);
+    //     await this.switchTo().window(pages[index]);
     //   }
     // } else {
-    //   await this.switchTo().window(tabs[0]);
+    //   await this.switchTo().window(pages[0]);
     // }
   }
 
@@ -299,7 +323,7 @@ class Browser {
     return (await this._contextWrapper.getCurrentPage()).title();
   }
 
-  async getTabs() {
+  async getpages() {
     return await this._contextWrapper.getCurrentPage();
   }
 

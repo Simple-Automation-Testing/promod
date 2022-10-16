@@ -15,6 +15,29 @@ describe('Base', () => {
     await browser.quitAll();
   });
 
+  it('by js function', async () => {
+    const email = $(() => document.querySelector('input[placeholder="Ім\'я користувача"]'));
+
+    expect(await email.isDisplayed()).toEqual(true);
+    expect(await email.isPresent()).toEqual(true);
+
+    const email1 = $(() => document.querySelector('input[placeholder="Ім\'ssssя користувача"]'));
+
+    expect(await email1.isDisplayed()).toEqual(false);
+    expect(await email1.isPresent()).toEqual(false);
+  });
+
+  it('by js function with parent', async () => {
+    const body = $(() => document.querySelector('body'));
+    const email = $(([parent]) => {
+      console.log(parent);
+      return parent.querySelector('input[placeholder="Ім\'я користувача"]');
+    }, body.getEngineElement());
+
+    expect(await email.isDisplayed()).toEqual(true);
+    expect(await email.isPresent()).toEqual(true);
+  });
+
   it('isDisplayed', async () => {
     const email = $('input[placeholder="Ім\'я lol"]');
 

@@ -5,4 +5,3 @@ export * from './swd/config';
 export * from './pw/config';
 
 export { seleniumWD, playwrightWD };
-export { Browser } from './swd/swd_client';
