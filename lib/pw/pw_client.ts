@@ -1,13 +1,7 @@
-import { toArray, isArray, isPromise, waitForCondition, isNumber, isAsyncFunction, isString } from 'sat-utils';
+import { toArray, isPromise, waitForCondition, isNumber, isAsyncFunction } from 'sat-utils';
 import { Key } from 'selenium-webdriver';
 import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
 import { ExecuteScriptFn } from '../interface';
-/*
-  const a = await page.$('button');
-  const b = await page.evaluateHandle(a => a.parentElement, a);
-
-  await b.asElement()?.click();
-*/
 
 function validateBrowserCallMethod(browserClass): Browser {
   const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
@@ -327,7 +321,7 @@ class Browser {
     await (() => new Promise((resolve) => setTimeout(resolve, time)))();
   }
 
-  async executeScript(script: ExecuteScriptFn, args: any[]): Promise<any> {
+  async executeScript(script: ExecuteScriptFn, args?: any[]): Promise<any> {
     const recomposedArgs = await this.toPlaywirghtArgs(args);
 
     const res = (await this._contextWrapper.getCurrentPage()).evaluate(script, recomposedArgs);

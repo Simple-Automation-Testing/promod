@@ -234,7 +234,7 @@ class Browser {
     return this.seleniumDriver.manage();
   }
 
-  async executeScript(script: ExecuteScriptFn, args: any[]): Promise<any> {
+  async executeScript(script: ExecuteScriptFn, args?: any[]): Promise<any> {
     const recomposedArgs = await this.toSeleniumArgs(args);
     const res = await this.seleniumDriver.executeScript(script, recomposedArgs);
 
@@ -242,7 +242,7 @@ class Browser {
   }
 
   // @depreactedF
-  async executeAsyncScript(script: ExecuteScriptFn | string, args: any[]): Promise<any> {
+  async executeAsyncScript(script: ExecuteScriptFn | string, args?: any[]): Promise<any> {
     const recomposedArgs = await this.toSeleniumArgs(args);
 
     const res = await this.seleniumDriver.executeAsyncScript(script, ...recomposedArgs);
