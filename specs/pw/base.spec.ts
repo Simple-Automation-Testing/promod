@@ -120,7 +120,7 @@ describe.only('Base', () => {
 			return root.querySelector(selector);
 		})(arguments[0], arguments[1])`,
         'button',
-        body.getWrappedElement(),
+        body.getEngineElement(),
       ).isPresent(),
     ).toEqual(true);
   });

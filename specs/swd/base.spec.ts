@@ -117,7 +117,7 @@ describe('Base', () => {
 			return root.querySelector(selector);
 		})(arguments[0], arguments[1])`,
         'button',
-        body.getWebDriverElement(),
+        body.getEngineElement(),
       ).isPresent(),
     ).toEqual(true);
   });

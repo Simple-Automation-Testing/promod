@@ -1,7 +1,10 @@
 /* eslint-disable max-len */
 import { isString, isFunction, isAsyncFunction, isPromise } from 'sat-utils';
-import { ElementHandle, Page } from 'playwright';
 import { browser } from './pw_client';
+
+import type { PromodElementType, PromodElementsType } from '../interface';
+
+import type { ElementHandle, Page } from 'playwright';
 
 const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
   getExecuteScriptArgs = isFunction(getExecuteScriptArgs) ? getExecuteScriptArgs : () => [];
@@ -60,9 +63,10 @@ class PromodElements {
     if (this.getParent) {
       let parent = await this.getParent();
 
-      if (parent.getWrappedElement) {
+      // @ts-ignore
+      if (parent.getEngineElement) {
         // @ts-ignore
-        parent = await parent.getWrappedElement();
+        parent = await parent.getEngineElement();
       }
 
       // TODO improve this solution
@@ -233,7 +237,7 @@ class PromodElement {
         // @ts-ignore
         elem.scrollIntoView(position);
       },
-      [await this.getWrappedElement(), position],
+      [await this.getEngineElement(), position],
     );
   }
 
@@ -255,8 +259,8 @@ class PromodElement {
             : `Parent element with selector ${this.parentSelector} was not found`,
         );
       }
-      if (parent.getWrappedElement) {
-        parent = await parent.getWrappedElement();
+      if (parent.getEngineElement) {
+        parent = await parent.getEngineElement();
       }
 
       if (this.useParent) {
@@ -297,12 +301,6 @@ class PromodElement {
       .catch(() => false);
   }
 
-  async getWrappedElement() {
-    await this.getElement();
-
-    return this._driverElement;
-  }
-
   locator() {
     let locatorValue = '';
     if (this.parentSelector) {
@@ -335,8 +333,8 @@ function getInitElementRest(
     isPromise(selector)
   ) {
     getExecuteScriptArgs = function getExecuteScriptArgs() {
-      const localRest = rest.map((item) => (item && item.getWrappedElement ? item.getWrappedElement() : item));
-      const rootPromiseIfRequired = root && root.getWrappedElement ? root.getWrappedElement() : root;
+      const localRest = rest.map((item) => (item && item.getEngineElement ? item.getEngineElement() : item));
+      const rootPromiseIfRequired = root && root.getEngineElement ? root.getEngineElement() : root;
       return [rootPromiseIfRequired, ...localRest];
     };
   } else if (root && root instanceof PromodElement) {
@@ -369,77 +367,3 @@ const $$ = (
 };
 
 export { $, $$, PromodElement, PromodElements };
-
-export interface PromodElementsType {
-  _driverElements: ElementHandle[];
-
-  get(index: number): PromodElementType;
-
-  last(): PromodElementType;
-
-  first(): PromodElementType;
-
-  each(cb: (item: PromodElementType, index?: number) => Promise<void>): Promise<void>;
-
-  count(): Promise<number>;
-}
-
-export interface PromodElementType {
-  _driverElement: ElementHandle;
-
-  getId(): Promise<string>;
-
-  click(withScroll?: boolean): Promise<void>;
-
-  hover(): Promise<void>;
-
-  focus(): Promise<void>;
-
-  sendKeys(...keys: Array<string | number | Promise<string | number>>): Promise<void>;
-
-  getTagName(): Promise<string>;
-
-  getCssValue(cssStyleProperty: string): Promise<string>;
-
-  getAttribute(attributeName: string): Promise<string>;
-
-  getText(): Promise<string>;
-
-  getSize(): Promise<{
-    width: number;
-    height: number;
-  }>;
-
-  getRect(): Promise<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }>;
-
-  getLocation(): Promise<{
-    x: number;
-    y: number;
-  }>;
-
-  $(selector: string | ((...args: any[]) => any) | Promise<any>): PromodElementType;
-  $$(selector: string | ((...args: any[]) => any) | Promise<any>): PromodElementsType;
-
-  isEnabled(): Promise<boolean>;
-
-  isSelected(): Promise<boolean>;
-
-  isPresent(): Promise<boolean>;
-
-  submit(): Promise<void>;
-
-  clear(): Promise<void>;
-
-  isDisplayed(): Promise<boolean>;
-
-  takeScreenshot(opt_scroll?: boolean): Promise<string>;
-
-  getWrappedElement(): Promise<ElementHandle>;
-
-  scrollIntoView(position?: boolean | string): Promise<void>;
-}

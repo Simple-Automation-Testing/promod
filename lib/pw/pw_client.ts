@@ -73,7 +73,6 @@ class PageWrapper {
       this.initialPage = page;
     }
 
-    console.log(await this.currentPage.title(), 'GET CURRENT PAGE TITLE');
     return this.currentPage;
   }
 

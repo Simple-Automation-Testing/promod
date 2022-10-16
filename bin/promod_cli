@@ -3,9 +3,12 @@
 
 process.title = 'promod_cli';
 
-const {} = require('fs');
 const { execSync } = require('child_process');
-const yargs = require('yargs/yargs');
-const { hideBin } = require('yargs/helpers');
 
-execSync('npm i playwright');
+const { PROMOD_ENGINE = 'selenium' } = process.env;
+
+if (PROMOD_ENGINE === 'selenium') {
+  execSync('npm i selenium-webdriver');
+} else if (PROMOD_ENGINE === 'playwright') {
+  execSync('npm i playwright');
+}

@@ -3,6 +3,8 @@ import { isString, isFunction, isPromise } from 'sat-utils';
 import { By, WebElement, WebDriver } from 'selenium-webdriver';
 import { browser } from './swd_client';
 
+import type { PromodElementType, PromodElementsType } from '../interface';
+
 function toSeleniumProtocolElement(webElId) {
   const elementObj = {
     'element-6066-11e4-a52e-4f735466cecf': webElId,
@@ -66,7 +68,7 @@ class PromodSeleniumElements {
     this.seleniumDriver = client;
   }
 
-  get(index): PromodSeleniumElementType {
+  get(index): PromodElementType {
     const childElement = new PromodSeleniumElement(
       this.selector,
       this.seleniumDriver,
@@ -80,11 +82,11 @@ class PromodSeleniumElements {
     return childElement as any;
   }
 
-  last(): PromodSeleniumElementType {
+  last(): PromodElementType {
     return this.get(-1) as any;
   }
 
-  first(): PromodSeleniumElementType {
+  first(): PromodElementType {
     return this.get(0) as any;
   }
 
@@ -94,9 +96,9 @@ class PromodSeleniumElements {
     if (this.getParent) {
       let parent = await this.getParent();
 
-      if (parent.getWebDriverElement) {
+      if (parent.getEngineElement) {
         // @ts-ignore
-        parent = await parent.getWebDriverElement();
+        parent = await parent.getEngineElement();
       }
 
       this.wdElements = await parent.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
@@ -123,7 +125,7 @@ class PromodSeleniumElements {
     return ids.map(toSeleniumProtocolElement);
   }
 
-  async each(cb: (item: PromodSeleniumElementType, index?: number) => Promise<void>): Promise<any> {
+  async each(cb: (item: PromodElementType, index?: number) => Promise<void>): Promise<any> {
     await this.getElement(0);
 
     for (let i = 0; i < this.wdElements.length; i++) {
@@ -142,7 +144,7 @@ class PromodSeleniumElement {
   private seleniumDriver: WebDriver;
   private selector: string;
   private wdElement: WebElement;
-  private getParent: () => Promise<PromodSeleniumElementType>;
+  private getParent: () => Promise<PromodElementType>;
   private getExecuteScriptArgs: () => any;
   private useParent: boolean;
   public parentSelector: string;
@@ -169,13 +171,13 @@ class PromodSeleniumElement {
     this.seleniumDriver = client;
   }
 
-  $(selector): PromodSeleniumElementType {
+  $(selector): PromodElementType {
     const childElement = new PromodSeleniumElement(selector, this.seleniumDriver, this.getElement.bind(this));
     childElement.parentSelector = this.selector;
     return childElement as any;
   }
 
-  $$(selector): PromodSeleniumElementsType {
+  $$(selector): PromodElementsType {
     const childElements = new PromodSeleniumElements(selector, this.seleniumDriver, this.getElement.bind(this));
     childElements.parentSelector = this.selector;
     return childElements as any;
@@ -220,7 +222,7 @@ class PromodSeleniumElement {
     await browser
       .currentClient()
       .actions()
-      .move({ origin: await this.getWebDriverElement() })
+      .move({ origin: await this.getEngineElement() })
       .perform();
   }
 
@@ -228,7 +230,7 @@ class PromodSeleniumElement {
     await browser
       .currentClient()
       .actions()
-      .move({ origin: await this.getWebDriverElement() })
+      .move({ origin: await this.getEngineElement() })
       .press()
       .perform();
   }
@@ -245,7 +247,7 @@ class PromodSeleniumElement {
       }
       arguments[0].scrollIntoView(position)
     `,
-      this.getWebDriverElement(),
+      this.getEngineElement(),
       position,
     );
   }
@@ -261,8 +263,8 @@ class PromodSeleniumElement {
             : `Parent element with selector ${this.parentSelector} was not found`,
         );
       }
-      if (parent.getWebDriverElement) {
-        parent = await parent.getWebDriverElement();
+      if (parent.getEngineElement) {
+        parent = await parent.getEngineElement();
       }
 
       if (this.useParent) {
@@ -313,7 +315,7 @@ class PromodSeleniumElement {
     return this.wdElement.id_;
   }
 
-  async getWebDriverElement() {
+  async getEngineElement() {
     await this.getElement();
 
     return this.wdElement;
@@ -334,7 +336,7 @@ class PromodSeleniumElement {
 
 function getInitElementRest(
   selector: string | By | ((...args: any[]) => any) | Promise<any>,
-  root?: PromodSeleniumElementType,
+  root?: PromodElementType,
   ...rest: any[]
 ) {
   let getParent = null;
@@ -351,8 +353,8 @@ function getInitElementRest(
     isPromise(selector)
   ) {
     getExecuteScriptArgs = function getExecuteScriptArgs() {
-      const localRest = rest.map((item) => (item && item.getWebDriverElement ? item.getWebDriverElement() : item));
-      const rootPromiseIfRequired = root && root.getWebDriverElement ? root.getWebDriverElement() : root;
+      const localRest = rest.map((item) => (item && item.getEngineElement ? item.getEngineElement() : item));
+      const rootPromiseIfRequired = root && root.getEngineElement ? root.getEngineElement() : root;
       return [rootPromiseIfRequired, ...localRest];
     };
   } else if (root && root instanceof PromodSeleniumElement) {
@@ -366,9 +368,9 @@ function getInitElementRest(
 
 const $ = (
   selector: string | By | ((...args: any[]) => any) | Promise<any>,
-  root?: PromodSeleniumElementType | any,
+  root?: PromodElementType | any,
   ...rest: any[]
-): PromodSeleniumElementType => {
+): PromodElementType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
 
   return new PromodSeleniumElement(selector, null, ...restArgs) as any;
@@ -376,86 +378,12 @@ const $ = (
 
 const $$ = (
   selector: string | By | ((...args: any[]) => any) | Promise<any>,
-  root?: PromodSeleniumElementType | any,
+  root?: PromodElementType | any,
   ...rest: any[]
-): PromodSeleniumElementsType => {
+): PromodElementsType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
 
   return new PromodSeleniumElements(selector, null, ...restArgs) as any;
 };
 
 export { $, $$, PromodSeleniumElement, PromodSeleniumElements, By };
-
-export interface PromodSeleniumElementsType {
-  wdElements: WebElement[];
-
-  get(index: number): PromodSeleniumElementType;
-
-  last(): PromodSeleniumElementType;
-
-  first(): PromodSeleniumElementType;
-
-  each(cb: (item: PromodSeleniumElementType, index?: number) => Promise<void>): Promise<void>;
-
-  count(): Promise<number>;
-}
-
-export interface PromodSeleniumElementType {
-  wdElement: WebElement;
-
-  getId(): Promise<string>;
-
-  click(withScroll?: boolean): Promise<void>;
-
-  hover(): Promise<void>;
-
-  focus(): Promise<void>;
-
-  sendKeys(...keys: Array<string | number | Promise<string | number>>): Promise<void>;
-
-  getTagName(): Promise<string>;
-
-  getCssValue(cssStyleProperty: string): Promise<string>;
-
-  getAttribute(attributeName: string): Promise<string>;
-
-  getText(): Promise<string>;
-
-  getSize(): Promise<{
-    width: number;
-    height: number;
-  }>;
-
-  getRect(): Promise<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }>;
-
-  getLocation(): Promise<{
-    x: number;
-    y: number;
-  }>;
-
-  $(selector: string | By | ((...args: any[]) => any) | Promise<any>): PromodSeleniumElementType;
-  $$(selector: string | By | ((...args: any[]) => any) | Promise<any>): PromodSeleniumElementsType;
-
-  isEnabled(): Promise<boolean>;
-
-  isSelected(): Promise<boolean>;
-
-  isPresent(): Promise<boolean>;
-
-  submit(): Promise<void>;
-
-  clear(): Promise<void>;
-
-  isDisplayed(): Promise<boolean>;
-
-  takeScreenshot(opt_scroll?: boolean): Promise<string>;
-
-  getWebDriverElement(): Promise<WebElement>;
-
-  scrollIntoView(position?: boolean | string): Promise<void>;
-}
