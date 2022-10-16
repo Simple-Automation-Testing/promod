@@ -30,6 +30,7 @@ class Browser {
     constructor() {
         this.wait = sat_utils_1.waitForCondition;
         this.wait = sat_utils_1.waitForCondition;
+        this.seleniumDriver;
     }
     currentClient() {
         return this.seleniumDriver;
@@ -155,9 +156,6 @@ class Browser {
     async takeScreenshot() {
         return await this.seleniumDriver.takeScreenshot();
     }
-    async refresh() {
-        return await this.seleniumDriver.navigate().refresh();
-    }
     async tabTitle() {
         return await this.seleniumDriver.getTitle();
     }
@@ -183,18 +181,25 @@ class Browser {
     manage() {
         return this.seleniumDriver.manage();
     }
-    async executeScript(script, ...args) {
-        const recomposedArgs = await this.toSeleniumArgs(...args);
-        const res = await this.seleniumDriver.executeScript(script, ...recomposedArgs);
+    async executeScript(script, args) {
+        const recomposedArgs = await this.toSeleniumArgs(args);
+        const res = await this.seleniumDriver.executeScript(script, recomposedArgs);
         return res;
     }
-    async executeAsyncScript(script, ...args) {
-        const recomposedArgs = await this.toSeleniumArgs(...args);
+    // @depreactedF
+    async executeAsyncScript(script, args) {
+        const recomposedArgs = await this.toSeleniumArgs(args);
         const res = await this.seleniumDriver.executeAsyncScript(script, ...recomposedArgs);
         return res;
     }
-    navigate() {
-        return this.seleniumDriver.navigate();
+    async back() {
+        return (await this.seleniumDriver.navigate()).back();
+    }
+    async forward() {
+        return (await this.seleniumDriver.navigate()).forward();
+    }
+    async refresh() {
+        return (await this.seleniumDriver.navigate()).refresh();
     }
     switchTo() {
         return this.seleniumDriver.switchTo();
@@ -229,7 +234,8 @@ class Browser {
     actions() {
         return this.seleniumDriver.actions({ async: true });
     }
-    async toSeleniumArgs(...args) {
+    async toSeleniumArgs(args) {
+        args = (0, sat_utils_1.toArray)(args);
         const executeScriptArgs = [];
         for (const item of args) {
             const resolvedItem = (0, sat_utils_1.isPromise)(item) ? await item : item;
@@ -253,7 +259,7 @@ class Browser {
                 executeScriptArgs.push(item);
             }
         }
-        return executeScriptArgs;
+        return executeScriptArgs.length ? executeScriptArgs : undefined;
     }
     async getSeleniumProtocolElement(item) {
         const webElId = await item.getId();

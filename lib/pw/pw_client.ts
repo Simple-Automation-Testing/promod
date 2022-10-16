@@ -1,8 +1,7 @@
-import { isArray, isPromise, waitForCondition, isNumber, isAsyncFunction, isString } from 'sat-utils';
+import { toArray, isArray, isPromise, waitForCondition, isNumber, isAsyncFunction, isString } from 'sat-utils';
 import { Key } from 'selenium-webdriver';
-import { ElementHandle, BrowserServer } from 'playwright';
-import type { Browser as PWBrowser, BrowserContext, Page } from 'playwright';
-
+import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
+import { ExecuteScriptFn } from '../interface';
 /*
   const a = await page.$('button');
   const b = await page.evaluateHandle(a => a.parentElement, a);
@@ -302,10 +301,6 @@ class Browser {
     return (await this._contextWrapper.getCurrentPage()).screenshot();
   }
 
-  async refresh() {
-    return (await this._contextWrapper.getCurrentPage()).reload();
-  }
-
   async tabTitle() {
     return (await this._contextWrapper.getCurrentPage()).title();
   }
@@ -332,21 +327,27 @@ class Browser {
     await (() => new Promise((resolve) => setTimeout(resolve, time)))();
   }
 
-  async executeScript(script: any, ...args: any[]): Promise<any> {
-    const recomposedArgs = await this.toPlaywirghtArgs(...args);
+  async executeScript(script: ExecuteScriptFn, args: any[]): Promise<any> {
+    const recomposedArgs = await this.toPlaywirghtArgs(args);
 
     const res = (await this._contextWrapper.getCurrentPage()).evaluate(script, recomposedArgs);
     return res;
   }
 
   async executeAsyncScript(script: any, ...args: any[]): Promise<any> {
-    // const recomposedArgs = await this.toSeleniumArgs(...args);
-    // const res = await this._engineDriver.executeAsyncScript(script, ...recomposedArgs);
-    // return res;
+    throw new TypeError('Not supported for playwright engine');
   }
 
-  navigate() {
-    // return this._engineDriver.navigate();
+  async back() {
+    return (await this._contextWrapper.getCurrentPage()).goBack();
+  }
+
+  async forward() {
+    return (await this._contextWrapper.getCurrentPage()).goForward();
+  }
+
+  async refresh() {
+    return (await this._contextWrapper.getCurrentPage()).reload();
   }
 
   switchTo() {
@@ -375,8 +376,9 @@ class Browser {
     await this._engineDriver.close();
   }
 
-  private async toPlaywirghtArgs(...args) {
+  private async toPlaywirghtArgs(args) {
     const executeScriptArgs = [];
+    args = toArray(args);
 
     for (const item of args) {
       const resolvedItem = isPromise(item) ? await item : item;
@@ -397,7 +399,7 @@ class Browser {
       }
     }
 
-    return executeScriptArgs;
+    return executeScriptArgs.length ? executeScriptArgs : undefined;
   }
 
   private resolveUrl(urlOrPath: string) {

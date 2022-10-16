@@ -1,5 +1,7 @@
+/// <reference types="node" />
 import { waitForCondition } from 'sat-utils';
-import type { Browser as PWBrowser } from 'playwright';
+import type { Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
+import { ExecuteScriptFn } from '../interface';
 interface IBrowserTab {
     index?: number;
     tabId?: string;
@@ -44,7 +46,7 @@ declare class Browser {
         driver: any;
         server: any;
     }): void;
-    get Key(): any;
+    get Key(): import("selenium-webdriver/lib/input").IKey;
     get baseUrl(): string;
     set baseUrl(url: string);
     returnToInitialTab(): Promise<void>;
@@ -56,19 +58,20 @@ declare class Browser {
      * @private
      */
     private switchToBrowserTab;
-    getTitle(): Promise<any>;
-    getCurrentUrl(): Promise<any>;
-    takeScreenshot(): Promise<any>;
-    refresh(): Promise<any>;
-    tabTitle(): Promise<any>;
+    getTitle(): Promise<string>;
+    getCurrentUrl(): Promise<string>;
+    takeScreenshot(): Promise<Buffer>;
+    tabTitle(): Promise<string>;
     getTabs(): Promise<Page>;
     getCurrentTab(): Promise<Page>;
-    get(url: string): Promise<any>;
-    setWindowSize(width: number, height: number): Promise<any>;
+    get(url: string): Promise<import("playwright-core").Response>;
+    setWindowSize(width: number, height: number): Promise<void>;
     sleep(time: number): Promise<void>;
-    executeScript(script: any, ...args: any[]): Promise<any>;
+    executeScript(script: ExecuteScriptFn, args: any[]): Promise<any>;
     executeAsyncScript(script: any, ...args: any[]): Promise<any>;
-    navigate(): void;
+    back(): Promise<import("playwright-core").Response>;
+    forward(): Promise<import("playwright-core").Response>;
+    refresh(): Promise<import("playwright-core").Response>;
     switchTo(): void;
     quit(): Promise<void>;
     quitAll(): Promise<void>;

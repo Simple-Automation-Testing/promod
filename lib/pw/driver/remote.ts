@@ -1,4 +1,4 @@
-import { Browser, BrowserServer } from 'playwright';
+import { Browser, BrowserServer } from 'playwright-core';
 import { runLocalEnv, browserNameMapping } from './local';
 
 const _getDriver = async (config): Promise<{ driver: Browser; server?: BrowserServer }> => {

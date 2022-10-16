@@ -1,5 +1,6 @@
-import { isArray, isPromise, waitForCondition, isNumber, isAsyncFunction, isString } from 'sat-utils';
+import { toArray, isArray, isPromise, waitForCondition, isNumber, isAsyncFunction, isString } from 'sat-utils';
 import { WebDriver, Key } from 'selenium-webdriver';
+import type { ExecuteScriptFn } from '../interface';
 
 function validateBrowserCallMethod(browserClass): Browser {
   const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
@@ -47,6 +48,7 @@ class Browser {
 
   constructor() {
     this.wait = waitForCondition;
+    this.seleniumDriver;
   }
 
   currentClient() {
@@ -199,10 +201,6 @@ class Browser {
     return await this.seleniumDriver.takeScreenshot();
   }
 
-  async refresh() {
-    return await this.seleniumDriver.navigate().refresh();
-  }
-
   async tabTitle() {
     return await this.seleniumDriver.getTitle();
   }
@@ -236,23 +234,32 @@ class Browser {
     return this.seleniumDriver.manage();
   }
 
-  async executeScript(script: any, ...args: any[]): Promise<any> {
-    const recomposedArgs = await this.toSeleniumArgs(...args);
-    const res = await this.seleniumDriver.executeScript(script, ...recomposedArgs);
+  async executeScript(script: ExecuteScriptFn, args: any[]): Promise<any> {
+    const recomposedArgs = await this.toSeleniumArgs(args);
+    const res = await this.seleniumDriver.executeScript(script, recomposedArgs);
 
     return res;
   }
 
-  async executeAsyncScript(script: any, ...args: any[]): Promise<any> {
-    const recomposedArgs = await this.toSeleniumArgs(...args);
+  // @depreactedF
+  async executeAsyncScript(script: ExecuteScriptFn | string, args: any[]): Promise<any> {
+    const recomposedArgs = await this.toSeleniumArgs(args);
 
     const res = await this.seleniumDriver.executeAsyncScript(script, ...recomposedArgs);
 
     return res;
   }
 
-  navigate() {
-    return this.seleniumDriver.navigate();
+  async back() {
+    return (await this.seleniumDriver.navigate()).back();
+  }
+
+  async forward() {
+    return (await this.seleniumDriver.navigate()).forward();
+  }
+
+  async refresh() {
+    return (await this.seleniumDriver.navigate()).refresh();
   }
 
   switchTo() {
@@ -292,7 +299,9 @@ class Browser {
     return this.seleniumDriver.actions({ async: true });
   }
 
-  private async toSeleniumArgs(...args) {
+  private async toSeleniumArgs(args) {
+    args = toArray(args);
+
     const executeScriptArgs = [];
 
     for (const item of args) {
@@ -318,7 +327,7 @@ class Browser {
       }
     }
 
-    return executeScriptArgs;
+    return executeScriptArgs.length ? executeScriptArgs : undefined;
   }
 
   private async getSeleniumProtocolElement(item) {

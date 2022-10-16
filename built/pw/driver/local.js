@@ -1,20 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.browserNameMapping = exports.runLocalEnv = void 0;
-const playwright_1 = require("playwright");
+const playwright_core_1 = require("playwright-core");
 const browserNameMapping = {
-    chrome: playwright_1.chromium,
-    firefox: playwright_1.firefox,
+    chrome: playwright_core_1.chromium,
+    firefox: playwright_core_1.firefox,
 };
 exports.browserNameMapping = browserNameMapping;
-(async () => {
-    const browserServer = await playwright_1.chromium.launchServer();
-    const wsEndpoint = browserServer.wsEndpoint();
-    // Use web socket endpoint later to establish a connection.
-    const browser = await playwright_1.chromium.connect(wsEndpoint);
-    // Close browser instance.
-    await browserServer.close();
-})();
 const throwInstructionError = (additional = '') => {
     throw new Error(`${additional}Run 'npm install playwright' to download and install browsers`);
 };

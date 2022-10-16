@@ -236,9 +236,6 @@ class Browser {
     async takeScreenshot() {
         return (await this._contextWrapper.getCurrentPage()).screenshot();
     }
-    async refresh() {
-        return (await this._contextWrapper.getCurrentPage()).reload();
-    }
     async tabTitle() {
         return (await this._contextWrapper.getCurrentPage()).title();
     }
@@ -258,18 +255,22 @@ class Browser {
     async sleep(time) {
         await (() => new Promise((resolve) => setTimeout(resolve, time)))();
     }
-    async executeScript(script, ...args) {
-        const recomposedArgs = await this.toPlaywirghtArgs(...args);
+    async executeScript(script, args) {
+        const recomposedArgs = await this.toPlaywirghtArgs(args);
         const res = (await this._contextWrapper.getCurrentPage()).evaluate(script, recomposedArgs);
         return res;
     }
     async executeAsyncScript(script, ...args) {
-        // const recomposedArgs = await this.toSeleniumArgs(...args);
-        // const res = await this._engineDriver.executeAsyncScript(script, ...recomposedArgs);
-        // return res;
+        throw new TypeError('Not supported for playwright engine');
     }
-    navigate() {
-        // return this._engineDriver.navigate();
+    async back() {
+        return (await this._contextWrapper.getCurrentPage()).goBack();
+    }
+    async forward() {
+        return (await this._contextWrapper.getCurrentPage()).goForward();
+    }
+    async refresh() {
+        return (await this._contextWrapper.getCurrentPage()).reload();
     }
     switchTo() {
         // return this._engineDriver.switchTo();
@@ -293,8 +294,9 @@ class Browser {
     async close() {
         await this._engineDriver.close();
     }
-    async toPlaywirghtArgs(...args) {
+    async toPlaywirghtArgs(args) {
         const executeScriptArgs = [];
+        args = (0, sat_utils_1.toArray)(args);
         for (const item of args) {
             const resolvedItem = (0, sat_utils_1.isPromise)(item) ? await item : item;
             if (Array.isArray(resolvedItem)) {
@@ -314,7 +316,7 @@ class Browser {
                 executeScriptArgs.push(item);
             }
         }
-        return executeScriptArgs;
+        return executeScriptArgs.length ? executeScriptArgs : undefined;
     }
     resolveUrl(urlOrPath) {
         let resolved;

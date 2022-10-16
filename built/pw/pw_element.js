@@ -132,14 +132,34 @@ class PromodElement {
             return this._driverElement.click();
         }
     }
-    // TODO implement
-    async getTagName() { }
+    async getTagName() {
+        await this.getElement();
+        await this._driver.evaluateHandle(([item]) => item.nodeName, [this._driverElement]);
+    }
     async getCssValue() { }
-    async getAttribute() { }
-    async getRect() { }
-    async isEnabled() { }
-    async isSelected() { }
-    async getLocation() { }
+    async getAttribute(attribute) {
+        await this.getElement();
+        await this._driverElement.getAttribute(attribute);
+    }
+    async getRect() {
+        await this.getElement();
+        return this._driverElement.boundingBox();
+    }
+    async isEnabled() {
+        await this.getElement();
+        await this._driverElement.isEnabled();
+    }
+    async isSelected() {
+        await this.getElement();
+        await this._driverElement.isChecked();
+    }
+    /**
+     * @deprecated
+     */
+    async getLocation() {
+        // await this.getElement();
+        // await this._driverElement();
+    }
     async sendKeys(value) {
         await this.getElement();
         await this._driverElement.type(value.toString());

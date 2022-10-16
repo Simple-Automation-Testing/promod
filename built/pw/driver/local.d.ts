@@ -1,6 +1,6 @@
 declare const browserNameMapping: {
-    chrome: any;
-    firefox: any;
+    chrome: import("playwright-core").BrowserType<{}>;
+    firefox: import("playwright-core").BrowserType<{}>;
 };
 declare const runLocalEnv: (config: any) => Promise<any>;
 export { runLocalEnv, browserNameMapping };

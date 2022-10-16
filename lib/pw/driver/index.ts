@@ -1,4 +1,4 @@
-import { Browser as PWBrowser } from 'playwright';
+import { Browser as PWBrowser } from 'playwright-core';
 import { _getDriver } from './remote';
 import { BaseConfPW } from '../config/config';
 import { Browser } from '../pw_client';

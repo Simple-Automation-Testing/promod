@@ -5,6 +5,7 @@
   "main": "./built/index.js",
   "bin": "./bin/promod_cli",
   "scripts": {
+    "test": "mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:pw": "mocha $(find specs/pw -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:swd": "mocha $(find specs/swd -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:units": "mocha $(find units -name '*.test.*') --require ts-node/register --timeout 500000",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@types/mocha": "^8.2.2",
     "@types/node": "^14.17.4",
+    "@types/selenium-webdriver": "^4.1.5",
     "@typescript-eslint/eslint-plugin": "^3.8.0",
     "@typescript-eslint/parser": "^3.8.0",
     "assertior": "0.0.26",
@@ -41,6 +43,7 @@
     "typescript": "4.8.4"
   },
   "dependencies": {
+    "playwright-core": "^1.27.1",
     "sat-utils": "1.2.2",
     "selenium-standalone": "^7.1.0",
     "selenium-webdriver": "4.5.0",

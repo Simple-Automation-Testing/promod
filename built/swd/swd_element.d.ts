@@ -1,4 +1,4 @@
-import { By, WebDriver } from 'selenium-webdriver';
+import { By, WebElement, WebDriver } from 'selenium-webdriver';
 import type { PromodElementType, PromodElementsType } from '../interface';
 declare class PromodSeleniumElements {
     private seleniumDriver;
@@ -41,7 +41,7 @@ declare class PromodSeleniumElement {
      * @param {boolean} [withScroll] try to prevent intercept error by scoll to bottom/to
      * @returns {Promise<void>}
      */
-    click(withScroll?: boolean): Promise<any>;
+    click(withScroll?: boolean): Promise<void>;
     hover(): Promise<void>;
     focus(): Promise<void>;
     scrollIntoView(position?: 'end' | 'start' | 'center'): Promise<void>;
@@ -52,7 +52,7 @@ declare class PromodSeleniumElement {
      * const button = $('button')
      * const buttonIsDisplayed = await button.isDisplayed();
      */
-    isDisplayed(): Promise<any>;
+    isDisplayed(): Promise<boolean>;
     /**
      * @returns {Promise<boolean>} button is present
      * @example
@@ -68,6 +68,6 @@ declare class PromodSeleniumElement {
     };
     private isInteractionIntercepted;
 }
-declare const $: (selector: any, root?: PromodElementType | any, ...rest: any[]) => PromodElementType;
-declare const $$: (selector: any, root?: PromodElementType | any, ...rest: any[]) => PromodElementsType;
+declare const $: (selector: string | Promise<any> | By | ((...args: any[]) => any), root?: PromodElementType | any, ...rest: any[]) => PromodElementType;
+declare const $$: (selector: string | Promise<any> | By | ((...args: any[]) => any), root?: PromodElementType | any, ...rest: any[]) => PromodElementsType;
 export { $, $$, PromodSeleniumElement, PromodSeleniumElements, By };

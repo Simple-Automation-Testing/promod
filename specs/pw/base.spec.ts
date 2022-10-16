@@ -3,7 +3,7 @@ import { expect } from 'assertior';
 import { playwrightWD } from '../../lib/index';
 import * as path from 'path';
 
-describe.only('Base', () => {
+describe('Base', () => {
   const { $, $$, getDriver, browser } = playwrightWD;
 
   beforeEach(async () => {
@@ -57,13 +57,13 @@ describe.only('Base', () => {
 
   it('execute script str', async () => {
     await $('input[placeholder="пароль"]').sendKeys('test');
-    const item = await browser.executeScript(([element]) => element.value, $('input[placeholder="пароль"]'));
+    const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="пароль"]')]);
     expect(item).toEqual('test');
   });
 
   it('execute script fn', async () => {
     await $('input[placeholder="пароль"]').sendKeys('test');
-    const item = await browser.executeScript(([item]) => item.value, $('input[placeholder="пароль"]'));
+    const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="пароль"]')]);
     expect(item).toEqual('test');
   });
 
@@ -125,7 +125,7 @@ describe.only('Base', () => {
     ).toEqual(true);
   });
 
-  it('scrollIntoView', async () => {
+  it.only('scrollIntoView', async () => {
     const email = $('input[placeholder="Ім\'я користувача"]');
     const pass = $('input[placeholder="пароль"]');
     const signIn = $('.login_form .btn-primary');

@@ -4,7 +4,7 @@ import { browser } from './pw_client';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
 
-import type { ElementHandle, Page } from 'playwright';
+import type { ElementHandle, Page } from 'playwright-core';
 
 const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
   getExecuteScriptArgs = isFunction(getExecuteScriptArgs) ? getExecuteScriptArgs : () => [];
@@ -176,14 +176,40 @@ class PromodElement {
     }
   }
 
-  // TODO implement
-  async getTagName() {}
+  async getTagName() {
+    await this.getElement();
+    await this._driver.evaluateHandle(([item]) => item.nodeName, [this._driverElement]);
+  }
+
   async getCssValue() {}
-  async getAttribute() {}
-  async getRect() {}
-  async isEnabled() {}
-  async isSelected() {}
-  async getLocation() {}
+
+  async getAttribute(attribute: string) {
+    await this.getElement();
+    await this._driverElement.getAttribute(attribute);
+  }
+
+  async getRect() {
+    await this.getElement();
+    return this._driverElement.boundingBox();
+  }
+
+  async isEnabled() {
+    await this.getElement();
+    await this._driverElement.isEnabled();
+  }
+
+  async isSelected() {
+    await this.getElement();
+    await this._driverElement.isChecked();
+  }
+
+  /**
+   * @deprecated
+   */
+  async getLocation() {
+    // await this.getElement();
+    // await this._driverElement();
+  }
 
   async sendKeys(value: string | number) {
     await this.getElement();

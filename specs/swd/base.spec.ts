@@ -54,22 +54,16 @@ describe('Base', () => {
     await signIn.click(true);
   });
 
-  it('execute script str', async () => {
-    await $('input[placeholder="пароль"]').sendKeys('test');
-    const item = await browser.executeScript('return arguments[0].value', $('input[placeholder="пароль"]'));
-    expect(item).toEqual('test');
-  });
-
   it('execute script fn', async () => {
     await $('input[placeholder="пароль"]').sendKeys('test');
-    const item = await browser.executeScript((item) => item.value, $('input[placeholder="пароль"]'));
+    const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="пароль"]')]);
     expect(item).toEqual('test');
   });
 
   it('execute script els', async () => {
     const btns = $$('button');
     // @ts-ignore
-    const item = await browser.executeScript((items) => Array.from(items).map((i) => i.innerText), btns);
+    const item = await browser.executeScript(([items]) => Array.from(items).map((i) => i.innerText), btns);
     expect(item).toDeepEqual(['Увійти', 'Зареєструватися', 'Увійти']);
   });
 
@@ -143,7 +137,8 @@ describe('Base', () => {
     const file = path.resolve(__dirname, '../misc/hover_focus.html');
     await browser.get(`file://${file}`);
     await focus.focus();
-    const data = await browser.executeScript("return document.querySelector('#focus').style.background");
+    // @ts-ignore
+    const data = await browser.executeScript(() => document.querySelector('#focus').style.background);
     expect(data).toEqual('pink');
   });
 
@@ -152,7 +147,8 @@ describe('Base', () => {
     const file = path.resolve(__dirname, '../misc/hover_focus.html');
     await browser.get(`file://${file}`);
     await hover.hover();
-    const data = await browser.executeScript("return document.querySelector('#hover').style.background");
+    // @ts-ignore
+    const data = await browser.executeScript(() => document.querySelector('#hover').style.background);
     expect(data).toEqual('red');
   });
 

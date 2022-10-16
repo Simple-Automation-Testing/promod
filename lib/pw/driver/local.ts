@@ -1,18 +1,9 @@
-import { chromium, firefox, Browser } from 'playwright';
+import { chromium, firefox, Browser } from 'playwright-core';
 
 const browserNameMapping = {
   chrome: chromium,
   firefox,
 };
-
-(async () => {
-  const browserServer = await chromium.launchServer();
-  const wsEndpoint = browserServer.wsEndpoint();
-  // Use web socket endpoint later to establish a connection.
-  const browser = await chromium.connect(wsEndpoint);
-  // Close browser instance.
-  await browserServer.close();
-})();
 
 const throwInstructionError = (additional = '') => {
   throw new Error(`${additional}Run 'npm install playwright' to download and install browsers`);

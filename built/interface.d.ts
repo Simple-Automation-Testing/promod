@@ -41,3 +41,4 @@ export interface PromodElementType {
     getEngineElement(): Promise<unknown>;
     scrollIntoView(position?: boolean | string): Promise<void>;
 }
+export declare type ExecuteScriptFn = (data: any[]) => unknown;
