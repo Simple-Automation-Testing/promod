@@ -5,6 +5,7 @@ import { browser } from './swd_client';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
 
+// TODO figure out is this still relevant
 function toSeleniumProtocolElement(webElId) {
   const elementObj = {
     'element-6066-11e4-a52e-4f735466cecf': webElId,
@@ -125,10 +126,10 @@ class PromodSeleniumElements {
     return this.wdElements.map((item) => item.id_);
   }
 
-  async getSeleniumProtocolElementObj() {
-    const ids = await this.getIds();
+  private async getEngineElements() {
+    await this.getElement(0);
 
-    return ids.map(toSeleniumProtocolElement);
+    return this.wdElements;
   }
 
   async each(cb: (item: PromodElementType, index?: number) => Promise<void>): Promise<any> {
@@ -187,12 +188,6 @@ class PromodSeleniumElement {
     const childElements = new PromodSeleniumElements(selector, this.seleniumDriver, this.getElement.bind(this));
     childElements.parentSelector = this.selector;
     return childElements as any;
-  }
-
-  async getSeleniumProtocolElementObj() {
-    const id = await this.getId();
-
-    return toSeleniumProtocolElement(id);
   }
 
   /**

@@ -1,15 +1,9 @@
-import {
-  isEmptyObject,
-  isNotEmptyObject,
-  toArray,
-  isPromise,
-  waitForCondition,
-  isNumber,
-  isAsyncFunction,
-} from 'sat-utils';
+import { isNotEmptyObject, waitForCondition, isNumber, isAsyncFunction } from 'sat-utils';
 import { Key } from 'selenium-webdriver';
-import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
 import { ExecuteScriptFn } from '../interface';
+import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
+
+import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
 
 function validateBrowserCallMethod(browserClass): Browser {
   const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
@@ -346,7 +340,7 @@ class Browser {
   }
 
   async executeScript(script: ExecuteScriptFn, args?: any[]): Promise<any> {
-    const recomposedArgs = await this.toPlaywirghtArgs(args);
+    const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
 
     const res = (await this._contextWrapper.getCurrentPage()).evaluate(script, recomposedArgs);
     return res;
@@ -392,32 +386,6 @@ class Browser {
 
   async close() {
     await this._engineDriver.close();
-  }
-
-  private async toPlaywirghtArgs(args) {
-    const executeScriptArgs = [];
-    args = toArray(args);
-
-    for (const item of args) {
-      const resolvedItem = isPromise(item) ? await item : item;
-
-      if (Array.isArray(resolvedItem)) {
-        const arrayItems = [];
-
-        for (const itemArr of resolvedItem) {
-          arrayItems.push(itemArr);
-        }
-        executeScriptArgs.push(arrayItems);
-      } else if (resolvedItem && resolvedItem.getEngineElement) {
-        executeScriptArgs.push(await resolvedItem.getEngineElement());
-      } else if (resolvedItem && resolvedItem.getEngineElements) {
-        executeScriptArgs.push(...(await resolvedItem.getEngineElements()));
-      } else {
-        executeScriptArgs.push(item);
-      }
-    }
-
-    return executeScriptArgs.length ? executeScriptArgs : undefined;
   }
 
   private resolveUrl(urlOrPath: string) {

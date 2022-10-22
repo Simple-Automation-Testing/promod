@@ -30,7 +30,6 @@ describe('Base', () => {
   it('by js function with parent', async () => {
     const body = $(() => document.querySelector('body'));
     const email = $(([parent]) => {
-      console.log(parent);
       return parent.querySelector('input[placeholder="Ім\'я користувача"]');
     }, body.getEngineElement());
 
@@ -85,8 +84,7 @@ describe('Base', () => {
 
   it('execute script els', async () => {
     const btns = $$('button');
-    // @ts-ignore
-    const item = await browser.executeScript(([items]) => Array.from(items).map((i) => i.innerText), btns);
+    const item = await browser.executeScript((items) => Array.from(items).map((i) => i.innerText), btns);
     expect(item).toDeepEqual(['Увійти', 'Зареєструватися', 'Увійти']);
   });
 

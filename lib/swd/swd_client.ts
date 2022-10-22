@@ -1,5 +1,7 @@
 import { toArray, isArray, isPromise, waitForCondition, isNumber, isAsyncFunction, isString } from 'sat-utils';
 import { WebDriver, Key } from 'selenium-webdriver';
+import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
+
 import type { ExecuteScriptFn } from '../interface';
 
 function validateBrowserCallMethod(browserClass): Browser {
@@ -234,16 +236,18 @@ class Browser {
     return this.seleniumDriver.manage();
   }
 
-  async executeScript(script: ExecuteScriptFn, args?: any[]): Promise<any> {
-    const recomposedArgs = await this.toSeleniumArgs(args);
+  async executeScript(script: ExecuteScriptFn, args?: any | any[]): Promise<any> {
+    const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
     const res = await this.seleniumDriver.executeScript(script, recomposedArgs);
 
     return res;
   }
 
-  // @depreactedF
+  /**
+   * @depreacted
+   */
   async executeAsyncScript(script: ExecuteScriptFn | string, args?: any[]): Promise<any> {
-    const recomposedArgs = await this.toSeleniumArgs(args);
+    const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
 
     const res = await this.seleniumDriver.executeAsyncScript(script, ...recomposedArgs);
 
@@ -297,37 +301,6 @@ class Browser {
 
   actions() {
     return this.seleniumDriver.actions({ async: true });
-  }
-
-  private async toSeleniumArgs(args) {
-    args = toArray(args);
-
-    const executeScriptArgs = [];
-
-    for (const item of args) {
-      const resolvedItem = isPromise(item) ? await item : item;
-
-      if (Array.isArray(resolvedItem)) {
-        const arrayItems = [];
-
-        for (const itemArr of resolvedItem) {
-          if (item && item.getId) {
-            const elementObj = await this.getSeleniumProtocolElement(itemArr);
-
-            arrayItems.push(elementObj);
-          } else {
-            arrayItems.push(itemArr);
-          }
-        }
-        executeScriptArgs.push(arrayItems);
-      } else if (resolvedItem && resolvedItem.getSeleniumProtocolElementObj) {
-        executeScriptArgs.push(await resolvedItem.getSeleniumProtocolElementObj());
-      } else {
-        executeScriptArgs.push(item);
-      }
-    }
-
-    return executeScriptArgs.length ? executeScriptArgs : undefined;
   }
 
   private async getSeleniumProtocolElement(item) {

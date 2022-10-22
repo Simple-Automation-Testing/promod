@@ -1,5 +1,5 @@
 import { getSeleniumDriver } from './driver';
-import { $, $$, By } from './swd_element';
+import { $, $$ } from './swd_element';
 import { browser } from './swd_client';
 
 const seleniumWD = {
@@ -7,7 +7,6 @@ const seleniumWD = {
   browser,
   $,
   $$,
-  By,
 };
 
 export { seleniumWD };

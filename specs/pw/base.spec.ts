@@ -27,7 +27,7 @@ describe('Base', () => {
     expect(await email1.isPresent()).toEqual(false);
   });
 
-  it.only('by js function with parent', async () => {
+  it('by js function with parent', async () => {
     try {
       const body = $(() => document.querySelector('body'));
       const email = $(([parent]) => {

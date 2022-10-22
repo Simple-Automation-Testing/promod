@@ -1,18 +1,10 @@
 import { isString, isUndefined } from 'sat-utils';
 import * as fs from 'fs';
 
-const checkString = ['seleniumAddress', 'seleniumSessionId', 'baseUrl'];
+const checkString = ['baseUrl'];
 
 export type BaseConfPW = {
   [key: string]: any;
-  localSeleniumStandaloneOpts?: {
-    port?: number | string;
-    args?: string[];
-    jvmArgs?: string[];
-  };
-  seleniumAddress?: string;
-  seleniumSessionId?: string;
-  // Browser capabilities
   capabilities?: {
     [key: string]: any;
     browserName?: 'chromium' | '';

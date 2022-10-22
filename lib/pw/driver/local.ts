@@ -1,4 +1,4 @@
-import { chromium, firefox } from 'playwright-core';
+import { chromium, firefox, BrowserType } from 'playwright-core';
 
 const browserNameMapping = {
   chrome: chromium,
@@ -21,7 +21,14 @@ const runLocalEnv = async (config) => {
   }
   const combinedConfig = getCombinedConfig(config);
 
-  const server = await browserNameMapping[config.capabilities.browserName].launchServer({ headless: false });
+  // TODO investigate how add prefs to chrome
+  const { downloadsPath, headless = false, args = [] } = combinedConfig;
+
+  const server = await (browserNameMapping[config.capabilities.browserName] as BrowserType).launchServer({
+    headless,
+    args,
+    downloadsPath,
+  });
   const wsEndpoint = server.wsEndpoint();
 
   return {

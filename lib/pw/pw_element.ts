@@ -1,9 +1,9 @@
 /* eslint-disable max-len */
 import { toArray, isString, isFunction, isAsyncFunction, isPromise } from 'sat-utils';
 import { browser } from './pw_client';
+import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
-
 import type { ElementHandle, Page } from 'playwright-core';
 
 const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
@@ -303,7 +303,6 @@ class PromodElement {
       }
       this._driverElement = await this._driver.evaluateHandle(getElementArgs[0], resolved);
     } else {
-      console.log(getElementArgs, '~~~~~~____~~~~~~~~~');
       this._driverElement = await this._driver.$(getElementArgs);
     }
 
