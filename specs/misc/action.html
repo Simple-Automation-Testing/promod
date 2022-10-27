@@ -1,0 +1,114 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <button id="hover">blur</button>
+    <button id="focus">focus</button>
+    <button id="click">click</button>
+    <input id="sendKeys" />
+
+    <div id="simple_collection">
+      <div id="resulter">0</div>
+      <button class="collection" onclick="clickCollectionItem(event)">1</button>
+      <button class="collection" onclick="clickCollectionItem(event)">2</button>
+      <button class="collection" onclick="clickCollectionItem(event)">3</button>
+      <button class="collection" onclick="clickCollectionItem(event)">4</button>
+      <button class="collection" onclick="clickCollectionItem(event)">5</button>
+    </div>
+
+    <div id="collection_with_visibility">
+      <div id="resulter">0</div>
+      <button class="collection" onclick="clickCollectionItem(event)">1</button>
+      <button class="collection" onclick="clickCollectionItem(event)" style="display: none">2</button>
+      <button class="collection" onclick="clickCollectionItem(event)">3</button>
+      <button class="collection" onclick="clickCollectionItem(event)" style="display: none">4</button>
+      <button class="collection" onclick="clickCollectionItem(event)">5</button>
+    </div>
+
+    <div id="section1">
+      <div id="section1_internal1">
+        <div id="collection1_section1">
+          <div class="section1_item">Item 1</div>
+          <div class="section1_item">Item 2</div>
+          <div class="section1_item">Item 3</div>
+          <div class="section1_item">Item 4</div>
+          <div class="section1_item">Item 5</div>
+        </div>
+      </div>
+      <div id="section1_internal2">
+        <div id="collection2_section1">
+          <input class="section1_field" />
+          <input class="section1_field" />
+          <input class="section1_field" />
+          <input class="section1_field" />
+          <input class="section1_field" />
+        </div>
+      </div>
+      <div id="section1_internal3">
+        <div id="userdata"></div>
+        <div id="userform">
+          <input id="username" />
+          <input id="password" />
+          <button id="user_submit" onclick="sublitForm(event)">Sumbit</button>
+        </div>
+      </div>
+
+      <div id="section1_internal4">
+        <div id="collection3_section1">
+          <div class="collection_item">
+            <div class="field1">field1 item1</div>
+            <div class="field2">field2 item1</div>
+            <div class="field3">field3 item1</div>
+          </div>
+          <div class="collection_item">
+            <div class="field1">field1 item2</div>
+            <div class="field2">field2 item2</div>
+            <div class="field3">field3 item2</div>
+          </div>
+          <div class="collection_item">
+            <div class="field1">field1 item3</div>
+            <div class="field2">field2 item3</div>
+            <div class="field3" style="display: none">field3 item3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 2500px"><button id="scroll">scroll</button></div>
+  </body>
+
+  <script>
+    const blurItem = document.getElementById('hover');
+    const focusItem = document.getElementById('focus');
+    const clickItem = document.getElementById('click');
+
+    function sublitForm(event) {
+      const username = document.getElementById('username');
+      const password = document.getElementById('password');
+
+      const userdata = document.getElementById('userdata');
+
+      userdata.innerText = `${username.value} ${password.value}`;
+    }
+
+    function clickCollectionItem(event) {
+      document.getElementById('resulter').innerText = event.target.innerText;
+    }
+
+    focusItem.addEventListener('focus', event => {
+      event.target.style.background = 'pink';
+    });
+
+    blurItem.addEventListener('mouseenter', event => {
+      event.target.style.background = 'red';
+    });
+
+    clickItem.addEventListener('click', event => {
+      event.target.style.background = 'yellow';
+    });
+  </script>
+</html>

@@ -1,0 +1,56 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+  <script>
+    const arr = Array.from({ length: 5 }, (_, i) => i);
+    const arr1 = Array.from({ length: 3 }, (_, i) => i);
+    const app = document.getElementById('app');
+
+    arr.forEach(itemIndex => {
+      const item = document.createElement('div');
+      const span = document.createElement('span');
+      item.className = 'div';
+
+      const button = document.createElement('button');
+
+      span.innerText = `Item ${itemIndex}`;
+      button.innerText = `Remove ${itemIndex}`;
+
+      button.onclick = function () {
+        app.removeChild(item);
+      };
+
+      item.appendChild(span);
+      item.appendChild(button);
+
+      arr1.forEach(internalItemIndex => {
+        const itemInternal = document.createElement('div');
+        const span = document.createElement('span');
+        itemInternal.className = 'internal_div';
+
+        const button = document.createElement('button');
+
+        span.innerText = `Item Internal ${internalItemIndex}`;
+        button.innerText = `Remove Internal${internalItemIndex}`;
+
+        button.onclick = function () {
+          item.removeChild(itemInternal);
+        };
+
+        itemInternal.appendChild(span);
+        itemInternal.appendChild(button);
+
+        item.appendChild(itemInternal);
+      });
+
+      app.appendChild(item);
+    });
+  </script>
+</html>

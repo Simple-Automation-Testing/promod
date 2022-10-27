@@ -1,6 +1,7 @@
-import { isNotEmptyObject, waitForCondition, isNumber, isAsyncFunction } from 'sat-utils';
+import { toArray, isNotEmptyObject, waitForCondition, isNumber, isAsyncFunction } from 'sat-utils';
 import { Key } from 'selenium-webdriver';
 import { ExecuteScriptFn } from '../interface';
+import { devices } from 'playwright-core';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 
 import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
@@ -41,33 +42,36 @@ interface IBrowserTab {
 }
 
 class PageWrapper {
-  private context: BrowserContext;
-  private currentPage: Page;
-  private initialPage: Page;
+  /** @private */
+  private _context: BrowserContext;
+  /** @private */
+  private _currentPage: Page;
+  /** @private */
+  private _initialPage: Page;
 
   constructor(context: BrowserContext) {
-    this.context = context;
+    this._context = context;
   }
 
   async updateContext(context: BrowserContext) {
-    this.context = context;
+    this._context = context;
     const contextPages = await context.pages();
 
     if (contextPages.length) {
-      this.currentPage = contextPages[0];
+      this._currentPage = contextPages[0];
     } else {
-      this.currentPage = await this.context.newPage();
+      this._currentPage = await this._context.newPage();
     }
   }
 
   async getCurrentPage() {
-    if (!this.currentPage) {
-      const page = await this.context.newPage();
-      this.currentPage = page;
-      this.initialPage = page;
+    if (!this._currentPage) {
+      const page = await this._context.newPage();
+      this._currentPage = page;
+      this._initialPage = page;
     }
 
-    return this.currentPage;
+    return this._currentPage;
   }
 
   async switchToNextPage(data: IBrowserTab = {}) {
@@ -78,7 +82,7 @@ class PageWrapper {
       if (isNumber(expectedQuantity)) {
         await waitForCondition(
           async () => {
-            pages = await this.context.pages();
+            pages = await this._context.pages();
             return pages.length === expectedQuantity;
           },
           {
@@ -92,10 +96,10 @@ class PageWrapper {
         if (title) {
           await waitForCondition(
             async () => {
-              pages = await this.context.pages();
+              pages = await this._context.pages();
               for (const tab of pages) {
                 if ((await tab.title()) === title) {
-                  this.currentPage = tab;
+                  this._currentPage = tab;
                   return true;
                 }
               }
@@ -103,21 +107,21 @@ class PageWrapper {
             { message: `Window with ${title} title was not found during ${timeout}.`, timeout },
           );
         } else {
-          this.currentPage = pages[index];
+          this._currentPage = pages[index];
         }
       } else {
-        this.currentPage = pages[0];
+        this._currentPage = pages[0];
       }
     } else {
-      const pages = await this.context.pages();
+      const pages = await this._context.pages();
       if (pages.length === 1) {
-        return this.currentPage;
+        return this._currentPage;
       } else {
         for (const availablePage of pages) {
-          if (availablePage !== this.currentPage) {
-            this.currentPage = availablePage;
+          if (availablePage !== this._currentPage) {
+            this._currentPage = availablePage;
 
-            return this.currentPage;
+            return this._currentPage;
           }
         }
       }
@@ -127,55 +131,61 @@ class PageWrapper {
 
 class ContextWrapper {
   public server: PWBrowser;
-  private currentContext: BrowserContext;
-  private currentPage: PageWrapper;
 
-  constructor(serverBrowser: PWBrowser) {
+  /** @private */
+  private _currentContext: BrowserContext;
+  /** @private */
+  private _currentPage: PageWrapper;
+  /** @private */
+  private _contextConfig: { [k: string]: any };
+
+  constructor(serverBrowser: PWBrowser, config) {
     this.server = serverBrowser;
+    this._contextConfig = config;
   }
 
   async switchPage(data: IBrowserTab) {
-    await this.currentPage.switchToNextPage(data);
+    await this._currentPage.switchToNextPage(data);
   }
 
   async runNewContext() {
-    this.currentContext = await this.server.newContext();
+    this._currentContext = await this.server.newContext();
 
-    if (!this.currentPage) {
-      this.currentPage = new PageWrapper(this.currentContext);
+    if (!this._currentPage) {
+      this._currentPage = new PageWrapper(this._currentContext);
     } else {
-      await this.currentPage.updateContext(this.currentContext);
+      await this._currentPage.updateContext(this._currentContext);
     }
   }
 
   async getCurrentContext() {
-    if (!this.currentContext) {
+    if (!this._currentContext) {
       await this.runNewContext();
     }
-    return this.currentContext;
+    return this._currentContext;
   }
 
   // TODO implement with tab - page title
   async changeContext({ index, tabTitle }) {
     if (isNumber(index)) {
       const contexts = await this.server.contexts();
-      this.currentContext = contexts[index];
-      await this.currentPage.updateContext(this.currentContext);
+      this._currentContext = contexts[index];
+      await this._currentPage.updateContext(this._currentContext);
     }
   }
 
   async getCurrentPage() {
     await this.getCurrentContext();
 
-    if (!this.currentPage) {
-      this.currentPage = new PageWrapper(this.currentContext);
+    if (!this._currentPage) {
+      this._currentPage = new PageWrapper(this._currentContext);
     }
 
-    return this.currentPage.getCurrentPage();
+    return this._currentPage.getCurrentPage();
   }
 
   async closeAllContexts() {
-    await this.currentContext.close();
+    await this._currentContext.close();
     const contexts = await this.server.contexts();
     for (const context of contexts) {
       await context.close();
@@ -183,16 +193,33 @@ class ContextWrapper {
   }
 }
 
+type TCookie = {
+  name: string;
+  value: string;
+  url?: string;
+  domain?: string;
+  path?: string;
+  expires?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None';
+};
+
 class Browser {
   public wait = waitForCondition;
   public _engineDriver: PWBrowser;
   public _contextWrapper: ContextWrapper;
-  private _pageWrapper: PageWrapper;
-  private _server: BrowserServer;
+  public _contextFrame: Page;
 
+  /** @private */
+  private _server: BrowserServer;
+  /** @private */
   private appBaseUrl: string;
+  /** @private */
   private initialTab: any;
+  /** @private */
   private _engineDrivers: PWBrowser[];
+  /** @private */
   private _createNewDriver: () => Promise<PWBrowser>;
 
   constructor() {
@@ -201,6 +228,13 @@ class Browser {
 
   currentClient() {
     return this._engineDriver;
+  }
+
+  async getWorkingContext() {
+    if (this._contextFrame) {
+      return this._contextFrame;
+    }
+    return await this._contextWrapper.getCurrentPage();
   }
 
   async getCurrentPage() {
@@ -220,9 +254,9 @@ class Browser {
     this._createNewDriver = driverCreator;
   }
 
-  setClient({ driver, server }) {
+  setClient({ driver, server, config }) {
     this._engineDriver = driver;
-    this._contextWrapper = new ContextWrapper(driver);
+    this._contextWrapper = new ContextWrapper(driver, config);
     this._server = server;
   }
 
@@ -238,6 +272,7 @@ class Browser {
     this.appBaseUrl = url;
   }
 
+  /** @private */
   public async returnToInitialTab() {
     // there was no switching in test
     if (!this.initialTab) {
@@ -258,6 +293,10 @@ class Browser {
   private async closeAllpagesExceptInitial() {}
 
   public async makeActionAtEveryTab(action: (...args: any) => Promise<any>, handles?: string[]) {}
+
+  public async setCookies(cookies: TCookie | TCookie[]) {
+    await (await this._contextWrapper.getCurrentContext()).addCookies(toArray(cookies) as TCookie[]);
+  }
 
   /**
    * switchToBrowserTab
@@ -331,6 +370,18 @@ class Browser {
     return (await this._contextWrapper.getCurrentPage()).goto(getUrl);
   }
 
+  async switchToIframe(element: string, jumpToDefaultFirst = false) {
+    if (jumpToDefaultFirst) {
+      await this.switchToDefauldIframe();
+    }
+
+    this._contextFrame = (await this._contextFrame.frame(element)) as any as Page;
+  }
+
+  async switchToDefauldIframe() {
+    this._contextFrame = null;
+  }
+
   async setWindowSize(width: number, height: number) {
     return (await this._contextWrapper.getCurrentPage()).setViewportSize({ width, height });
   }
@@ -339,13 +390,16 @@ class Browser {
     await (() => new Promise((resolve) => setTimeout(resolve, time)))();
   }
 
-  async executeScript(script: ExecuteScriptFn, args?: any[]): Promise<any> {
+  async executeScript(script: ExecuteScriptFn, args?: any | any[]): Promise<any> {
     const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
 
     const res = (await this._contextWrapper.getCurrentPage()).evaluate(script, recomposedArgs);
     return res;
   }
 
+  /**
+   * @deprecated
+   */
   async executeAsyncScript(script: any, ...args: any[]): Promise<any> {
     throw new TypeError('Not supported for playwright engine');
   }

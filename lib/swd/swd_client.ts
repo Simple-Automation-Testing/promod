@@ -1,7 +1,7 @@
-import { toArray, isArray, isPromise, waitForCondition, isNumber, isAsyncFunction, isString } from 'sat-utils';
+import { toArray, isArray, waitForCondition, isNumber, isAsyncFunction, isString } from 'sat-utils';
 import { WebDriver, Key } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
-
+import { buildBy } from './swd_alignment';
 import type { ExecuteScriptFn } from '../interface';
 
 function validateBrowserCallMethod(browserClass): Browser {
@@ -69,6 +69,18 @@ class Browser {
     const newDriver = await this._createNewDriver();
     this.drivers.push(newDriver);
     this.seleniumDriver = newDriver;
+  }
+
+  async switchToIframe(element: string, jumpToDefaultFirst = false) {
+    if (jumpToDefaultFirst) {
+      await this.switchToDefauldIframe();
+    }
+
+    await this.seleniumDriver.switchTo().frame(this.seleniumDriver.findElement(buildBy(element)));
+  }
+
+  async switchToDefauldIframe() {
+    await this.seleniumDriver.switchTo().defaultContent();
   }
 
   async switchToBrowser({ index, tabTitle }: { index?: number; tabTitle?: string } = {}) {
@@ -191,6 +203,13 @@ class Browser {
     }
   }
 
+  public async setCookies(cookies: { name: string; value: string } | { name: string; value: string }[]) {
+    const cookiesArr = toArray(cookies);
+    for (const cookie of cookiesArr) {
+      await (await this.seleniumDriver.manage()).addCookie(cookie);
+    }
+  }
+
   async getTitle() {
     return await this.seleniumDriver.getTitle();
   }
@@ -232,6 +251,7 @@ class Browser {
     await (() => new Promise((resolve) => setTimeout(resolve, time)))();
   }
 
+  /** @depreacted */
   manage() {
     return this.seleniumDriver.manage();
   }

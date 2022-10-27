@@ -2,7 +2,7 @@
 import { isString, isFunction, isPromise } from 'sat-utils';
 import { By, WebElement, WebDriver } from 'selenium-webdriver';
 import { browser } from './swd_client';
-
+import { buildBy } from './swd_alignment';
 import type { PromodElementType, PromodElementsType } from '../interface';
 
 // TODO figure out is this still relevant
@@ -13,32 +13,6 @@ function toSeleniumProtocolElement(webElId) {
   };
   return elementObj;
 }
-
-const buildBy = (selector: string | By, getExecuteScriptArgs?: () => any[]): any => {
-  if (selector instanceof By) {
-    return selector;
-  }
-
-  getExecuteScriptArgs = isFunction(getExecuteScriptArgs) ? getExecuteScriptArgs : () => [];
-
-  if (isString(selector) && (selector as string).includes('xpath=')) {
-    return By.xpath((selector as string).replace('xpath=', ''));
-    /**
-     * @depreacted
-     */
-  } else if (isString(selector) && (selector as string).includes('js=')) {
-    /**
-     * @depreacted
-     */
-    return By.js((selector as string).replace('js=', ''), ...getExecuteScriptArgs());
-  } else if (isPromise(selector)) {
-    return selector;
-  } else if (isFunction(selector)) {
-    return By.js(selector, getExecuteScriptArgs());
-  }
-
-  return By.css(selector);
-};
 
 const SELENIUM_API_METHODS = [
   'sendKeys',

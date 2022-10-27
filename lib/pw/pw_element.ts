@@ -1,7 +1,6 @@
 /* eslint-disable max-len */
 import { toArray, isString, isFunction, isAsyncFunction, isPromise } from 'sat-utils';
 import { browser } from './pw_client';
-import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
 import type { ElementHandle, Page } from 'playwright-core';
@@ -16,7 +15,7 @@ const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
   } else if (isPromise(selector)) {
     return selector;
   } else if (isFunction(selector)) {
-    return [selector, getExecuteScriptArgs()];
+    return [selector, ...getExecuteScriptArgs()];
   }
 
   return selector;
@@ -58,7 +57,7 @@ class PromodElements {
   }
 
   private async getElement(index?) {
-    this._driver = await browser.getCurrentPage();
+    this._driver = await browser.getWorkingContext();
 
     if (this.getParent) {
       let parent = await this.getParent();
@@ -273,7 +272,7 @@ class PromodElement {
   }
 
   async getElement() {
-    this._driver = await browser.getCurrentPage();
+    this._driver = await browser.getWorkingContext();
     const getElementArgs = buildBy(this.selector, this.getExecuteScriptArgs);
     if (this.getParent) {
       let parent = (await this.getParent()) as any;
