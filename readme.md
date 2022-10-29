@@ -99,7 +99,7 @@ after(async function() {
 
 
 ## Improvement plan
- * [ ] Add documentation
- * [ ] Add playwright integration
- * [ ] Add test runner
- * [ ] Add logger
+ * [ ] Add documentation - in progress
+ * [ ] Add playwright integration - in progress
+ * [ ] Add test runner - in progress
+ * [ ] Add logger - in progress

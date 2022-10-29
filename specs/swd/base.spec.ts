@@ -1,14 +1,14 @@
 import { Key } from 'selenium-webdriver';
 import { expect } from 'assertior';
 import { seleniumWD } from '../../lib/index';
-import * as path from 'path';
+import { formsFile, hoveFocusFile, framesFile } from '../misc/setup';
 
-describe('Base', () => {
+describe.only('Base', () => {
   const { $, $$, getSeleniumDriver, browser } = seleniumWD;
 
   beforeEach(async () => {
     await getSeleniumDriver(browser);
-    await browser.get('http://localhost:4000/');
+    await browser.get(formsFile);
   });
 
   afterEach(async () => {
@@ -46,7 +46,7 @@ describe('Base', () => {
 
   it('several browsers', async () => {
     const email = $('input[placeholder="Ім\'я користувача"]');
-    const pass = $('input[placeholder="пароль"]');
+    const pass = $('input[placeholder="Пароль"]');
 
     await browser.runNewBrowser();
     await browser.get('https://google.com');
@@ -69,7 +69,7 @@ describe('Base', () => {
 
   it('element click/sendKeys', async () => {
     const email = $('input[placeholder="Ім\'я користувача"]');
-    const pass = $('input[placeholder="пароль"]');
+    const pass = $('input[placeholder="Пароль"]');
     const signIn = $('.login_form .btn-primary');
     await browser.actions().keyDown(Key.SHIFT).perform();
     await email.sendKeys(`${Key.SHIFT}a`);
@@ -77,8 +77,8 @@ describe('Base', () => {
   });
 
   it('execute script fn', async () => {
-    await $('input[placeholder="пароль"]').sendKeys('test');
-    const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="пароль"]')]);
+    await $('input[placeholder="Пароль"]').sendKeys('test');
+    const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="Пароль"]')]);
     expect(item).toEqual('test');
   });
 
@@ -140,7 +140,7 @@ describe('Base', () => {
 
   it('scrollIntoView', async () => {
     const email = $('input[placeholder="Ім\'я користувача"]');
-    const pass = $('input[placeholder="пароль"]');
+    const pass = $('input[placeholder="Пароль"]');
     const signIn = $('.login_form .btn-primary');
     await email.sendKeys('admin');
     await pass.sendKeys('admin');
@@ -156,8 +156,7 @@ describe('Base', () => {
 
   it('focus', async () => {
     const focus = $('#focus');
-    const file = path.resolve(__dirname, '../misc/hover_focus.html');
-    await browser.get(`file://${file}`);
+    await browser.get(hoveFocusFile);
     await focus.focus();
     // @ts-ignore
     const data = await browser.executeScript(() => document.querySelector('#focus').style.background);
@@ -166,8 +165,7 @@ describe('Base', () => {
 
   it('hover', async () => {
     const hover = $('#hover');
-    const file = path.resolve(__dirname, '../misc/hover_focus.html');
-    await browser.get(`file://${file}`);
+    await browser.get(hoveFocusFile);
     await hover.hover();
     // @ts-ignore
     const data = await browser.executeScript(() => document.querySelector('#hover').style.background);
@@ -175,8 +173,17 @@ describe('Base', () => {
   });
 
   it('screenshot', async () => {
-    const file = path.resolve(__dirname, '../misc/hover_focus.html');
-    await browser.get(`file://${file}`);
+    await browser.get(hoveFocusFile);
     await browser.takeScreenshot();
+  });
+
+  it.only('iframes', async () => {
+    await browser.get(framesFile);
+    expect(await $('#test').isDisplayed()).toEqual(true);
+    await browser.switchToIframe('#test');
+    expect(await $('#hover').isDisplayed()).toEqual(true);
+    await browser.switchToDefauldIframe();
+    expect(await $('#hover').isDisplayed()).toEqual(false);
+    expect(await $('#main').isDisplayed()).toEqual(true);
   });
 });

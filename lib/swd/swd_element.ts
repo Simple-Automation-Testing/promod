@@ -31,7 +31,7 @@ const SELENIUM_API_METHODS = [
 ];
 
 class PromodSeleniumElements {
-  private seleniumDriver: WebDriver;
+  private _driver: WebDriver;
   private selector: string;
   private wdElements: WebElement[];
   private getParent: () => Promise<PromodSeleniumElement & WebElement>;
@@ -39,20 +39,20 @@ class PromodSeleniumElements {
   public parentSelector: string;
 
   constructor(selector, client, getParent?, getExecuteScriptArgs?) {
-    this.seleniumDriver = client;
+    this._driver = client;
     this.selector = selector;
     this.getParent = getParent;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
   }
 
   setseleniumDriver(client: WebDriver) {
-    this.seleniumDriver = client;
+    this._driver = client;
   }
 
   get(index): PromodElementType {
     const childElement = new PromodSeleniumElement(
       this.selector,
-      this.seleniumDriver,
+      this._driver,
       this.getElement.bind(this, index),
       null,
       true,
@@ -72,7 +72,7 @@ class PromodSeleniumElements {
   }
 
   private async getElement(index?) {
-    this.seleniumDriver = browser.currentClient();
+    this._driver = browser.currentClient();
 
     if (this.getParent) {
       let parent = await this.getParent();
@@ -84,7 +84,7 @@ class PromodSeleniumElements {
 
       this.wdElements = await parent.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
     } else {
-      this.wdElements = await this.seleniumDriver.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
+      this.wdElements = await this._driver.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
     }
 
     if (index === -1) {
@@ -100,6 +100,7 @@ class PromodSeleniumElements {
     return this.wdElements.map((item) => item.id_);
   }
 
+  /** @private */
   private async getEngineElements() {
     await this.getElement(0);
 
@@ -122,7 +123,7 @@ class PromodSeleniumElements {
 }
 
 class PromodSeleniumElement {
-  private seleniumDriver: WebDriver;
+  private _driver: WebDriver;
   private selector: string;
   private wdElement: WebElement;
   private getParent: () => Promise<PromodElementType>;
@@ -131,7 +132,7 @@ class PromodSeleniumElement {
   public parentSelector: string;
 
   constructor(selector, client, getParent?, getExecuteScriptArgs?, useParent?) {
-    this.seleniumDriver = client;
+    this._driver = client;
     this.selector = selector;
     this.getParent = getParent;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
@@ -149,17 +150,17 @@ class PromodSeleniumElement {
   }
 
   setseleniumDriver(client: WebDriver) {
-    this.seleniumDriver = client;
+    this._driver = client;
   }
 
   $(selector): PromodElementType {
-    const childElement = new PromodSeleniumElement(selector, this.seleniumDriver, this.getElement.bind(this));
+    const childElement = new PromodSeleniumElement(selector, this._driver, this.getElement.bind(this));
     childElement.parentSelector = this.selector;
     return childElement as any;
   }
 
   $$(selector): PromodElementsType {
-    const childElements = new PromodSeleniumElements(selector, this.seleniumDriver, this.getElement.bind(this));
+    const childElements = new PromodSeleniumElements(selector, this._driver, this.getElement.bind(this));
     childElements.parentSelector = this.selector;
     return childElements as any;
   }
@@ -212,7 +213,7 @@ class PromodSeleniumElement {
 
   async scrollIntoView(position?: 'end' | 'start' | 'center') {
     await this.getElement();
-    await this.seleniumDriver.executeScript(
+    await this._driver.executeScript(
       `
       let position = true;
 
@@ -228,7 +229,7 @@ class PromodSeleniumElement {
   }
 
   async getElement() {
-    this.seleniumDriver = browser.currentClient();
+    this._driver = browser.currentClient();
     if (this.getParent) {
       let parent = (await this.getParent()) as any;
       if (!parent) {
@@ -248,7 +249,7 @@ class PromodSeleniumElement {
         this.wdElement = await parent.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
       }
     } else {
-      this.wdElement = await this.seleniumDriver.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
+      this.wdElement = await this._driver.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
     }
 
     return this.wdElement;

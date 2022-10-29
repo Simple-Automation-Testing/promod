@@ -1,14 +1,13 @@
 import { Key } from 'selenium-webdriver';
 import { expect } from 'assertior';
 import { playwrightWD } from '../../lib/index';
-import * as path from 'path';
+import { formsFile, hoveFocusFile, framesFile } from '../misc/setup';
 
 describe('Base', () => {
   const { $, $$, getDriver, browser } = playwrightWD;
 
   beforeEach(async () => {
     await getDriver(browser);
-    await browser.get('http://localhost:4000/');
   });
 
   afterEach(async () => {
@@ -16,6 +15,7 @@ describe('Base', () => {
   });
 
   it('by js function', async () => {
+    await browser.get(formsFile);
     const email = $(() => document.querySelector('input[placeholder="Ім\'я користувача"]'));
 
     expect(await email.isDisplayed()).toEqual(true);
@@ -28,9 +28,10 @@ describe('Base', () => {
   });
 
   it('by js function with parent', async () => {
+    await browser.get(formsFile);
     try {
       const body = $(() => document.querySelector('body'));
-      const email = $(([parent]) => {
+      const email = $((parent) => {
         console.log(parent);
         return parent.querySelector('input[placeholder="Ім\'я користувача"]');
       }, body.getEngineElement());
@@ -44,6 +45,7 @@ describe('Base', () => {
   });
 
   it('isDisplayed', async () => {
+    await browser.get(formsFile);
     const email = $('input[placeholder="Ім\'я lol"]');
 
     expect(await email.isDisplayed()).toEqual(false);
@@ -51,8 +53,9 @@ describe('Base', () => {
   });
 
   it('several browsers', async () => {
+    await browser.get(formsFile);
     const email = $('input[placeholder="Ім\'я користувача"]');
-    const pass = $('input[placeholder="пароль"]');
+    const pass = $('input[placeholder="Пароль"]');
 
     await browser.runNewBrowser();
     await browser.get('https://google.com');
@@ -75,8 +78,9 @@ describe('Base', () => {
   });
 
   it('element click/sendKeys', async () => {
+    await browser.get(formsFile);
     const email = $('input[placeholder="Ім\'я користувача"]');
-    const pass = $('input[placeholder="пароль"]');
+    const pass = $('input[placeholder="Пароль"]');
     const signIn = $('.login_form .btn-primary');
     // await browser.actions().keyDown(Key.SHIFT).perform();
     await email.sendKeys(`${Key.SHIFT}a`);
@@ -84,18 +88,21 @@ describe('Base', () => {
   });
 
   it('execute script str', async () => {
-    await $('input[placeholder="пароль"]').sendKeys('test');
-    const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="пароль"]')]);
+    await browser.get(formsFile);
+    await $('input[placeholder="Пароль"]').sendKeys('test');
+    const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="Пароль"]')]);
     expect(item).toEqual('test');
   });
 
   it('execute script fn', async () => {
-    await $('input[placeholder="пароль"]').sendKeys('test');
-    const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="пароль"]')]);
+    await browser.get(formsFile);
+    await $('input[placeholder="Пароль"]').sendKeys('test');
+    const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="Пароль"]')]);
     expect(item).toEqual('test');
   });
 
   it('execute script els', async () => {
+    await browser.get(formsFile);
     const btns = $$('button');
     // @ts-ignore
     const item = await browser.executeScript((items) => Array.from(items).map((i) => i.innerText), btns);
@@ -110,18 +117,21 @@ describe('Base', () => {
   });
 
   it('count', async () => {
+    await browser.get(formsFile);
     const notExistingElements = $('.not_existing_item0').$('.not_existing_item1').$$('button');
     expect(await notExistingElements.count()).toEqual(0);
   });
 
   it('isPresent', async () => {
+    await browser.get(formsFile);
     expect(await $('button.super.not.exist').$$('a').get(1).isPresent()).toEqual(false);
     expect(await $$('button').get(0).isPresent()).toEqual(true);
   });
 
   it('by js function with argument', async () => {
+    await browser.get(formsFile);
     expect(
-      await $(([selector]) => {
+      await $((selector) => {
         return document.querySelector(selector);
       }, 'button').isPresent(),
     ).toEqual(true);
@@ -153,9 +163,9 @@ describe('Base', () => {
     ).toEqual(true);
   });
 
-  it('scrollIntoView', async () => {
+  it.skip('scrollIntoView', async () => {
     const email = $('input[placeholder="Ім\'я користувача"]');
-    const pass = $('input[placeholder="пароль"]');
+    const pass = $('input[placeholder="Пароль"]');
     const signIn = $('.login_form .btn-primary');
     await email.sendKeys('admin');
     await pass.sendKeys('admin');
@@ -171,9 +181,8 @@ describe('Base', () => {
   });
 
   it('focus', async () => {
+    await browser.get(hoveFocusFile);
     const focus = $('#focus');
-    const file = path.resolve(__dirname, '../misc/hover_focus.html');
-    await browser.get(`file://${file}`);
     await focus.focus();
     // @ts-ignore
     const data = await browser.executeScript(() => document.querySelector('#focus').style.background);
@@ -182,8 +191,7 @@ describe('Base', () => {
 
   it('hover', async () => {
     const hover = $('#hover');
-    const file = path.resolve(__dirname, '../misc/hover_focus.html');
-    await browser.get(`file://${file}`);
+    await browser.get(hoveFocusFile);
     await hover.hover();
     // @ts-ignore
     const data = await browser.executeScript(() => document.querySelector('#hover').style.background);
@@ -191,8 +199,17 @@ describe('Base', () => {
   });
 
   it('screenshot', async () => {
-    const file = path.resolve(__dirname, '../misc/hover_focus.html');
-    await browser.get(`file://${file}`);
+    await browser.get(hoveFocusFile);
     await browser.takeScreenshot();
+  });
+
+  it('iframes', async () => {
+    await browser.get(framesFile);
+    expect(await $('#test').isDisplayed()).toEqual(true);
+    await browser.switchToIframe('#test');
+    expect(await $('#hover').isDisplayed()).toEqual(true);
+    await browser.switchToDefauldIframe();
+    expect(await $('#hover').isDisplayed()).toEqual(false);
+    expect(await $('#main').isDisplayed()).toEqual(true);
   });
 });

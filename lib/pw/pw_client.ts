@@ -1,8 +1,9 @@
-import { toArray, isNotEmptyObject, waitForCondition, isNumber, isAsyncFunction } from 'sat-utils';
+import { toArray, isNotEmptyObject, waitForCondition, isNumber, isAsyncFunction, safeHasOwnPropery } from 'sat-utils';
 import { Key } from 'selenium-webdriver';
 import { ExecuteScriptFn } from '../interface';
-import { devices } from 'playwright-core';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
+
+// import {devices} from 'playwright-core';
 
 import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
 
@@ -137,9 +138,9 @@ class ContextWrapper {
   /** @private */
   private _currentPage: PageWrapper;
   /** @private */
-  private _contextConfig: { [k: string]: any };
+  private _contextConfig: { [k: string]: any; userAgent?: string; viewport?: { width: number; height: number } };
 
-  constructor(serverBrowser: PWBrowser, config) {
+  constructor(serverBrowser: PWBrowser, config = {}) {
     this.server = serverBrowser;
     this._contextConfig = config;
   }
@@ -148,8 +149,11 @@ class ContextWrapper {
     await this._currentPage.switchToNextPage(data);
   }
 
-  async runNewContext() {
-    this._currentContext = await this.server.newContext();
+  async runNewContext(ignoreConfig?: boolean) {
+    const config = ignoreConfig ? {} : this._contextConfig;
+
+    const { userAgent, isMobile, viewport } = config;
+    this._currentContext = await this.server.newContext({ userAgent, isMobile, viewport });
 
     if (!this._currentPage) {
       this._currentPage = new PageWrapper(this._currentContext);
@@ -370,12 +374,24 @@ class Browser {
     return (await this._contextWrapper.getCurrentPage()).goto(getUrl);
   }
 
-  async switchToIframe(element: string, jumpToDefaultFirst = false) {
+  async switchToIframe(selector: string | { name?: string; url?: string | RegExp }, jumpToDefaultFirst = false) {
     if (jumpToDefaultFirst) {
       await this.switchToDefauldIframe();
     }
 
-    this._contextFrame = (await this._contextFrame.frame(element)) as any as Page;
+    if (safeHasOwnPropery(selector, 'name') || safeHasOwnPropery(selector, 'url')) {
+      this._contextFrame = (await (await this.getWorkingContext()).frame(selector)) as any as Page;
+    } else {
+      const currentWorkingContext = await this.getWorkingContext();
+      /**
+       * @info - switch to iframe context, get first top dom element and get handler of that element
+       */
+      this._contextFrame = (await currentWorkingContext
+        .frameLocator(selector as string)
+        .locator('*')
+        .first()
+        .elementHandle()) as any as Page;
+    }
   }
 
   async switchToDefauldIframe() {
@@ -393,7 +409,7 @@ class Browser {
   async executeScript(script: ExecuteScriptFn, args?: any | any[]): Promise<any> {
     const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
 
-    const res = (await this._contextWrapper.getCurrentPage()).evaluate(script, recomposedArgs);
+    const res = await (await this.getWorkingContext()).evaluate(script, recomposedArgs);
     return res;
   }
 

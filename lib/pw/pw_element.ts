@@ -61,7 +61,6 @@ class PromodElements {
 
     if (this.getParent) {
       let parent = await this.getParent();
-
       // @ts-ignore
       if (parent.getEngineElement) {
         // @ts-ignore
@@ -249,8 +248,7 @@ class PromodElement {
   async scrollIntoView(position?: 'end' | 'start' | 'center') {
     await this.getElement();
     await this._driver.evaluateHandle(
-      (arg) => {
-        const [elem, scrollPosition] = arg;
+      ([elem, scrollPosition]) => {
         let position = true;
 
         const scrollBlock = ['end', 'start', 'center', 'nearest'];
@@ -300,7 +298,10 @@ class PromodElement {
         // TODO refactor resolver
         resolved.push(await item);
       }
-      this._driverElement = await this._driver.evaluateHandle(getElementArgs[0], resolved);
+      this._driverElement = await this._driver.evaluateHandle(
+        getElementArgs[0],
+        resolved.length === 1 ? resolved[0] : resolved,
+      );
     } else {
       this._driverElement = await this._driver.$(getElementArgs);
     }
