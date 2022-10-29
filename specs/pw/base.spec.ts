@@ -14,6 +14,15 @@ describe('Base', () => {
     await browser.quitAll();
   });
 
+  it('openNewTab', async () => {
+    await browser.get(formsFile);
+    await browser.openNewTab(hoveFocusFile);
+    await browser.switchToTab({ index: 1, expectedQuantity: 2 });
+    expect(await browser.getCurrentUrl()).toEqual(hoveFocusFile);
+    await browser.switchToTab({ index: 0, expectedQuantity: 2 });
+    expect(await browser.getCurrentUrl()).toEqual(formsFile);
+  });
+
   it('by js function', async () => {
     await browser.get(formsFile);
     const email = $(() => document.querySelector('input[placeholder="Ім\'я користувача"]'));

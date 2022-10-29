@@ -203,6 +203,10 @@ class Browser {
     }
   }
 
+  async openNewTab(url = 'data:,') {
+    await this.seleniumDriver.executeScript(`window.open(arguments[0], '_blank')`, url);
+  }
+
   public async setCookies(cookies: { name: string; value: string } | { name: string; value: string }[]) {
     const cookiesArr = toArray(cookies);
     for (const cookie of cookiesArr) {

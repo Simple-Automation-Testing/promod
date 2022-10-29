@@ -79,7 +79,7 @@ class PageWrapper {
     if (isNotEmptyObject(data)) {
       const { index, expectedQuantity, title, timeout } = data;
 
-      let pages;
+      let pages = await this._context.pages();
       if (isNumber(expectedQuantity)) {
         await waitForCondition(
           async () => {
@@ -92,7 +92,6 @@ class PageWrapper {
           },
         );
       }
-
       if (pages.length > 1) {
         if (title) {
           await waitForCondition(
@@ -285,6 +284,10 @@ class Browser {
     await this.closeAllpagesExceptInitial();
     // set initialTab to null for further "it" to use
     this.initialTab = null;
+  }
+
+  async openNewTab(url = 'data:,') {
+    return (await this._contextWrapper.getCurrentPage()).evaluate((openUrl) => window.open(openUrl, '_blank'), url);
   }
 
   public async switchToTab(tabObject: IBrowserTab) {

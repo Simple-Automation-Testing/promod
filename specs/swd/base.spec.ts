@@ -3,7 +3,7 @@ import { expect } from 'assertior';
 import { seleniumWD } from '../../lib/index';
 import { formsFile, hoveFocusFile, framesFile } from '../misc/setup';
 
-describe.only('Base', () => {
+describe('Base', () => {
   const { $, $$, getSeleniumDriver, browser } = seleniumWD;
 
   beforeEach(async () => {
@@ -13,6 +13,15 @@ describe.only('Base', () => {
 
   afterEach(async () => {
     await browser.quitAll();
+  });
+
+  it('openNewTab', async () => {
+    await browser.get(formsFile);
+    await browser.openNewTab(hoveFocusFile);
+    await browser.switchToTab({ index: 1, expectedQuantity: 2 });
+    expect(await browser.getCurrentUrl()).toEqual(hoveFocusFile);
+    await browser.switchToTab({ index: 0, expectedQuantity: 2 });
+    expect(await browser.getCurrentUrl()).toEqual(formsFile);
   });
 
   it('by js function', async () => {
@@ -177,7 +186,7 @@ describe.only('Base', () => {
     await browser.takeScreenshot();
   });
 
-  it.only('iframes', async () => {
+  it('iframes', async () => {
     await browser.get(framesFile);
     expect(await $('#test').isDisplayed()).toEqual(true);
     await browser.switchToIframe('#test');
