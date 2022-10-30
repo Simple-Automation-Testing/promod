@@ -19,7 +19,7 @@ async function getDriver(config: BaseConfPW | Browser = {}, browser?: Browser): 
   // validate config
   validatePlaywrightConf(_config);
 
-  const { driver, server } = await _getDriver(_config);
+  const { driver, server, config: commonConfig } = await _getDriver(_config);
 
   /**
    * @info
@@ -28,7 +28,7 @@ async function getDriver(config: BaseConfPW | Browser = {}, browser?: Browser): 
    */
 
   _browser.setCreateNewDriver = (): Promise<PWBrowser> => getDriver(_config);
-  _browser.setClient({ driver, server });
+  _browser.setClient({ driver, server, config: commonConfig });
 
   if (config.baseUrl) {
     _browser.baseUrl = config.baseUrl;

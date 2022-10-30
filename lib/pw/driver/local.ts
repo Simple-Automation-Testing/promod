@@ -33,7 +33,7 @@ const runLocalEnv = async (config) => {
   const combinedConfig = getCombinedConfig(config);
 
   // TODO investigate how add prefs to chrome
-  const { downloadsPath, headless = false, args = [] } = combinedConfig;
+  const { downloadsPath, headless = false, args = [], agent } = combinedConfig;
 
   const isHeadless = shouldBeHeadless(args, headless);
 

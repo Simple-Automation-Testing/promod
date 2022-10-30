@@ -137,7 +137,12 @@ class ContextWrapper {
   /** @private */
   private _currentPage: PageWrapper;
   /** @private */
-  private _contextConfig: { [k: string]: any; userAgent?: string; viewport?: { width: number; height: number } };
+  private _contextConfig: {
+    [k: string]: any;
+    isMobile?: boolean;
+    userAgent?: string;
+    viewport?: { width: number; height: number };
+  };
 
   constructor(serverBrowser: PWBrowser, config = {}) {
     this.server = serverBrowser;
