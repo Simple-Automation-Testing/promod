@@ -8,7 +8,6 @@ async function toNativeEngineExecuteScriptArgs(args) {
 
   for (const item of argsArray) {
     const resolvedItem = isPromise(item) ? await item : item;
-
     if (Array.isArray(resolvedItem)) {
       const arrayItems = [];
 
@@ -21,7 +20,7 @@ async function toNativeEngineExecuteScriptArgs(args) {
     } else if (resolvedItem && resolvedItem.getEngineElements) {
       executeScriptArgs.push(...(await resolvedItem.getEngineElements()));
     } else {
-      executeScriptArgs.push(item);
+      executeScriptArgs.push(resolvedItem);
     }
   }
 
