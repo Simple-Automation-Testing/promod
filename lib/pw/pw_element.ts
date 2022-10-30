@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import { toArray, isString, isFunction, isAsyncFunction, isPromise } from 'sat-utils';
+import { toArray, isString, isFunction, isAsyncFunction, isPromise, lengthToIndexesArray } from 'sat-utils';
 import { browser } from './pw_client';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
@@ -59,18 +59,47 @@ class PromodElements {
   private async getElement(index?) {
     this._driver = await browser.getWorkingContext();
 
+    const getElementArgs = buildBy(this.selector, this.getExecuteScriptArgs);
+    const shouldUserDocumentRoot = this.selector.toString().startsWith('xpath=//');
+
     if (this.getParent) {
       let parent = await this.getParent();
       // @ts-ignore
       if (parent.getEngineElement) {
         // @ts-ignore
-        parent = await parent.getEngineElement();
+        parent = shouldUserDocumentRoot ? this._driver : await parent.getEngineElement();
       }
 
       // TODO improve this solution
-      this._driverElements = (await parent.$$(
-        buildBy(this.selector, this.getExecuteScriptArgs),
+      this._driverElements = (await (shouldUserDocumentRoot ? this._driver : parent).$$(
+        getElementArgs,
       )) as any as ElementHandle[];
+    } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
+      const elementHandles = [];
+      const resolved = [];
+      const callArgs = toArray(getElementArgs[1]);
+
+      for (const item of callArgs) {
+        // TODO refactor resolver
+        resolved.push(await item);
+      }
+      // @ts-ignore
+      const handlesByFunctionSearch = await this._driver.evaluateHandle(
+        getElementArgs[0],
+        resolved.length === 1 ? resolved[0] : resolved,
+      );
+      // @ts-ignore
+      const availableHandlesLength = await this._driver.evaluate((nodes) => nodes.length, handlesByFunctionSearch);
+      for (const index of lengthToIndexesArray(availableHandlesLength)) {
+        const handle = await this._driver.evaluateHandle(
+          // @ts-ignore
+          ([nodes, itemIndex]) => nodes[itemIndex],
+          [handlesByFunctionSearch, index],
+        );
+        elementHandles.push(await handle.asElement());
+      }
+
+      this._driverElements = elementHandles.filter(Boolean);
     } else {
       this._driverElements = await this._driver.$$(buildBy(this.selector, this.getExecuteScriptArgs));
     }
@@ -237,12 +266,12 @@ class PromodElement {
 
   async getText() {
     await this.getElement();
-    await this._driverElement.textContent();
+    return await this._driverElement.textContent();
   }
 
   async takeScreenshot() {
     await this.getElement();
-    await this._driverElement.screenshot();
+    return await this._driverElement.screenshot();
   }
 
   async scrollIntoView(position?: 'end' | 'start' | 'center') {
@@ -272,6 +301,8 @@ class PromodElement {
   async getElement() {
     this._driver = await browser.getWorkingContext();
     const getElementArgs = buildBy(this.selector, this.getExecuteScriptArgs);
+    const shouldUserDocumentRoot = this.selector.toString().startsWith('xpath=//');
+
     if (this.getParent) {
       let parent = (await this.getParent()) as any;
       if (!parent) {
@@ -282,13 +313,13 @@ class PromodElement {
         );
       }
       if (parent.getEngineElement) {
-        parent = await parent.getEngineElement();
+        parent = shouldUserDocumentRoot ? this._driver : await parent.getEngineElement();
       }
 
       if (this.useParent) {
         this._driverElement = parent;
       } else {
-        this._driverElement = await parent.$(getElementArgs);
+        this._driverElement = await (shouldUserDocumentRoot ? this._driver : parent).$(getElementArgs);
       }
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
       const resolved = [];
@@ -298,10 +329,9 @@ class PromodElement {
         // TODO refactor resolver
         resolved.push(await item);
       }
-      this._driverElement = await this._driver.evaluateHandle(
-        getElementArgs[0],
-        resolved.length === 1 ? resolved[0] : resolved,
-      );
+      this._driverElement = (
+        await this._driver.evaluateHandle(getElementArgs[0], resolved.length === 1 ? resolved[0] : resolved)
+      ).asElement();
     } else {
       this._driverElement = await this._driver.$(getElementArgs);
     }

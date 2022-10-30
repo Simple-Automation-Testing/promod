@@ -25,6 +25,12 @@ describe('Base', () => {
 
   it('by js function', async () => {
     await browser.get(formsFile);
+    const button = $('form').$$('xpath=//button');
+    expect(await button.get(1).getText()).toEqual('Зареєструватися');
+  });
+
+  it('by js function', async () => {
+    await browser.get(formsFile);
     const email = $(() => document.querySelector('input[placeholder="Ім\'я користувача"]'));
 
     expect(await email.isDisplayed()).toEqual(true);
