@@ -319,7 +319,7 @@ class PromodElement {
       if (this.useParent) {
         this._driverElement = parent;
       } else {
-        this._driverElement = await (shouldUserDocumentRoot ? this._driver : parent).$(getElementArgs);
+        this._driverElement = (await (shouldUserDocumentRoot ? this._driver : parent).$(getElementArgs)).asElement();
       }
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
       const resolved = [];
@@ -333,7 +333,7 @@ class PromodElement {
         await this._driver.evaluateHandle(getElementArgs[0], resolved.length === 1 ? resolved[0] : resolved)
       ).asElement();
     } else {
-      this._driverElement = await this._driver.$(getElementArgs);
+      this._driverElement = await (await this._driver.$(getElementArgs)).asElement();
     }
 
     return this._driverElement;
@@ -359,7 +359,7 @@ class PromodElement {
    */
   async isPresent() {
     return this.getElement()
-      .then(() => this._driverElement.isVisible())
+      .then(() => Boolean(this._driverElement))
       .catch(() => false);
   }
 
