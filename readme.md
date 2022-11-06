@@ -25,12 +25,12 @@
 ## Usage
 ```js
   const {seleniumWD} = require('promod');
-  const {$, $$, getSeleniumDriver, browser} = seleniumWD;
+  const {$, $$, getDriver, browser} = seleniumWD;
 
   ;(async () => {
     const searchInput = $('input[name="q"]');
     const sections = $$('section');
-    await getSeleniumDriver({seleniumAddress: 'http://localhost:4444/wd/hub'}, browser);
+    await getDriver({seleniumAddress: 'http://localhost:4444/wd/hub'}, browser);
     await browser.get('https://www.npmjs.com/');
     await searchInput.sendKeys(`promod${browser.Key.ENTER}`);
     console.log(await sections.get(0).$('a').getText());
@@ -66,9 +66,9 @@ before(async function() {
    * rest - other config data
    */
   const {onPrepare, ...rest} = config;
-  const {getSeleniumDriver, browser, $, $$} = seleniumWD;
+  const {getDriver, browser, $, $$} = seleniumWD;
 
-	await getSeleniumDriver(rest, browser);
+	await getDriver(rest, browser);
 
   // i am not a big fan of global object usage, but if it is suitable for you, just add API to global
   global.browser = browser;

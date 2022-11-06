@@ -353,7 +353,6 @@ class Browser {
       const { width, height } = window.screen;
       return { width: width + 500, height: height + 500 };
     });
-    console.log(width, height, ' <<<<<<<<<<<<');
 
     return (await this._contextWrapper.getCurrentPage()).setViewportSize({ width, height });
   }

@@ -3,7 +3,7 @@ import * as _http from 'selenium-webdriver/http';
 
 import { runLocalEnv } from './local';
 
-const getDriver = async (config) => {
+const _getDriver = async (config) => {
   const combinedConfig = config || { capabilities: Capabilities.chrome() };
   if (!combinedConfig.capabilities) {
     combinedConfig.capabilities = Capabilities.chrome();
@@ -25,4 +25,4 @@ const getDriver = async (config) => {
   return driver;
 };
 
-export { getDriver };
+export { _getDriver };

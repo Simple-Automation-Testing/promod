@@ -15,8 +15,8 @@ function validateBrowserCallMethod(browserClass): Browser {
       async function decoratedWithChecker(...args) {
         if (!this.seleniumDriver) {
           throw new Error(`
-${key}(): Seems like driver was not initialized, please check how or where did you call getSeleniumDriver function
-or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/init.md#getseleniumdriver
+${key}(): Seems like driver was not initialized, please check how or where did you call getDriver function
+or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/init.md#getdriver
 					`);
         }
 

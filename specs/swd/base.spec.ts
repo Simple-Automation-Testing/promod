@@ -4,10 +4,10 @@ import { seleniumWD } from '../../lib/index';
 import { logsFile, formsFile, hoveFocusFile, framesFile } from '../misc/setup';
 
 describe('Base', () => {
-  const { $, $$, getSeleniumDriver, browser } = seleniumWD;
+  const { $, $$, getDriver, browser } = seleniumWD;
 
   beforeEach(async () => {
-    await getSeleniumDriver(browser);
+    await getDriver(browser);
     await browser.get(formsFile);
   });
 

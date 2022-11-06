@@ -1,10 +1,10 @@
 # Session initialization
-Promod is a library, it does not have own test runner, initialization of the driver session should be done by ```getSeleniumDriver``` function
+Promod is a library, it does not have own test runner, initialization of the driver session should be done by ```getDriver``` function
 
-- [getSeleniumDriver](#getseleniumdriver)
+- [getDriver](#getdriver)
 
 
-## getSeleniumDriver
+## getDriver
 ```js
 	const {seleniumWD} = require('promod');
 	const conf = {
@@ -13,14 +13,14 @@ Promod is a library, it does not have own test runner, initialization of the dri
 		},
 		baseUrl: 'https://www.npmjs.com',
 	};
-	const {getSeleniumDriver, browser, $, $$} = seleniumWD;
+	const {getDriver, browser, $, $$} = seleniumWD;
 	// lazy
 	const searchInput = $('input[name="q"]');
 	const searchButton = $$('[title="Submit"]').get(0);
 
 	test()
 	async function test() {
-		await getSeleniumDriver(conf, browser);
+		await getDriver(conf, browser);
 		await browser.get('/'); // open npm promode package
 		await searchInput.sendKeys('promod');
 		await searchButton.click();
