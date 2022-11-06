@@ -319,7 +319,8 @@ class PromodElement {
       if (this.useParent) {
         this._driverElement = parent;
       } else {
-        this._driverElement = (await (shouldUserDocumentRoot ? this._driver : parent).$(getElementArgs)).asElement();
+        const element = await (shouldUserDocumentRoot ? this._driver : parent).$(getElementArgs);
+        this._driverElement = element ? await element.asElement() : element;
       }
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
       const resolved = [];

@@ -1,7 +1,7 @@
 import { Key } from 'selenium-webdriver';
 import { expect } from 'assertior';
 import { playwrightWD } from '../../lib/index';
-import { formsFile, hoveFocusFile, framesFile } from '../misc/setup';
+import { logsFile, formsFile, hoveFocusFile, framesFile } from '../misc/setup';
 
 describe('Base', () => {
   const { $, $$, getDriver, browser } = playwrightWD;
@@ -12,6 +12,23 @@ describe('Base', () => {
 
   afterEach(async () => {
     await browser.quitAll();
+  });
+
+  it('maximize', async () => {
+    await browser.get(logsFile);
+    const sizeBeforeMaximize = await browser.getWindomSize();
+    await browser.maximize();
+    const sizeAfterMaximize = await browser.getWindomSize();
+
+    console.log(sizeBeforeMaximize, sizeAfterMaximize);
+  });
+
+  it('logs', async () => {
+    await browser.get(logsFile);
+    await browser.sleep(500);
+    const logs = JSON.stringify(await browser.getBrowserLogs());
+    console.log(logs);
+    expect(logs).stringIncludesSubstring('~~~~~~~~~~~~~~~~~~~~~~~~111111111');
   });
 
   it('openNewTab', async () => {

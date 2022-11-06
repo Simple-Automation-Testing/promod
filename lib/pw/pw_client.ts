@@ -50,8 +50,11 @@ class PageWrapper {
   /** @private */
   private _initialPage: Page;
 
+  public _logs: any[];
+
   constructor(context: BrowserContext) {
     this._context = context;
+    this._logs = [];
   }
 
   async updateContext(context: BrowserContext) {
@@ -70,6 +73,12 @@ class PageWrapper {
       const page = await this._context.newPage();
       this._currentPage = page;
       this._initialPage = page;
+
+      this._initialPage.on('console', async (msg) => {
+        for (const arg of msg.args()) {
+          this._logs.push(await arg.jsonValue());
+        }
+      });
     }
 
     return this._currentPage;
@@ -151,6 +160,10 @@ class ContextWrapper {
 
   async switchPage(data: IBrowserTab) {
     await this._currentPage.switchToNextPage(data);
+  }
+
+  getPageLogs() {
+    return this._currentPage._logs;
   }
 
   async runNewContext(ignoreConfig?: boolean) {
@@ -316,40 +329,6 @@ class Browser {
    */
   private async switchToBrowserTab(tabObject: IBrowserTab) {
     await this._contextWrapper.switchPage(tabObject);
-
-    // let pages = await this.getpages();
-    // if (isNumber(expectedQuantity)) {
-    //   await waitForCondition(
-    //     async () => {
-    //       pages = await this.getpages();
-    //       return pages.length === expectedQuantity;
-    //     },
-    //     {
-    //       message: `Couldn't wait for ${expectedQuantity} tab(s) to appear. Probably you should pass expectedQuantity`,
-    //       timeout,
-    //     },
-    //   );
-    // }
-    // if (pages.length > 1) {
-    //   if (title) {
-    //     await waitForCondition(
-    //       async () => {
-    //         pages = await this.getpages();
-    //         for (const tab of pages) {
-    //           await this.switchTo().window(tab);
-    //           if ((await this.getTitle()) === title) {
-    //             return true;
-    //           }
-    //         }
-    //       },
-    //       { message: `Window with ${title} title was not found during ${timeout}.`, timeout },
-    //     );
-    //   } else {
-    //     await this.switchTo().window(pages[index]);
-    //   }
-    // } else {
-    //   await this.switchTo().window(pages[0]);
-    // }
   }
 
   async getTitle() {
@@ -362,6 +341,36 @@ class Browser {
 
   async takeScreenshot() {
     return (await this._contextWrapper.getCurrentPage()).screenshot();
+  }
+
+  async maximize() {
+    /**
+     * @info it is workaround implementation for maximization of the browser page
+     */
+    const { width, height } = await (
+      await this._contextWrapper.getCurrentPage()
+    ).evaluate(() => {
+      const { width, height } = window.screen;
+      return { width: width + 500, height: height + 500 };
+    });
+    console.log(width, height, ' <<<<<<<<<<<<');
+
+    return (await this._contextWrapper.getCurrentPage()).setViewportSize({ width, height });
+  }
+
+  async getBrowserLogs() {
+    try {
+      return this._contextWrapper.getPageLogs();
+      // @ts-ignore
+    } catch (e) {
+      return 'Comman was failed ' + e.toString();
+    }
+  }
+
+  async getWindomSize(): Promise<{ height: number; width: number }> {
+    return await (
+      await this._contextWrapper.getCurrentPage()
+    ).evaluate(() => ({ height: window.outerHeight, width: window.outerWidth }));
   }
 
   async tabTitle() {

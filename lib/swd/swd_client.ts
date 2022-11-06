@@ -207,7 +207,7 @@ class Browser {
     await this.seleniumDriver.executeScript(`window.open(arguments[0], '_blank')`, url);
   }
 
-  public async setCookies(cookies: { name: string; value: string } | { name: string; value: string }[]) {
+  async setCookies(cookies: { name: string; value: string } | { name: string; value: string }[]) {
     const cookiesArr = toArray(cookies);
     for (const cookie of cookiesArr) {
       await (await this.seleniumDriver.manage()).addCookie(cookie);
@@ -220,6 +220,10 @@ class Browser {
 
   async getCurrentUrl() {
     return await this.seleniumDriver.getCurrentUrl();
+  }
+
+  async getWindomSize(): Promise<{ height: number; width: number }> {
+    return await this.seleniumDriver.executeScript(() => ({ height: window.outerHeight, width: window.outerWidth }));
   }
 
   async takeScreenshot() {
@@ -316,6 +320,26 @@ class Browser {
     if (this.seleniumDriver) {
       await this.seleniumDriver.quit();
       this.seleniumDriver = null;
+    }
+  }
+
+  async maximize() {
+    const { width, height } = (await this.seleniumDriver.executeScript(() => {
+      const { availHeight, availWidth } = window.screen;
+      return { width: availWidth, height: availHeight };
+    })) as { width: number; height: number };
+
+    const manage = await this.seleniumDriver.manage();
+    await manage.window().setRect({ width, height });
+  }
+
+  async getBrowserLogs() {
+    try {
+      // @ts-ignore
+      const manage = await this.seleniumDriver.manage();
+      return manage.logs().get('browser');
+    } catch (e) {
+      return 'Comman was failed ' + e.toString();
     }
   }
 
