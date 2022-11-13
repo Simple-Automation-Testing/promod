@@ -1,4 +1,4 @@
-import { isBoolean } from 'sat-utils';
+import { isBoolean, safeJSONstringify } from 'sat-utils';
 import { chromium, firefox } from 'playwright-core';
 
 import type { BrowserType } from 'playwright-core';
@@ -8,7 +8,11 @@ const browserNameMapping = {
   firefox,
 };
 
-const shouldBeHeadless = (args: string[], isHeadlessRequired) => {
+const shouldBeHeadless = (args: string[], isHeadlessRequired, fullConfig) => {
+  if (safeJSONstringify(fullConfig).includes('--headless')) {
+    return true;
+  }
+
   if (isBoolean(isHeadlessRequired)) {
     return isHeadlessRequired;
   }
@@ -35,7 +39,7 @@ const runLocalEnv = async (config) => {
   // TODO investigate how add prefs to chrome
   const { downloadsPath, headless = false, args = [], agent } = combinedConfig;
 
-  const isHeadless = shouldBeHeadless(args, headless);
+  const isHeadless = shouldBeHeadless(args, headless, combinedConfig);
 
   const server = await (browserNameMapping[config.capabilities.browserName] as BrowserType).launchServer({
     headless: isHeadless,
