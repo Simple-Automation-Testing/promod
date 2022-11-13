@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
-import { isString, isFunction, isPromise } from 'sat-utils';
-import { By, WebElement, WebDriver } from 'selenium-webdriver';
+import { safeHasOwnPropery, isString, isFunction, isPromise, isObject, lengthToIndexesArray } from 'sat-utils';
+import { By, WebElement, WebDriver, Key } from 'selenium-webdriver';
 import { browser } from './swd_client';
 import { buildBy } from './swd_alignment';
 import type { PromodElementType, PromodElementsType } from '../interface';
@@ -33,7 +33,7 @@ const SELENIUM_API_METHODS = [
 class PromodSeleniumElements {
   private _driver: WebDriver;
   private selector: string;
-  private wdElements: WebElement[];
+  private _driverElements: WebElement[];
   private getParent: () => Promise<PromodSeleniumElement & WebElement>;
   private getExecuteScriptArgs: () => any;
   public parentSelector: string;
@@ -82,42 +82,42 @@ class PromodSeleniumElements {
         parent = await parent.getEngineElement();
       }
 
-      this.wdElements = await parent.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElements = await parent.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
     } else {
-      this.wdElements = await this._driver.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElements = await this._driver.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
     }
 
     if (index === -1) {
-      return this.wdElements[this.wdElements.length - 1];
+      return this._driverElements[this._driverElements.length - 1];
     }
 
-    return this.wdElements[index];
+    return this._driverElements[index];
   }
 
   async getIds() {
     await this.getElement();
     // @ts-ignore
-    return this.wdElements.map((item) => item.id_);
+    return this._driverElements.map((item) => item.id_);
   }
 
   /** @private */
   private async getEngineElements() {
     await this.getElement(0);
 
-    return this.wdElements;
+    return this._driverElements;
   }
 
   async each(cb: (item: PromodElementType, index?: number) => Promise<void>): Promise<any> {
     await this.getElement(0);
 
-    for (let i = 0; i < this.wdElements.length; i++) {
+    for (let i = 0; i < this._driverElements.length; i++) {
       await cb(this.get(i), i);
     }
   }
 
   async count(): Promise<number> {
     return this.getElement()
-      .then(() => this.wdElements.length)
+      .then(() => this._driverElements.length)
       .catch(() => 0);
   }
 }
@@ -125,7 +125,7 @@ class PromodSeleniumElements {
 class PromodSeleniumElement {
   private _driver: WebDriver;
   private selector: string;
-  private wdElement: WebElement;
+  private _driverElement: WebElement;
   private getParent: () => Promise<PromodElementType>;
   private getExecuteScriptArgs: () => any;
   private useParent: boolean;
@@ -142,7 +142,7 @@ class PromodSeleniumElement {
 
     SELENIUM_API_METHODS.forEach(function (methodName) {
       self[methodName] = (...args: any[]) => {
-        const action = () => self.wdElement[methodName].call(self.wdElement, ...args);
+        const action = () => self._driverElement[methodName].call(self._driverElement, ...args);
 
         return self.callElementAction(action);
       };
@@ -172,16 +172,20 @@ class PromodSeleniumElement {
   async click(withScroll?: boolean) {
     await this.getElement();
     if (withScroll) {
-      const scrollableClickResult = await this.wdElement
+      const scrollableClickResult = await this._driverElement
         .click()
         .catch((err) =>
-          this.isInteractionIntercepted(err) ? this.scrollIntoView('center').then(() => this.wdElement.click()) : err,
+          this.isInteractionIntercepted(err)
+            ? this.scrollIntoView('center').then(() => this._driverElement.click())
+            : err,
         )
         .catch((err) =>
-          this.isInteractionIntercepted(err) ? this.scrollIntoView('start').then(() => this.wdElement.click()) : err,
+          this.isInteractionIntercepted(err)
+            ? this.scrollIntoView('start').then(() => this._driverElement.click())
+            : err,
         )
         .catch((err) =>
-          this.isInteractionIntercepted(err) ? this.scrollIntoView('end').then(() => this.wdElement.click()) : err,
+          this.isInteractionIntercepted(err) ? this.scrollIntoView('end').then(() => this._driverElement.click()) : err,
         )
         .then((err) => err)
         .catch((err) => err);
@@ -190,7 +194,7 @@ class PromodSeleniumElement {
         throw scrollableClickResult;
       }
     } else {
-      return this.wdElement.click();
+      return this._driverElement.click();
     }
   }
 
@@ -244,15 +248,15 @@ class PromodSeleniumElement {
       }
 
       if (this.useParent) {
-        this.wdElement = parent;
+        this._driverElement = parent;
       } else {
-        this.wdElement = await parent.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
+        this._driverElement = await parent.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
       }
     } else {
-      this.wdElement = await this._driver.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElement = await this._driver.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
     }
 
-    return this.wdElement;
+    return this._driverElement;
   }
 
   /**
@@ -263,8 +267,83 @@ class PromodSeleniumElement {
    */
   async isDisplayed() {
     return this.getElement()
-      .then(() => this.wdElement.isDisplayed())
+      .then(() => this._driverElement.isDisplayed())
       .catch(() => false);
+  }
+
+  async clearViaBackspace(repeat: number = 1) {
+    await this.getElement();
+    await this._driverElement.click();
+    for (const _act of lengthToIndexesArray(repeat)) {
+      await this._driverElement.sendKeys(Key.BACK_SPACE);
+    }
+  }
+
+  async pressEnter() {
+    await this.getElement();
+    await this._driverElement.click();
+    await this._driverElement.sendKeys(Key.ENTER);
+  }
+
+  // select specific
+  async selectOption(
+    optValue:
+      | string
+      | {
+          /**
+           * Matches by `option.value`. Optional.
+           */
+          value?: string;
+
+          /**
+           * Matches by `option.label`. Optional.
+           */
+          label?: string;
+
+          /**
+           * Matches by the index. Optional.
+           */
+          index?: number;
+        },
+  ) {
+    await this.getElement();
+    // open options list
+    await this.click();
+
+    if (isString(optValue)) {
+      return this.$$('option').each(async (opt) => {
+        const text = await opt.getText();
+        if (text.trim() === (optValue as string).trim()) {
+          await opt.click();
+        }
+      });
+    }
+    if (isObject(optValue) && safeHasOwnPropery(optValue, 'value')) {
+      return this.$$('option').each(async (opt) => {
+        const text = await opt.getAttribute('value');
+        if (text.trim() === (optValue['value'] as string).trim()) {
+          await opt.click();
+        }
+      });
+    }
+    if (isObject(optValue) && safeHasOwnPropery(optValue, 'label')) {
+      return this.$$('option').each(async (opt) => {
+        const text = await opt.getAttribute('label');
+        if (text.trim() === (optValue['label'] as string).trim()) {
+          await opt.click();
+        }
+      });
+    }
+    if (isObject(optValue) && safeHasOwnPropery(optValue, 'index')) {
+      return this.$$('option').each(async (opt) => {
+        const text = await opt.getAttribute('index');
+        if (text.trim() === (optValue['index'] as string).toString().trim()) {
+          await opt.click();
+        }
+      });
+    }
+
+    // return this._driverElement.sendKeys(value);
   }
 
   /**
@@ -288,13 +367,13 @@ class PromodSeleniumElement {
   async getId() {
     await this.getElement();
     // @ts-ignore
-    return this.wdElement.id_;
+    return this._driverElement.id_;
   }
 
   async getEngineElement() {
     await this.getElement();
 
-    return this.wdElement;
+    return this._driverElement;
   }
 
   locator() {

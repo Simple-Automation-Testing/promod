@@ -21,6 +21,27 @@ export interface PromodElementType {
 
   hover(): Promise<void>;
 
+  selectOption(
+    value:
+      | string
+      | {
+          /**
+           * Matches by `option.value`. Optional.
+           */
+          value?: string;
+
+          /**
+           * Matches by `option.label`. Optional.
+           */
+          label?: string;
+
+          /**
+           * Matches by the index. Optional.
+           */
+          index?: number;
+        },
+  ): Promise<void>;
+
   focus(): Promise<void>;
 
   sendKeys(...keys: Array<string | number | Promise<string | number>>): Promise<void>;
@@ -49,6 +70,10 @@ export interface PromodElementType {
     x: number;
     y: number;
   }>;
+
+  clearViaBackspace(repeat: number): Promise<void>;
+
+  pressEnter(): Promise<void>;
 
   $(selector: string | ((...args: any[]) => any) | Promise<any>): PromodElementType;
   $$(selector: string | ((...args: any[]) => any) | Promise<any>): PromodElementsType;

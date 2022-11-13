@@ -9,7 +9,16 @@ const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
   getExecuteScriptArgs = isFunction(getExecuteScriptArgs) ? getExecuteScriptArgs : () => [];
 
   if (isString(selector) && (selector as string).includes('xpath=')) {
-    return (selector as string).replace('xpath=', '');
+    const sel = selector as string;
+    if (sel.startsWith('xpath=//')) {
+      return sel.replace('xpath=', '');
+    }
+    if (sel.startsWith('xpath=.') && !sel.includes('|.')) {
+      return sel.replace('xpath=.', '');
+    }
+    if (sel.startsWith('xpath=.') && sel.includes('|.')) {
+      return sel.replace('xpath=.', '').replace(/\|\./gi, '|');
+    }
   } else if (isString(selector) && (selector as string).includes('js=')) {
     return [(selector as string).replace('js=', ''), ...getExecuteScriptArgs()];
   } else if (isPromise(selector)) {
@@ -240,7 +249,7 @@ class PromodElement {
 
   async sendKeys(value: string | number) {
     await this.getElement();
-    await this._driverElement.type(value.toString());
+    await this._driverElement.type(value.toString(), { delay: 25 });
   }
 
   async hover() {
@@ -251,6 +260,44 @@ class PromodElement {
   async focus() {
     await this.getElement();
     await this._driverElement.focus();
+  }
+
+  async pressEnter() {
+    await this.getElement();
+    await this._driverElement.focus();
+    await this._driver.keyboard.press('Enter');
+  }
+
+  async clearViaBackspace(repeat: number = 1) {
+    await this.getElement();
+    await this._driverElement.focus();
+    for (const _act of lengthToIndexesArray(repeat)) {
+      await this._driver.keyboard.press('Backspace', { delay: 25 });
+    }
+  }
+
+  async selectOption(
+    value:
+      | string
+      | {
+          /**
+           * Matches by `option.value`. Optional.
+           */
+          value?: string;
+
+          /**
+           * Matches by `option.label`. Optional.
+           */
+          label?: string;
+
+          /**
+           * Matches by the index. Optional.
+           */
+          index?: number;
+        },
+  ) {
+    await this.getElement();
+    return this._driverElement.selectOption(value);
   }
 
   async clear() {

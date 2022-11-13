@@ -1,7 +1,7 @@
 import { Key } from 'selenium-webdriver';
 import { expect } from 'assertior';
 import { playwrightWD } from '../../lib/index';
-import { logsFile, formsFile, hoveFocusFile, framesFile } from '../misc/setup';
+import { logsFile, formsFile, hoveFocusFile, framesFile, selectorsFile } from '../misc/setup';
 
 describe('Base', () => {
   const { $, $$, getDriver, browser } = playwrightWD;
@@ -12,6 +12,22 @@ describe('Base', () => {
 
   afterEach(async () => {
     await browser.quitAll();
+  });
+
+  it('selectors', async () => {
+    await browser.get(selectorsFile);
+    expect(await $('body').$('[id="target"]').isDisplayed()).toEqual(true);
+    expect(await $('select').$('[id="target"]').isDisplayed()).toEqual(false);
+    expect(await $('select').$('xpath=//*[@id="target"]').isDisplayed()).toEqual(true);
+    expect(await $('select').$('xpath=.//*[@id="target"]').isDisplayed()).toEqual(false);
+    expect(await $('body').$('xpath=.//*[@id="target"]').isDisplayed()).toEqual(true);
+  });
+
+  it('select', async () => {
+    await browser.get(selectorsFile);
+    const select = $('select');
+    await select.selectOption('2');
+    expect(await $('#target').getText()).toEqual('2');
   });
 
   it('maximize', async () => {
