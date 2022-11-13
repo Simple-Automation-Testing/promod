@@ -214,14 +214,14 @@ class PromodElement {
 
   async getTagName() {
     await this.getElement();
-    await this._driver.evaluateHandle(([item]) => item.nodeName, [this._driverElement]);
+    return this._driver.evaluate((item) => item.nodeName.toLowerCase(), this._driverElement);
   }
 
   async getCssValue() {}
 
   async getAttribute(attribute: string) {
     await this.getElement();
-    await this._driverElement.getAttribute(attribute);
+    return this._driverElement.getAttribute(attribute);
   }
 
   async getRect() {
@@ -231,12 +231,12 @@ class PromodElement {
 
   async isEnabled() {
     await this.getElement();
-    await this._driverElement.isEnabled();
+    return this._driverElement.isEnabled();
   }
 
   async isSelected() {
     await this.getElement();
-    await this._driverElement.isChecked();
+    return this._driverElement.isChecked();
   }
 
   /**
@@ -295,8 +295,24 @@ class PromodElement {
            */
           index?: number;
         },
+    strictTextOptionEqual?: boolean,
   ) {
     await this.getElement();
+    if (isString(value)) {
+      const opts = await this._driverElement.$$('option');
+      for (const opt of opts) {
+        const content = (await opt.textContent()).trim();
+        // @ts-ignore
+        const res = strictTextOptionEqual ? content === value.trim() : content.includes(value);
+        if (res) {
+          return this._driverElement.selectOption(opt);
+        }
+      }
+
+      // TODO add promod errors
+      throw new Error(`Option with text ${value} was not found`);
+    }
+
     return this._driverElement.selectOption(value);
   }
 

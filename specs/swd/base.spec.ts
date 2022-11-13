@@ -24,6 +24,12 @@ describe('Base', () => {
     expect(await $('body').$('xpath=.//*[@id="target"]').isDisplayed()).toEqual(true);
   });
 
+  it('getTagName', async () => {
+    await browser.get(selectorsFile);
+    const select = $('select');
+    expect(await select.getTagName()).toEqual('select');
+  });
+
   it('select', async () => {
     await browser.get(selectorsFile);
     const select = $('select');
