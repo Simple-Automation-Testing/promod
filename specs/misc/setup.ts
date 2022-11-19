@@ -7,5 +7,6 @@ const framesFile = `file://${path.resolve(__dirname, './frames.html')}`;
 const formsFile = `file://${path.resolve(__dirname, './forms.html')}`;
 const logsFile = `file://${path.resolve(__dirname, './logs.html')}`;
 const selectorsFile = `file://${path.resolve(__dirname, './selectors.html')}`;
+const iframesFile = `file://${path.resolve(__dirname, './iframes.html')}`;
 
-export { actionFile, collectionFile, hoveFocusFile, framesFile, formsFile, logsFile, selectorsFile };
+export { iframesFile, actionFile, collectionFile, hoveFocusFile, framesFile, formsFile, logsFile, selectorsFile };

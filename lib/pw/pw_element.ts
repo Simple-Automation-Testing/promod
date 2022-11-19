@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
-import { toArray, isString, isFunction, isAsyncFunction, isPromise, lengthToIndexesArray } from 'sat-utils';
+import { Key } from 'selenium-webdriver';
+import { toArray, isString, isNumber, isFunction, isAsyncFunction, isPromise, lengthToIndexesArray } from 'sat-utils';
 import { browser } from './pw_client';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
@@ -247,9 +248,28 @@ class PromodElement {
     // await this._driverElement();
   }
 
+  /**
+   * @example works with Enter, need improve for another Keys
+   *
+   * @param value
+   */
   async sendKeys(value: string | number) {
+    if (!isString(value) && !isNumber(value)) {
+      throw new TypeError('sendKeys accepts only string or number value type');
+    }
     await this.getElement();
-    await this._driverElement.type(value.toString(), { delay: 25 });
+    const stringValue = value.toString();
+    const seleniumEnter = Key.ENTER;
+
+    if (stringValue.includes(seleniumEnter)) {
+      const splitedValues = stringValue.split(seleniumEnter);
+      for (const [index, valueItem] of splitedValues.entries()) {
+        await this._driverElement.type(valueItem, { delay: 25 });
+        if (index !== splitedValues.length - 1) await this.pressEnter();
+      }
+    } else {
+      await this._driverElement.type(stringValue, { delay: 25 });
+    }
   }
 
   async hover() {
@@ -262,15 +282,19 @@ class PromodElement {
     await this._driverElement.focus();
   }
 
-  async pressEnter() {
+  async pressEnter(focus: boolean = true) {
     await this.getElement();
-    await this._driverElement.focus();
+    if (focus) {
+      await this._driverElement.focus();
+    }
     await this._driver.keyboard.press('Enter');
   }
 
-  async clearViaBackspace(repeat: number = 1) {
+  async clearViaBackspace(repeat: number = 1, focus = true) {
     await this.getElement();
-    await this._driverElement.focus();
+    if (focus) {
+      await this._driverElement.focus();
+    }
     for (const _act of lengthToIndexesArray(repeat)) {
       await this._driver.keyboard.press('Backspace', { delay: 25 });
     }

@@ -22,7 +22,7 @@
 - [Usage](#usage)
 - [Transition from protractor to promod. Mocha example.](#transition-from-protractor-to-promod-mocha-example)
 
-## Usage
+## Usage with selenium engine
 ```js
   const {seleniumWD} = require('promod');
   const {$, $$, getDriver, browser} = seleniumWD;
@@ -31,6 +31,22 @@
     const searchInput = $('input[name="q"]');
     const sections = $$('section');
     await getDriver({seleniumAddress: 'http://localhost:4444/wd/hub'}, browser);
+    await browser.get('https://www.npmjs.com/');
+    await searchInput.sendKeys(`promod${browser.Key.ENTER}`);
+    console.log(await sections.get(0).$('a').getText());
+  })()
+
+```
+
+## Usage with playwright engine (only for local execution)
+```js
+  const {playwrightWD} = require('promod');
+  const {$, $$, getDriver, browser} = playwrightWD;
+
+  ;(async () => {
+    const searchInput = $('input[name="q"]');
+    const sections = $$('section');
+    await getDriver(browser);
     await browser.get('https://www.npmjs.com/');
     await searchInput.sendKeys(`promod${browser.Key.ENTER}`);
     console.log(await sections.get(0).$('a').getText());
@@ -100,6 +116,6 @@ after(async function() {
 
 ## Improvement plan
  * [ ] Add documentation - in progress
- * [ ] Add playwright integration - in progress
+ * [x] Add playwright integration - in progress
  * [ ] Add test runner - in progress
  * [ ] Add logger - in progress

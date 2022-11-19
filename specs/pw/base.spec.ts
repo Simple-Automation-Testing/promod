@@ -1,7 +1,7 @@
 import { Key } from 'selenium-webdriver';
 import { expect } from 'assertior';
 import { playwrightWD } from '../../lib/index';
-import { logsFile, formsFile, hoveFocusFile, framesFile, selectorsFile } from '../misc/setup';
+import { iframesFile, logsFile, formsFile, hoveFocusFile, framesFile, selectorsFile } from '../misc/setup';
 
 describe('Base', () => {
   const { $, $$, getDriver, browser } = playwrightWD;
@@ -12,6 +12,26 @@ describe('Base', () => {
 
   afterEach(async () => {
     await browser.quitAll();
+  });
+
+  it('iframes', async () => {
+    await browser.get(iframesFile);
+
+    await browser.switchToIframe('[name="first"]');
+    const list = $('ul').$$('li');
+    const listSecond = $('#list').$$('span');
+    expect(await list.count()).toEqual(3);
+
+    await browser.switchToDefauldIframe();
+    expect(await list.count()).toEqual(0);
+    await browser.switchToIframe('#first');
+    await browser.switchToIframe('#second');
+
+    expect(await listSecond.count()).toEqual(3);
+    expect(await list.count()).toEqual(0);
+    await browser.switchToDefauldIframe();
+    expect(await list.count()).toEqual(0);
+    expect(await listSecond.count()).toEqual(0);
   });
 
   it('selectors', async () => {

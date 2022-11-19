@@ -1,0 +1,23 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="second_level">second level</div>
+
+    <ul>
+      <li onclick="update(event)">1</li>
+      <li onclick="update(event)">2</li>
+      <li onclick="update(event)">3</li>
+    </ul>
+    <iframe src="./second.html" id="second" name="second" frameborder="0"></iframe>
+  </body>
+  <script>
+    function update(event) {
+      document.getElementById('second_level').innerText = event.target.innerText;
+    }
+  </script>
+</html>

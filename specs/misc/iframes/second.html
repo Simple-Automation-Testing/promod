@@ -1,0 +1,22 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="third_level">second level</div>
+
+    <div id="list">
+      <span onclick="update(event)">1</li>
+      <span onclick="update(event)">2</li>
+      <span onclick="update(event)">3</li>
+    </ul>
+  </body>
+  <script>
+    function update(event) {
+      document.getElementById('third_level').innerText = event.target.innerText;
+    }
+  </script>
+</html>

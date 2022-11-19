@@ -2,7 +2,7 @@ import { toArray, isNotEmptyObject, waitForCondition, isNumber, isAsyncFunction,
 import { Key } from 'selenium-webdriver';
 import { ExecuteScriptFn } from '../interface';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
-
+import { Locator } from 'playwright-core';
 // import {devices} from 'playwright-core';
 
 import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
@@ -231,6 +231,7 @@ class Browser {
   public _engineDriver: PWBrowser;
   public _contextWrapper: ContextWrapper;
   public _contextFrame: Page;
+  public _contextFrameHolder: Locator;
 
   /** @private */
   private _server: BrowserServer;
@@ -390,28 +391,22 @@ class Browser {
     return (await this._contextWrapper.getCurrentPage()).goto(getUrl);
   }
 
-  async switchToIframe(selector: string | { name?: string; url?: string | RegExp }, jumpToDefaultFirst = false) {
+  async switchToIframe(selector: string, jumpToDefaultFirst = false) {
     if (jumpToDefaultFirst) {
       await this.switchToDefauldIframe();
     }
 
-    if (safeHasOwnPropery(selector, 'name') || safeHasOwnPropery(selector, 'url')) {
-      this._contextFrame = (await (await this.getWorkingContext()).frame(selector)) as any as Page;
-    } else {
-      const currentWorkingContext = await this.getWorkingContext();
-      /**
-       * @info - switch to iframe context, get first top dom element and get handler of that element
-       */
-      this._contextFrame = (await currentWorkingContext
-        .frameLocator(selector as string)
-        .locator('*')
-        .first()
-        .elementHandle()) as any as Page;
-    }
+    const currentWorkingContext = this._contextFrameHolder ? this._contextFrameHolder : await this.getWorkingContext();
+
+    const requiredFrame = await currentWorkingContext.frameLocator(selector).locator('*').first();
+    this._contextFrameHolder = requiredFrame;
+
+    this._contextFrame = (await requiredFrame.elementHandle()) as any as Page;
   }
 
   async switchToDefauldIframe() {
     this._contextFrame = null;
+    this._contextFrameHolder = null;
   }
 
   async setWindowSize(width: number, height: number) {

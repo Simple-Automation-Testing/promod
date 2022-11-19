@@ -271,17 +271,21 @@ class PromodSeleniumElement {
       .catch(() => false);
   }
 
-  async clearViaBackspace(repeat: number = 1) {
+  async clearViaBackspace(repeat: number = 1, focus?: boolean) {
     await this.getElement();
-    await this._driverElement.click();
+    if (focus) {
+      await this.click(true);
+    }
     for (const _act of lengthToIndexesArray(repeat)) {
       await this._driverElement.sendKeys(Key.BACK_SPACE);
     }
   }
 
-  async pressEnter() {
+  async pressEnter(focus?: boolean) {
     await this.getElement();
-    await this._driverElement.click();
+    if (focus) {
+      await this.click(true);
+    }
     await this._driverElement.sendKeys(Key.ENTER);
   }
 
@@ -308,7 +312,7 @@ class PromodSeleniumElement {
   ) {
     await this.getElement();
     // open options list
-    await this.click();
+    await this.click(true);
 
     if (isString(optValue)) {
       return this.$$('option').each(async (opt) => {
