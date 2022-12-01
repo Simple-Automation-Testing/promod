@@ -2,6 +2,8 @@ import { toArray, isArray, waitForCondition, isNumber, isAsyncFunction, isString
 import { WebDriver, Key } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { buildBy } from './swd_alignment';
+import { KeysSWD } from '../mappers';
+
 import type { ExecuteScriptFn } from '../interface';
 
 function validateBrowserCallMethod(browserClass): Browser {
@@ -55,6 +57,18 @@ class Browser {
 
   currentClient() {
     return this.seleniumDriver;
+  }
+
+  get keyboard() {
+    return KeysSWD;
+  }
+
+  async keyDownAndHold(key: string) {
+    await this.seleniumDriver.actions().keyDown(key).perform();
+  }
+
+  async keyUp(key: string) {
+    await this.seleniumDriver.actions().keyUp(key).perform();
   }
 
   async runNewBrowser() {

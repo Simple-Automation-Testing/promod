@@ -100,8 +100,7 @@ class PromodSeleniumElements {
     return this._driverElements.map((item) => item.id_);
   }
 
-  /** @private */
-  private async getEngineElements() {
+  async getEngineElements() {
     await this.getElement(0);
 
     return this._driverElements;

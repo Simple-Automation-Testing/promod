@@ -4,6 +4,7 @@ import { ExecuteScriptFn } from '../interface';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { Locator } from 'playwright-core';
 // import {devices} from 'playwright-core';
+import { KeysPW } from '../mappers';
 
 import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
 
@@ -82,6 +83,18 @@ class PageWrapper {
     }
 
     return this._currentPage;
+  }
+
+  get keyboard() {
+    return KeysPW;
+  }
+
+  async keyDownAndHold(key: string) {
+    await (await this.getCurrentPage()).keyboard.down(key);
+  }
+
+  async keyUp(key: string) {
+    await (await this.getCurrentPage()).keyboard.up(key);
   }
 
   async switchToNextPage(data: IBrowserTab = {}) {

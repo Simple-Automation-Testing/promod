@@ -1,3 +1,5 @@
+import type { Keys } from './mappers';
+
 export interface PromodElementsType {
   // wdElements: WebElement[];
 
@@ -91,6 +93,8 @@ export interface PromodElementType {
   isDisplayed(): Promise<boolean>;
 
   takeScreenshot(opt_scroll?: boolean): Promise<string>;
+
+  getEngineElements(): Promise<unknown>;
 
   getEngineElement(): Promise<unknown>;
 
