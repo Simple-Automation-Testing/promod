@@ -85,18 +85,6 @@ class PageWrapper {
     return this._currentPage;
   }
 
-  get keyboard() {
-    return KeysPW;
-  }
-
-  async keyDownAndHold(key: string) {
-    await (await this.getCurrentPage()).keyboard.down(key);
-  }
-
-  async keyUp(key: string) {
-    await (await this.getCurrentPage()).keyboard.up(key);
-  }
-
   async switchToNextPage(data: IBrowserTab = {}) {
     if (isNotEmptyObject(data)) {
       const { index, expectedQuantity, title, timeout } = data;
@@ -380,6 +368,18 @@ class Browser {
     }
   }
 
+  get keyboard() {
+    return KeysPW;
+  }
+
+  async keyDownAndHold(key: string) {
+    await (await this.getCurrentPage()).keyboard.down(key);
+  }
+
+  async keyUp(key: string) {
+    await (await this.getCurrentPage()).keyboard.up(key);
+  }
+
   async getWindomSize(): Promise<{ height: number; width: number }> {
     return await (
       await this._contextWrapper.getCurrentPage()
@@ -456,9 +456,8 @@ class Browser {
     return (await this._contextWrapper.getCurrentPage()).reload();
   }
 
-  switchTo() {
-    // return this._engineDriver.switchTo();
-  }
+  /** @deprecated */
+  switchTo() {}
 
   async quit() {
     if (this._engineDrivers && this._engineDrivers.length) {

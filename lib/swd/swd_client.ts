@@ -308,6 +308,7 @@ class Browser {
     return (await this.seleniumDriver.navigate()).refresh();
   }
 
+  /** @deprecated */
   switchTo() {
     return this.seleniumDriver.switchTo();
   }
