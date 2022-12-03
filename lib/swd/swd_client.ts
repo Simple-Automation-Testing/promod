@@ -228,6 +228,18 @@ class Browser {
     }
   }
 
+  public async getCookies() {
+    await (await this.seleniumDriver.manage()).getCookies();
+  }
+
+  public async deleteCookie(name: string) {
+    await (await this.seleniumDriver.manage()).deleteCookie(name);
+  }
+
+  public async deleteAllCookies() {
+    await (await this.seleniumDriver.manage()).deleteAllCookies();
+  }
+
   async getTitle() {
     return await this.seleniumDriver.getTitle();
   }

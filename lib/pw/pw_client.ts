@@ -325,6 +325,27 @@ class Browser {
     await (await this._contextWrapper.getCurrentContext()).addCookies(toArray(cookies) as TCookie[]);
   }
 
+  public async getCookies() {
+    await (await this._contextWrapper.getCurrentContext()).cookies();
+  }
+
+  /**
+   * @info https://github.com/microsoft/playwright/issues/10143
+   * @param {string} name cookie name
+   * @returns {Promise<void>}
+   */
+  public async deleteCookie(name: string) {
+    const ctx = await this._contextWrapper.getCurrentContext();
+    const filteredCookies = (await ctx.cookies()).filter((cookie) => cookie.name !== name);
+
+    await ctx.clearCookies();
+    await ctx.addCookies(filteredCookies);
+  }
+
+  public async deleteAllCookies() {
+    await (await this._contextWrapper.getCurrentContext()).clearCookies();
+  }
+
   /**
    * switchToBrowserTab
    * @private
