@@ -1,7 +1,7 @@
 import type { Keys } from './mappers';
 
 export interface PromodElementsType {
-  // wdElements: WebElement[];
+  selector: string;
 
   get(index: number): PromodElementType;
 
@@ -15,8 +15,7 @@ export interface PromodElementsType {
 }
 
 export interface PromodElementType {
-  // wdElement: WebElement;
-
+  selector: string;
   getId(): Promise<string>;
 
   click(withScroll?: boolean): Promise<void>;

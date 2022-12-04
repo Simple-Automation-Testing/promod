@@ -322,11 +322,21 @@ class Browser {
   public async makeActionAtEveryTab(action: (...args: any) => Promise<any>, handles?: string[]) {}
 
   public async setCookies(cookies: TCookie | TCookie[]) {
-    await (await this._contextWrapper.getCurrentContext()).addCookies(toArray(cookies) as TCookie[]);
+    const currentUrl = await this.getCurrentUrl();
+    const parsed = new URL(currentUrl);
+    const cookiesToSet = toArray(cookies).map(({ url = parsed.origin, domain, path, ...items }) => {
+      if (domain && path) {
+        return { domain, path, ...items };
+      }
+
+      return { url, ...items };
+    });
+
+    await (await this._contextWrapper.getCurrentContext()).addCookies(cookiesToSet as TCookie[]);
   }
 
   public async getCookies() {
-    await (await this._contextWrapper.getCurrentContext()).cookies();
+    return await (await this._contextWrapper.getCurrentContext()).cookies();
   }
 
   /**
@@ -340,6 +350,13 @@ class Browser {
 
     await ctx.clearCookies();
     await ctx.addCookies(filteredCookies);
+  }
+
+  public async getCookieByName(name: string) {
+    const ctx = await this._contextWrapper.getCurrentContext();
+    const requiredCookie = (await ctx.cookies()).find((cookie) => cookie.name !== name);
+
+    return requiredCookie;
   }
 
   public async deleteAllCookies() {
@@ -356,6 +373,10 @@ class Browser {
 
   async getTitle() {
     return (await this._contextWrapper.getCurrentPage()).title();
+  }
+
+  async getTabsCount() {
+    return (await this._contextWrapper.getCurrentContext()).pages().length;
   }
 
   async getCurrentUrl() {

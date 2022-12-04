@@ -229,7 +229,11 @@ class Browser {
   }
 
   public async getCookies() {
-    await (await this.seleniumDriver.manage()).getCookies();
+    return await (await this.seleniumDriver.manage()).getCookies();
+  }
+
+  public async getCookieByName(name: string) {
+    return await (await this.seleniumDriver.manage()).getCookie(name);
   }
 
   public async deleteCookie(name: string) {
@@ -262,6 +266,10 @@ class Browser {
 
   async getTabs() {
     return await this.seleniumDriver.getAllWindowHandles();
+  }
+
+  async getTabsCount() {
+    return (await this.seleniumDriver.getAllWindowHandles()).length;
   }
 
   async getCurrentTab() {

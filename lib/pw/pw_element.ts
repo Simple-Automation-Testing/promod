@@ -149,11 +149,11 @@ class PromodElements {
 
 class PromodElement {
   private _driver: Page;
-  private selector: string;
   private _driverElement: ElementHandle;
   private getParent: () => Promise<PromodElementType>;
   private getExecuteScriptArgs: () => any;
   private useParent: boolean;
+  public selector: string;
   public parentSelector: string;
 
   constructor(selector, client, getParent?, getExecuteScriptArgs?, useParent?) {

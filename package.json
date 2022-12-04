@@ -1,14 +1,14 @@
 {
   "name": "promod",
-  "version": "1.1.0-rc-21",
+  "version": "1.1.0-rc-24",
   "description": "Library for automation testing",
   "main": "./built/index.js",
   "bin": "./bin/promod_cli",
   "scripts": {
     "pw:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright install --force chrome",
     "test": "mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
-    "test:pw": "mocha $(find specs/pw -name '*.spec.*') --require ts-node/register --timeout 500000",
-    "test:swd": "mocha $(find specs/swd -name '*.spec.*') --require ts-node/register --timeout 500000",
+    "test:pw": "ENGINE=pw mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
+    "test:swd": "ENGINE=swd mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:units": "mocha $(find units -name '*.test.*') --require ts-node/register --timeout 500000",
     "test:debug": "mocha ./specs/async.child.methods.spec.ts --require ts-node/register --timeout 300000",
     "lint": "eslint --ext .ts ./",
