@@ -356,12 +356,20 @@ class PromodElement {
     return await this._driverElement.textContent();
   }
 
+  /**
+   * @returns {Promise<Buffer>}
+   */
   async takeScreenshot() {
     await this.getElement();
     return await this._driverElement.screenshot();
   }
 
-  async scrollIntoView(position?: 'end' | 'start' | 'center') {
+  /**
+   *
+   * @param {'end' | 'start' | 'center' | 'nearest'} [position] scroll position
+   * @returns {Promise<void>}
+   */
+  async scrollIntoView(position?: 'end' | 'start' | 'center' | 'nearest') {
     await this.getElement();
     await this._driver.evaluateHandle(
       ([elem, scrollPosition]) => {

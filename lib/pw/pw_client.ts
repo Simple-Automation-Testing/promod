@@ -383,6 +383,9 @@ class Browser {
     return (await this._contextWrapper.getCurrentPage()).url();
   }
 
+  /**
+   * @returns {Promise<Buffer>}
+   */
   async takeScreenshot() {
     return (await this._contextWrapper.getCurrentPage()).screenshot();
   }

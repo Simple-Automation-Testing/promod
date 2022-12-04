@@ -256,8 +256,13 @@ class Browser {
     return await this.seleniumDriver.executeScript(() => ({ height: window.outerHeight, width: window.outerWidth }));
   }
 
+  /**
+   * @returns {Promise<Buffer>}
+   */
   async takeScreenshot() {
-    return await this.seleniumDriver.takeScreenshot();
+    const res = await this.seleniumDriver.takeScreenshot();
+
+    return Buffer.from(res, 'base64');
   }
 
   async tabTitle() {
