@@ -171,6 +171,7 @@ class ContextWrapper {
     const config = ignoreConfig ? {} : this._contextConfig;
 
     const { userAgent, isMobile, viewport } = config;
+
     this._currentContext = await this.server.newContext({ userAgent, isMobile, viewport });
 
     if (!this._currentPage) {

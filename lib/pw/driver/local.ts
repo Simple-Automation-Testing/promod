@@ -1,11 +1,12 @@
 import { isBoolean, safeJSONstringify } from 'sat-utils';
-import { chromium, firefox } from 'playwright-core';
+import { chromium, firefox, webkit } from 'playwright-core';
 
 import type { BrowserType } from 'playwright-core';
 
 const browserNameMapping = {
   chrome: chromium,
   firefox,
+  webkit,
 };
 
 const shouldBeHeadless = (args: string[], isHeadlessRequired, fullConfig) => {
