@@ -72,14 +72,12 @@ class PromodSeleniumElements {
     return childElement as any;
   }
 
-  last(): PromodElementType {
-    return this.get(-1) as any;
-  }
-
-  first(): PromodElementType {
-    return this.get(0) as any;
-  }
-
+  /**
+   *
+   * @info if index is less than zero we will get element from the end
+   * @param {number} index
+   * @returns
+   */
   private async getElement(index?) {
     this._driver = browser.currentClient();
 
@@ -96,11 +94,19 @@ class PromodSeleniumElements {
       this._driverElements = await this._driver.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
     }
 
-    if (index === -1) {
-      return this._driverElements[this._driverElements.length - 1];
+    if (index < 0) {
+      return this._driverElements[this._driverElements.length + index];
     }
 
     return this._driverElements[index];
+  }
+
+  last(): PromodElementType {
+    return this.get(-1) as any;
+  }
+
+  first(): PromodElementType {
+    return this.get(0) as any;
   }
 
   async getIds() {
@@ -120,6 +126,28 @@ class PromodSeleniumElements {
 
     for (let i = 0; i < this._driverElements.length; i++) {
       await cb(this.get(i), i);
+    }
+  }
+
+  async map<T>(cb: (item: PromodElementType, index?: number) => Promise<T>): Promise<T[]> {
+    await this.getElement(0);
+    const res = [];
+
+    for (let i = 0; i < this._driverElements.length; i++) {
+      res.push(await cb(this.get(i), i));
+    }
+
+    return res;
+  }
+
+  async find(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<PromodElementType> {
+    await this.getElement(0);
+
+    for (let i = 0; i < this._driverElements.length; i++) {
+      const el = this.get(i);
+      if (await cb(el, i)) {
+        return el;
+      }
     }
   }
 
@@ -185,6 +213,7 @@ class PromodSeleniumElement {
    * @param {{ x: number; y: number }} [opts.position] position
    * @param {number} [opts.timeout] timeout
    * @param {boolean} [opts.trial] trial
+   * @param {boolean} [opts.allowForceIfIntercepted] allowForceIfIntercepted
    * @returns {Promise<void>}
    */
   async click(
@@ -196,6 +225,7 @@ class PromodSeleniumElement {
       force?: boolean;
       modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
       noWaitAfter?: boolean;
+      allowForceIfIntercepted?: boolean;
       position?: { x: number; y: number };
       timeout?: number;
       trial?: boolean;
@@ -205,37 +235,29 @@ class PromodSeleniumElement {
       throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
     }
 
+    const { withScroll, allowForceIfIntercepted, ...pwOpts } = opts;
+
     await this.getElement();
 
-    if (opts.withScroll) {
+    if (withScroll) {
       await this.scrollIntoView('center');
+    }
 
-      if (opts.force) {
+    if (opts.force) {
+      return this._driver.executeScript((elem) => elem.click(), this._driverElement);
+    }
+
+    const scrollableClickResult = await this._driverElement.click().catch((err) => err);
+
+    if (scrollableClickResult) {
+      const { isIntercepted, isReadyToForce } = await this.isInteractionIntercepted(scrollableClickResult);
+      if (isIntercepted && isReadyToForce && allowForceIfIntercepted) {
         return this._driver.executeScript((elem) => elem.click(), this._driverElement);
       }
+    }
 
-      const scrollableClickResult = await this._driverElement
-        .click()
-        .catch((err) =>
-          this.isInteractionIntercepted(err)
-            ? this.scrollIntoView('start').then(() => this._driverElement.click())
-            : err,
-        )
-        .catch((err) =>
-          this.isInteractionIntercepted(err) ? this.scrollIntoView('end').then(() => this._driverElement.click()) : err,
-        )
-        .then((err) => err)
-        .catch((err) => err);
-
-      if (scrollableClickResult) {
-        throw scrollableClickResult;
-      }
-    } else {
-      if (opts.force) {
-        return this._driver.executeScript((elem) => elem.click(), this._driverElement);
-      }
-
-      return this._driverElement.click();
+    if (scrollableClickResult) {
+      throw scrollableClickResult;
     }
   }
 
@@ -429,8 +451,13 @@ class PromodSeleniumElement {
     return { value: `${locatorValue}${this.selector}` };
   }
 
-  private isInteractionIntercepted(err) {
-    return err.toString().includes('element click intercepted');
+  private async isInteractionIntercepted(err) {
+    const strErr: string = err.toString();
+
+    return {
+      isReadyToForce: (await this.isDisplayed()) && (await this._driverElement.isEnabled()),
+      isIntercepted: strErr.includes('element click intercepted'),
+    };
   }
 }
 

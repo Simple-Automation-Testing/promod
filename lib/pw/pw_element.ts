@@ -125,8 +125,8 @@ class PromodElements {
       this._driverElements = await this._driver.$$(buildBy(this.selector, this.getExecuteScriptArgs));
     }
 
-    if (index === -1) {
-      return this._driverElements[this._driverElements.length - 1];
+    if (index < 0) {
+      return this._driverElements[this._driverElements.length + index];
     }
 
     return this._driverElements[index];
@@ -148,6 +148,28 @@ class PromodElements {
 
     for (let i = 0; i < this._driverElements.length; i++) {
       await cb(this.get(i), i);
+    }
+  }
+
+  async map<T>(cb: (item: PromodElementType, index?: number) => Promise<T>): Promise<T[]> {
+    await this.getElement(0);
+    const res = [];
+
+    for (let i = 0; i < this._driverElements.length; i++) {
+      res.push(await cb(this.get(i), i));
+    }
+
+    return res;
+  }
+
+  async find(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<PromodElementType> {
+    await this.getElement(0);
+
+    for (let i = 0; i < this._driverElements.length; i++) {
+      const el = this.get(i);
+      if (await cb(el, i)) {
+        return el;
+      }
     }
   }
 
@@ -215,37 +237,36 @@ class PromodElement {
       modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
       noWaitAfter?: boolean;
       position?: { x: number; y: number };
+      allowForceIfIntercepted?: boolean;
       timeout?: number;
       trial?: boolean;
-    } = { clickCount: 1 },
+    } = { clickCount: 1, timeout: 500 },
   ) {
     if (!isObject(opts) && !isUndefined(opts)) {
       throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
     }
-    const { withScroll, ...pwOpts } = opts;
+    const { withScroll, allowForceIfIntercepted, ...pwOpts } = opts;
     await this.getElement();
+
     if (withScroll) {
       await this.scrollIntoView('center');
-      const scrollableClickResult = await this._driverElement
-        .click(opts)
-        .catch((err) =>
-          this.isInteractionIntercepted(err)
-            ? this.scrollIntoView('start').then(() => this._driverElement.click(pwOpts))
-            : err,
-        )
-        .catch((err) =>
-          this.isInteractionIntercepted(err)
-            ? this.scrollIntoView('end').then(() => this._driverElement.click(pwOpts))
-            : err,
-        )
-        .then((err) => err)
-        .catch((err) => err);
+    }
 
-      if (scrollableClickResult) {
-        throw scrollableClickResult;
+    if (pwOpts.force) {
+      return await this._driverElement.click({ ...pwOpts, force: true });
+    }
+
+    const scrollableClickResult = await this._driverElement.click(pwOpts).catch((err) => err);
+
+    if (scrollableClickResult) {
+      const { isIntercepted, isReadyToForce } = await this.isInteractionIntercepted(scrollableClickResult);
+      if (isIntercepted && isReadyToForce && allowForceIfIntercepted) {
+        return this._driverElement.click({ ...pwOpts, force: true });
       }
-    } else {
-      return this._driverElement.click(opts);
+    }
+
+    if (scrollableClickResult) {
+      throw scrollableClickResult;
     }
   }
 
@@ -503,8 +524,13 @@ class PromodElement {
     return { value: `${locatorValue}${this.selector}` };
   }
 
-  private isInteractionIntercepted(err) {
-    return err.toString().includes('element click intercepted');
+  private async isInteractionIntercepted(err) {
+    const strErr: string = err.toString();
+
+    return {
+      isReadyToForce: strErr.includes('element is visible, enabled and stable'),
+      isIntercepted: strErr.includes('subtree intercepts pointer events'),
+    };
   }
 }
 

@@ -11,6 +11,10 @@ export interface PromodElementsType {
 
   each(cb: (item: PromodElementType, index?: number) => Promise<void>): Promise<void>;
 
+  map<T>(cb: (item: PromodElementType, index?: number) => Promise<T>): Promise<T[]>;
+
+  find(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<PromodElementType>;
+
   count(): Promise<number>;
 }
 
@@ -24,6 +28,7 @@ export interface PromodElementType {
     clickCount?: number;
     delay?: number;
     force?: boolean;
+    allowForceIfIntercepted?: boolean;
     modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
     noWaitAfter?: boolean;
     position?: { x: number; y: number };
