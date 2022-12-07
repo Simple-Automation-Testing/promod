@@ -1,6 +1,17 @@
 /* eslint-disable max-len */
 import { Key } from 'selenium-webdriver';
-import { toArray, isString, isNumber, isFunction, isAsyncFunction, isPromise, lengthToIndexesArray } from 'sat-utils';
+import {
+  getType,
+  isUndefined,
+  isObject,
+  toArray,
+  isString,
+  isNumber,
+  isFunction,
+  isAsyncFunction,
+  isPromise,
+  lengthToIndexesArray,
+} from 'sat-utils';
 import { browser } from './pw_client';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
@@ -181,26 +192,51 @@ class PromodElement {
   }
 
   /**
-   * @param {boolean} [withScroll] try to prevent intercept error by scoll to bottom/to
+   * @param {object} [opts] clickOpts
+   * @param {boolean} [opts.withScroll] withScroll
+   * @param {'left' | 'right' | 'middle'} [opts.button] button
+   * @param {number} [opts.clickCount] clickCount
+   * @param {number} [opts.delay] delay
+   * @param {boolean} [opts.force] force
+   * @param {Array<'Alt' | 'Control' | 'Meta' | 'Shift'>} [opts.modifiers] modifiers
+   * @param {boolean} [opts.noWaitAfter] noWaitAfter
+   * @param {{ x: number; y: number }} [opts.position] position
+   * @param {number} [opts.timeout] timeout
+   * @param {boolean} [opts.trial] trial
    * @returns {Promise<void>}
    */
-  async click(withScroll?: boolean) {
+  async click(
+    opts: {
+      withScroll?: boolean;
+      button?: 'left' | 'right' | 'middle';
+      clickCount?: number;
+      delay?: number;
+      force?: boolean;
+      modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
+      noWaitAfter?: boolean;
+      position?: { x: number; y: number };
+      timeout?: number;
+      trial?: boolean;
+    } = { clickCount: 1 },
+  ) {
+    if (!isObject(opts) && !isUndefined(opts)) {
+      throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
+    }
+    const { withScroll, ...pwOpts } = opts;
     await this.getElement();
     if (withScroll) {
+      await this.scrollIntoView('center');
       const scrollableClickResult = await this._driverElement
-        .click()
+        .click(opts)
         .catch((err) =>
           this.isInteractionIntercepted(err)
-            ? this.scrollIntoView('center').then(() => this._driverElement.click())
+            ? this.scrollIntoView('start').then(() => this._driverElement.click(pwOpts))
             : err,
         )
         .catch((err) =>
           this.isInteractionIntercepted(err)
-            ? this.scrollIntoView('start').then(() => this._driverElement.click())
+            ? this.scrollIntoView('end').then(() => this._driverElement.click(pwOpts))
             : err,
-        )
-        .catch((err) =>
-          this.isInteractionIntercepted(err) ? this.scrollIntoView('end').then(() => this._driverElement.click()) : err,
         )
         .then((err) => err)
         .catch((err) => err);
@@ -209,7 +245,7 @@ class PromodElement {
         throw scrollableClickResult;
       }
     } else {
-      return this._driverElement.click();
+      return this._driverElement.click(opts);
     }
   }
 
@@ -255,7 +291,7 @@ class PromodElement {
    */
   async sendKeys(value: string | number) {
     if (!isString(value) && !isNumber(value)) {
-      throw new TypeError('sendKeys accepts only string or number value type');
+      throw new TypeError(`sendKeys(); accepts only string or number value type ${getType(value)}`);
     }
     await this.getElement();
     const stringValue = value.toString();

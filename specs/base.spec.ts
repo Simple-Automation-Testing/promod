@@ -165,7 +165,7 @@ describe('Base', () => {
     const signIn = $('.login_form .btn-primary');
     // await browser.actions().keyDown(Key.SHIFT).perform();
     await email.sendKeys(`${Key.SHIFT}a`);
-    await signIn.click(true);
+    await signIn.click();
   });
 
   it('execute script str', async () => {

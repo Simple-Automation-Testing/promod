@@ -1,5 +1,14 @@
 /* eslint-disable max-len */
-import { safeHasOwnPropery, isString, isFunction, isPromise, isObject, lengthToIndexesArray } from 'sat-utils';
+import {
+  isUndefined,
+  getType,
+  safeHasOwnPropery,
+  isString,
+  isFunction,
+  isPromise,
+  isObject,
+  lengthToIndexesArray,
+} from 'sat-utils';
 import { By, WebElement, WebDriver, Key } from 'selenium-webdriver';
 import { browser } from './swd_client';
 import { buildBy } from './swd_alignment';
@@ -165,19 +174,48 @@ class PromodSeleniumElement {
   }
 
   /**
-   * @param {boolean} [withScroll] try to prevent intercept error by scoll to bottom/to
+   * @param {object} [opts] clickOpts
+   * @param {boolean} [opts.withScroll] withScroll
+   * @param {'left' | 'right' | 'middle'} [opts.button] button
+   * @param {number} [opts.clickCount] clickCount
+   * @param {number} [opts.delay] delay
+   * @param {boolean} [opts.force] force
+   * @param {Array<'Alt' | 'Control' | 'Meta' | 'Shift'>} [opts.modifiers] modifiers
+   * @param {boolean} [opts.noWaitAfter] noWaitAfter
+   * @param {{ x: number; y: number }} [opts.position] position
+   * @param {number} [opts.timeout] timeout
+   * @param {boolean} [opts.trial] trial
    * @returns {Promise<void>}
    */
-  async click(withScroll?: boolean) {
+  async click(
+    opts: {
+      withScroll?: boolean;
+      button?: 'left' | 'right' | 'middle';
+      clickCount?: number;
+      delay?: number;
+      force?: boolean;
+      modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
+      noWaitAfter?: boolean;
+      position?: { x: number; y: number };
+      timeout?: number;
+      trial?: boolean;
+    } = { clickCount: 1 },
+  ) {
+    if (!isObject(opts) && !isUndefined(opts)) {
+      throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
+    }
+
     await this.getElement();
-    if (withScroll) {
+
+    if (opts.withScroll) {
+      await this.scrollIntoView('center');
+
+      if (opts.force) {
+        return this._driver.executeScript((elem) => elem.click(), this._driverElement);
+      }
+
       const scrollableClickResult = await this._driverElement
         .click()
-        .catch((err) =>
-          this.isInteractionIntercepted(err)
-            ? this.scrollIntoView('center').then(() => this._driverElement.click())
-            : err,
-        )
         .catch((err) =>
           this.isInteractionIntercepted(err)
             ? this.scrollIntoView('start').then(() => this._driverElement.click())
@@ -193,6 +231,10 @@ class PromodSeleniumElement {
         throw scrollableClickResult;
       }
     } else {
+      if (opts.force) {
+        return this._driver.executeScript((elem) => elem.click(), this._driverElement);
+      }
+
       return this._driverElement.click();
     }
   }
@@ -273,7 +315,7 @@ class PromodSeleniumElement {
   async clearViaBackspace(repeat: number = 1, focus?: boolean) {
     await this.getElement();
     if (focus) {
-      await this.click(true);
+      await this.click({ withScroll: true });
     }
     for (const _act of lengthToIndexesArray(repeat)) {
       await this._driverElement.sendKeys(Key.BACK_SPACE);
@@ -283,7 +325,7 @@ class PromodSeleniumElement {
   async pressEnter(focus?: boolean) {
     await this.getElement();
     if (focus) {
-      await this.click(true);
+      await this.click({ withScroll: true });
     }
     await this._driverElement.sendKeys(Key.ENTER);
   }
@@ -311,7 +353,7 @@ class PromodSeleniumElement {
   ) {
     await this.getElement();
     // open options list
-    await this.click(true);
+    await this.click({ withScroll: true });
 
     if (isString(optValue)) {
       return this.$$('option').each(async (opt) => {

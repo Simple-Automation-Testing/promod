@@ -18,7 +18,18 @@ export interface PromodElementType {
   selector: string;
   getId(): Promise<string>;
 
-  click(withScroll?: boolean): Promise<void>;
+  click(opts?: {
+    withScroll?: boolean;
+    button?: 'left' | 'right' | 'middle';
+    clickCount?: number;
+    delay?: number;
+    force?: boolean;
+    modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
+    noWaitAfter?: boolean;
+    position?: { x: number; y: number };
+    timeout?: number;
+    trial?: boolean;
+  }): Promise<void>;
 
   hover(): Promise<void>;
 

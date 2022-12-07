@@ -49,7 +49,7 @@ const findViewPort = (capabilitiesDescriptor) => {
   if (matched) {
     const [width, height] = matched[0].split(',');
 
-    return { width, height };
+    return { width: Number(width), height: Number(height) };
   }
 };
 
