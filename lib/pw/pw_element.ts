@@ -13,6 +13,7 @@ import {
   lengthToIndexesArray,
 } from 'sat-utils';
 import { browser } from './pw_client';
+import { getPositionXY } from '../mappers';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
 import type { ElementHandle, Page } from 'playwright-core';
@@ -256,12 +257,12 @@ class PromodElement {
       return await this._driverElement.click({ ...pwOpts, force: true });
     }
 
-    const scrollableClickResult = await this._driverElement.click(pwOpts).catch((err) => err);
+    let scrollableClickResult = await this._driverElement.click(pwOpts).catch((err) => err);
 
     if (scrollableClickResult) {
       const { isIntercepted, isReadyToForce } = await this.isInteractionIntercepted(scrollableClickResult);
       if (isIntercepted && isReadyToForce && allowForceIfIntercepted) {
-        return this._driverElement.click({ ...pwOpts, force: true });
+        scrollableClickResult = await this.clickByElementCoordinate('left-top').catch((err) => err);
       }
     }
 
@@ -332,6 +333,45 @@ class PromodElement {
   async hover() {
     await this.getElement();
     await this._driverElement.hover();
+  }
+
+  async clickByElementCoordinate(
+    position:
+      | 'center'
+      | 'center-top'
+      | 'center-bottom'
+      | 'center-right'
+      | 'center-left'
+      | 'right-top'
+      | 'right-bottom'
+      | 'left-top'
+      | 'left-bottom' = 'center',
+  ) {
+    const { x, y } = await this.getElementCoordinates(position);
+
+    await (await browser.getCurrentPage()).mouse.click(x, y);
+  }
+
+  async getElementCoordinates(
+    position:
+      | 'center'
+      | 'center-top'
+      | 'center-bottom'
+      | 'center-right'
+      | 'center-left'
+      | 'right-top'
+      | 'right-bottom'
+      | 'left-top'
+      | 'left-bottom' = 'center',
+  ) {
+    await this.getElement();
+    const { x, y, width, height } = await this._driver.evaluate(
+      // @ts-ignore
+      (el) => el.getBoundingClientRect(),
+      await this.getEngineElement(),
+    );
+
+    return getPositionXY(position, { x, y, width, height });
   }
 
   async focus() {

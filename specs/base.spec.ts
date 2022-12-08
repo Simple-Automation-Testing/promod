@@ -5,7 +5,7 @@ import {
   iframesFile,
   logsFile,
   formsFile,
-  hoveFocusFile,
+  hoverFocusFile,
   framesFile,
   selectorsFile,
 } from './setup';
@@ -82,9 +82,9 @@ describe('Base', () => {
 
   it('openNewTab', async () => {
     await browser.get(formsFile);
-    await browser.openNewTab(hoveFocusFile);
+    await browser.openNewTab(hoverFocusFile);
     await browser.switchToTab({ index: 1, expectedQuantity: 2 });
-    expect(await browser.getCurrentUrl()).toEqual(hoveFocusFile);
+    expect(await browser.getCurrentUrl()).toEqual(hoverFocusFile);
     await browser.switchToTab({ index: 0, expectedQuantity: 2 });
     expect(await browser.getCurrentUrl()).toEqual(formsFile);
   });
@@ -261,8 +261,31 @@ describe('Base', () => {
     expect(beforeScroll).toNotDeepEqual(afterScroll);
   });
 
+  it('click', async () => {
+    const clickElement = $('#click');
+    const positions = [
+      'center',
+      'center-top',
+      'center-bottom',
+      'center-right',
+      'center-left',
+      'right-top',
+      'right-bottom',
+      'left-top',
+      'left-bottom',
+    ];
+    for (const position of positions) {
+      await browser.get(hoverFocusFile);
+
+      await clickElement.clickByElementCoordinate(position as any);
+      // @ts-ignore
+      const data = await browser.executeScript(() => document.querySelector('#click').style.background);
+      expect(data).toEqual('black');
+    }
+  });
+
   it('focus', async () => {
-    await browser.get(hoveFocusFile);
+    await browser.get(hoverFocusFile);
     const focus = $('#focus');
     await focus.focus();
     // @ts-ignore
@@ -272,7 +295,7 @@ describe('Base', () => {
 
   it('hover', async () => {
     const hover = $('#hover');
-    await browser.get(hoveFocusFile);
+    await browser.get(hoverFocusFile);
     await hover.hover();
     // @ts-ignore
     const data = await browser.executeScript(() => document.querySelector('#hover').style.background);
@@ -280,7 +303,7 @@ describe('Base', () => {
   });
 
   it('screenshot', async () => {
-    await browser.get(hoveFocusFile);
+    await browser.get(hoverFocusFile);
     await browser.takeScreenshot();
   });
 

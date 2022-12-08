@@ -62,6 +62,32 @@ const KeysPW = {
   F12: 'F12',
 };
 
+const getPositionXY = (
+  position: string,
+  { x, y, width, height }: { x: number; y: number; width: number; height: number },
+) => {
+  switch (position) {
+    case 'center':
+      return { x: x + width / 2, y: y + height / 2 };
+    case 'center-bottom':
+      return { x: x + width / 2, y: y + height - 2 };
+    case 'center-top':
+      return { x: x + width / 2, y: y + 2 };
+    case 'center-right':
+      return { x: x + width - 2, y: y + height / 2 };
+    case 'center-left':
+      return { x: x + 2, y: y + height / 2 };
+    case 'right-top':
+      return { x: x + width - 2, y: y + 2 };
+    case 'right-bottom':
+      return { x: x + width - 2, y: y + height - 2 };
+    case 'left-top':
+      return { x: x + 2, y: y + 2 };
+    case 'left-bottom':
+      return { x: x + 2, y: y + height - 2 };
+  }
+};
+
 export type Keys = typeof KeysPW;
 
-export { KeysPW, KeysSWD };
+export { KeysPW, KeysSWD, getPositionXY };

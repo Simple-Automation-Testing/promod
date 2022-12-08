@@ -12,6 +12,8 @@ import {
 import { By, WebElement, WebDriver, Key } from 'selenium-webdriver';
 import { browser } from './swd_client';
 import { buildBy } from './swd_alignment';
+import { getPositionXY } from '../mappers';
+
 import type { PromodElementType, PromodElementsType } from '../interface';
 
 // TODO figure out is this still relevant
@@ -202,6 +204,12 @@ class PromodSeleniumElement {
   }
 
   /**
+   * @example
+   * const button = $('button');
+   * await button.click(); // regular click
+   * await button.click({ withScroll: true }); // first element will be scrolled to view port and then regular click
+   * await button.click({ allowForceIfIntercepted: true }); // if regular click is intercepted by another element, click will be re-executed by element x,y center coordinates
+   *
    * @param {object} [opts] clickOpts
    * @param {boolean} [opts.withScroll] withScroll
    * @param {'left' | 'right' | 'middle'} [opts.button] button
@@ -219,13 +227,13 @@ class PromodSeleniumElement {
   async click(
     opts: {
       withScroll?: boolean;
+      allowForceIfIntercepted?: boolean;
       button?: 'left' | 'right' | 'middle';
       clickCount?: number;
       delay?: number;
       force?: boolean;
       modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
       noWaitAfter?: boolean;
-      allowForceIfIntercepted?: boolean;
       position?: { x: number; y: number };
       timeout?: number;
       trial?: boolean;
@@ -235,7 +243,7 @@ class PromodSeleniumElement {
       throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
     }
 
-    const { withScroll, allowForceIfIntercepted, ...pwOpts } = opts;
+    const { withScroll, allowForceIfIntercepted } = opts;
 
     await this.getElement();
 
@@ -244,15 +252,15 @@ class PromodSeleniumElement {
     }
 
     if (opts.force) {
-      return this._driver.executeScript((elem) => elem.click(), this._driverElement);
+      return await this.clickByElementCoordinate();
     }
 
-    const scrollableClickResult = await this._driverElement.click().catch((err) => err);
+    let scrollableClickResult = await this._driverElement.click().catch((err) => err);
 
     if (scrollableClickResult) {
       const { isIntercepted, isReadyToForce } = await this.isInteractionIntercepted(scrollableClickResult);
       if (isIntercepted && isReadyToForce && allowForceIfIntercepted) {
-        return this._driver.executeScript((elem) => elem.click(), this._driverElement);
+        scrollableClickResult = await this.clickByElementCoordinate('left-top').catch((err) => err);
       }
     }
 
@@ -269,6 +277,46 @@ class PromodSeleniumElement {
       .perform();
   }
 
+  async clickByElementCoordinate(
+    position:
+      | 'center'
+      | 'center-top'
+      | 'center-bottom'
+      | 'center-right'
+      | 'center-left'
+      | 'right-top'
+      | 'right-bottom'
+      | 'left-top'
+      | 'left-bottom' = 'center',
+  ) {
+    const { x, y } = await this.getElementCoordinates(position);
+
+    await browser
+      .currentClient()
+      .actions()
+      .move({ x: Math.round(x), y: Math.round(y) })
+      .click()
+      .perform();
+  }
+
+  async getElementCoordinates(
+    position:
+      | 'center'
+      | 'center-top'
+      | 'center-bottom'
+      | 'center-right'
+      | 'center-left'
+      | 'right-top'
+      | 'right-bottom'
+      | 'left-top'
+      | 'left-bottom' = 'center',
+  ) {
+    await this.getElement();
+    const { x, y, width, height } = await this._driverElement.getRect();
+
+    return getPositionXY(position, { x, y, width, height });
+  }
+
   async focus() {
     await browser
       .currentClient()
@@ -281,17 +329,16 @@ class PromodSeleniumElement {
   async scrollIntoView(position?: 'end' | 'start' | 'center') {
     await this.getElement();
     await this._driver.executeScript(
-      `
-      let position = true;
+      ([elem, scrollPosition]) => {
+        let position;
 
-      const scrollBlock = ['end', 'start', 'center', 'nearest']
-      if(scrollBlock.includes(arguments[1])) {
-        position = {block: arguments[1]}
-      }
-      arguments[0].scrollIntoView(position)
-    `,
-      this.getEngineElement(),
-      position,
+        const scrollBlock = ['end', 'start', 'center', 'nearest'];
+        if (scrollBlock.includes(scrollPosition)) {
+          position = { block: scrollPosition };
+        }
+        elem.scrollIntoView(position || true);
+      },
+      [await this.getEngineElement(), position],
     );
   }
 
@@ -323,10 +370,11 @@ class PromodSeleniumElement {
   }
 
   /**
-   * @returns {Promise<boolean>} button is present
    * @example
    * const button = $('button')
-   * const buttonIsDisplayed = await button.isDisplayed();
+   * await button.isDisplayed() // boolean - true|false
+   *
+   * @returns {Promise<boolean>} button is present
    */
   async isDisplayed() {
     return this.getElement()
@@ -334,6 +382,18 @@ class PromodSeleniumElement {
       .catch(() => false);
   }
 
+  /**
+   * @example
+   * const txt = '123';
+   * const inpt = $('input');
+   * await inpt.sendKeys(txt);
+   * await inpt.clearViaBackspace(txt.length, true);
+   *
+   * @param {number} repeat how many times execute back space
+   * @param {boolean} [focus] should element got focus event before execute back space
+   *
+   * @returns {Promise<void>}
+   */
   async clearViaBackspace(repeat: number = 1, focus?: boolean) {
     await this.getElement();
     if (focus) {
@@ -344,6 +404,17 @@ class PromodSeleniumElement {
     }
   }
 
+  /**
+   * @example
+   * const txt = '123';
+   * const inpt = $('input');
+   * await inpt.sendKeys(txt);
+   * await inpt.pressEnter(true);
+   *
+   * @param {boolean} [focus] should element got focus event before execute enter
+   *
+   * @returns {Promise<void>}
+   */
   async pressEnter(focus?: boolean) {
     await this.getElement();
     if (focus) {
@@ -355,23 +426,12 @@ class PromodSeleniumElement {
   // select specific
   async selectOption(
     optValue:
-      | string
       | {
-          /**
-           * Matches by `option.value`. Optional.
-           */
           value?: string;
-
-          /**
-           * Matches by `option.label`. Optional.
-           */
           label?: string;
-
-          /**
-           * Matches by the index. Optional.
-           */
           index?: number;
-        },
+        }
+      | string,
   ) {
     await this.getElement();
     // open options list
@@ -409,15 +469,14 @@ class PromodSeleniumElement {
         }
       });
     }
-
-    // return this._driverElement.sendKeys(value);
   }
 
   /**
-   * @returns {Promise<boolean>} button is present
    * @example
    * const button = $('button')
    * const buttonIsPresent = await button.isPresent();
+   *
+   * @returns {Promise<boolean>} button is present
    */
   async isPresent() {
     return this.getElement()

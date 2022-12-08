@@ -146,7 +146,7 @@ class Browser {
       return;
     }
     await this.closeAllTabsExceptInitial();
-    await this.switchTo().window(this.initialTab);
+    this.seleniumDriver.switchTo().window(this.initialTab)
     // set initialTab to null for further "it" to use
     this.initialTab = null;
   }
@@ -167,6 +167,7 @@ class Browser {
   public async makeActionAtEveryTab(action: (...args: any) => Promise<any>, handles?: string[]) {
     handles = handles || (await this.getTabs());
     for (const windowHandle of handles) {
+
       await this.switchTo().window(windowHandle);
       await action();
     }
@@ -179,7 +180,7 @@ class Browser {
   private async switchToBrowserTab(tabObject: IBrowserTab) {
     const { index, expectedQuantity, title, timeout = 5000, tabId } = tabObject;
     if (tabId) {
-      return await this.switchTo().window(tabId);
+      return await this.seleniumDriver.switchTo().window(tabId);
     }
     let tabs = await this.getTabs();
     if (isNumber(expectedQuantity)) {
@@ -201,7 +202,7 @@ class Browser {
           async () => {
             tabs = await this.getTabs();
             for (const tab of tabs) {
-              await this.switchTo().window(tab);
+              await this.seleniumDriver.switchTo().window(tab);
               if ((await this.getTitle()) === title) {
                 return true;
               }
@@ -210,10 +211,10 @@ class Browser {
           { message: `Window with ${title} title was not found during ${timeout}.`, timeout },
         );
       } else {
-        await this.switchTo().window(tabs[index]);
+        await this.seleniumDriver.switchTo().window(tabs[index]);
       }
     } else {
-      await this.switchTo().window(tabs[0]);
+      await this.seleniumDriver.switchTo().window(tabs[0]);
     }
   }
 

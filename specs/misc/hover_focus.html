@@ -8,11 +8,13 @@
   <body>
     <button id="hover">blur</button>
     <button id="focus">focus</button>
+    <button id="click">click</button>
   </body>
 
   <script>
     const blurItem = document.getElementById('hover');
     const focusItem = document.getElementById('focus');
+    const clickItem = document.getElementById('click');
 
     focusItem.addEventListener('focus', (event) => {
       event.target.style.background = 'pink';
@@ -20,6 +22,10 @@
 
     blurItem.addEventListener('mouseenter', (event) => {
       event.target.style.background = 'red';
+    });
+
+    clickItem.addEventListener('click', (event) => {
+      event.target.style.background = 'black';
     });
   </script>
 </html>
