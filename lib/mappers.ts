@@ -62,6 +62,35 @@ const KeysPW = {
   F12: 'F12',
 };
 
+/**
+ * @param {string} urlOrPath
+ * @returns {string}
+ */
+const resolveUrl = (urlOrPath: string, appBaseUrl) => {
+  let resolved;
+
+  if (!urlOrPath.includes('http') && appBaseUrl) {
+    const url = appBaseUrl;
+    const path = urlOrPath;
+
+    if (url.endsWith('/') && path.startsWith('/')) {
+      resolved = `${url.replace(/.$/u, '')}${path}`;
+    } else if (url.endsWith('/') && !path.startsWith('/')) {
+      resolved = `${url}${path}`;
+    } else if (!url.endsWith('/') && path.startsWith('/')) {
+      resolved = `${url}${path}`;
+    } else {
+      resolved = `${url}/${path}`;
+    }
+  } else if (urlOrPath === '' || urlOrPath === '/') {
+    return appBaseUrl;
+  } else {
+    resolved = urlOrPath;
+  }
+
+  return resolved;
+};
+
 const getPositionXY = (
   position: string,
   { x, y, width, height }: { x: number; y: number; width: number; height: number },
@@ -90,4 +119,4 @@ const getPositionXY = (
 
 export type Keys = typeof KeysPW;
 
-export { KeysPW, KeysSWD, getPositionXY };
+export { KeysPW, KeysSWD, getPositionXY, resolveUrl };

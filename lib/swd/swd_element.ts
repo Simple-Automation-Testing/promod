@@ -38,7 +38,6 @@ const SELENIUM_API_METHODS = [
   'clear',
   'getId',
   'takeScreenshot',
-  'getLocation',
 ];
 
 class PromodSeleniumElements {

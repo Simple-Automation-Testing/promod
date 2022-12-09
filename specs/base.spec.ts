@@ -76,7 +76,6 @@ describe('Base', () => {
     await browser.get(logsFile);
     await browser.sleep(500);
     const logs = JSON.stringify(await browser.getBrowserLogs());
-    console.log(logs);
     expect(logs).stringIncludesSubstring('~~~~~~~~~~~~~~~~~~~~~~~~111111111');
   });
 

@@ -3,10 +3,35 @@ import type { Keys } from './mappers';
 export interface PromodElementsType {
   selector: string;
 
+  /**
+   * @example
+   * const els = $$('a')
+   * const thirdLink = els.get(2);
+   * const lastLink = els.get(-1);
+   *
+   * @param {number} index
+   * @returns {PromodElementType} PromodElementType instance
+   */
   get(index: number): PromodElementType;
 
+  /**
+   * @example
+   * const els = $$('a')
+   * const lastLink = els.last(); // same as els.get(-1);
+   *
+   * @param {number} index
+   * @returns {PromodElementType} PromodElementType instance
+   */
   last(): PromodElementType;
 
+  /**
+   * @example
+   * const els = $$('a')
+   * const firstLink = els.first(); // same as els.get(0);
+   *
+   * @param {number} index
+   * @returns {PromodElementType} PromodElementType instance
+   */
   first(): PromodElementType;
 
   each(cb: (item: PromodElementType, index?: number) => Promise<void>): Promise<void>;
@@ -15,15 +40,26 @@ export interface PromodElementsType {
 
   find(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<PromodElementType>;
 
+  /**
+   * @example
+   * const els = $$('a')
+   * const linksCount = await els.count(); // number
+   *
+   * @param {number} index
+   * @returns {Promise<number>} elements count
+   */
   count(): Promise<number>;
 }
 
 export interface PromodElementType {
   selector: string;
 
-  getId(): Promise<string>;
-
   /**
+   * @example
+   * const link = $('a')
+   * await link.clickByElementCoordinate('center'); // will click center
+   * await link.clickByElementCoordinate('right-top'); // will click right top corner
+   *
    * @param {string} position click position
    * @returns {Promise<void>}
    */
@@ -40,6 +76,14 @@ export interface PromodElementType {
       | 'left-bottom',
   ): Promise<void>;
 
+  /**
+   * @example
+   * const link = $('a')
+   * const { x, y } = await link.getElementCoordinates('center'); // returns x and y of the element center
+   *
+   * @param {string} position click position
+   * @returns {Promise<{ x: number; y: number }>}
+   */
   getElementCoordinates(
     position?:
       | 'center'
@@ -90,7 +134,23 @@ export interface PromodElementType {
     trial?: boolean;
   }): Promise<void>;
 
+  /**
+   * @example
+   * const link = $('a')
+   * await link.hover('center'); // will hove element
+   *
+   * @returns {Promise<void>}
+   */
   hover(): Promise<void>;
+
+  /**
+   * @example
+   * const button = $('button');
+   * await button.focus(); // regular focus on element
+   *
+   * @returns {Promise<void>}
+   */
+  focus(): Promise<void>;
 
   selectOption(
     value:
@@ -113,30 +173,37 @@ export interface PromodElementType {
         },
   ): Promise<void>;
 
+  sendKeys(...keys: Array<string | number | Promise<string | number>>): Promise<void>;
+
   /**
    * @example
    * const button = $('button');
-   * await button.focus(); // regular focus on element
+   * const buttonTag = await button.getTagName(); // button string
    *
-   * @returns {Promise<void>}
+   * @returns {Promise<string>}
    */
-  focus(): Promise<void>;
-
-  sendKeys(...keys: Array<string | number | Promise<string | number>>): Promise<void>;
-
   getTagName(): Promise<string>;
+
+  /**
+   * @example
+   * const button = $('button');
+   * const buttonTag = await button.getText(); // button text content
+   *
+   * @returns {Promise<string>}
+   */
+  getText(): Promise<string>;
 
   getCssValue(cssStyleProperty: string): Promise<string>;
 
   getAttribute(attributeName: string): Promise<string>;
 
-  getText(): Promise<string>;
-
-  getSize(): Promise<{
-    width: number;
-    height: number;
-  }>;
-
+  /**
+   * @example
+   * const button = $('button');
+   * const {x,y,width,height} = await button.getRect(); // button bounding box
+   *
+   * @returns {Promise<x: number; y: number;width: number;height: number;>} element bounding box
+   */
   getRect(): Promise<{
     x: number;
     y: number;
@@ -144,13 +211,31 @@ export interface PromodElementType {
     height: number;
   }>;
 
-  getLocation(): Promise<{
-    x: number;
-    y: number;
-  }>;
+  /**
+   * @example
+   * const txt = '123';
+   * const inpt = $('input');
+   * await inpt.sendKeys(txt);
+   * await inpt.clearViaBackspace(txt.length, true);
+   *
+   * @param {number} repeat how many times execute back space
+   * @param {boolean} [focus] should element got focus event before execute back space
+   *
+   * @returns {Promise<void>}
+   */
+  clearViaBackspace(repeat: number, focus?: boolean): Promise<void>;
 
-  clearViaBackspace(repeat: number): Promise<void>;
-
+  /**
+   * @example
+   * const txt = '123';
+   * const inpt = $('input');
+   * await inpt.sendKeys(txt);
+   * await inpt.pressEnter(true);
+   *
+   * @param {boolean} [focus] should element got focus event before execute enter
+   *
+   * @returns {Promise<void>}
+   */
   pressEnter(): Promise<void>;
 
   $(selector: string | ((...args: any[]) => any) | Promise<any>): PromodElementType;
@@ -176,5 +261,24 @@ export interface PromodElementType {
 
   scrollIntoView(position?: boolean | string): Promise<void>;
 }
+
+export type TCookie = {
+  name: string;
+  value: string;
+  url?: string;
+  domain?: string;
+  path?: string;
+  expires?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None';
+};
+
+export type TLogLevel = {
+  level: string;
+  type: string;
+  timestamp: string;
+  message: any | any[];
+};
 
 export type ExecuteScriptFn = (data: any | any[]) => unknown;

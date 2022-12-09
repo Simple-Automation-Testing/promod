@@ -2,9 +2,9 @@ import { toArray, isArray, waitForCondition, isNumber, isAsyncFunction, isString
 import { WebDriver, Key } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { buildBy } from './swd_alignment';
-import { KeysSWD } from '../mappers';
+import { KeysSWD, resolveUrl } from '../mappers';
 
-import type { ExecuteScriptFn } from '../interface';
+import type { ExecuteScriptFn, TCookie, TLogLevel } from '../interface';
 
 function validateBrowserCallMethod(browserClass): Browser {
   const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
@@ -34,17 +34,17 @@ or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/in
   return new browserClass();
 }
 
-interface IBrowserTab {
+type IBrowserTab = {
   index?: number;
   tabId?: string;
   expectedQuantity?: number;
   title?: string;
   timeout?: number;
-}
+};
 
 class Browser {
-  public wait = waitForCondition;
-  public seleniumDriver: WebDriver;
+  wait = waitForCondition;
+  seleniumDriver: WebDriver;
   private appBaseUrl: string;
   private initialTab: any;
   private drivers: WebDriver[];
@@ -140,18 +140,18 @@ class Browser {
     this.appBaseUrl = url;
   }
 
-  public async returnToInitialTab() {
+  async returnToInitialTab() {
     // there was no switching in test
     if (!this.initialTab) {
       return;
     }
     await this.closeAllTabsExceptInitial();
-    this.seleniumDriver.switchTo().window(this.initialTab)
+    this.seleniumDriver.switchTo().window(this.initialTab);
     // set initialTab to null for further "it" to use
     this.initialTab = null;
   }
 
-  public async switchToTab(tabObject: IBrowserTab) {
+  async switchToTab(tabObject: IBrowserTab) {
     if (!this.initialTab) {
       this.initialTab = await this.getCurrentTab();
     }
@@ -164,11 +164,23 @@ class Browser {
     await this.makeActionAtEveryTab(async () => this.close(), handles);
   }
 
-  public async makeActionAtEveryTab(action: (...args: any) => Promise<any>, handles?: string[]) {
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * const tabTitles = [];
+   * await browser.makeActionAtEveryTab(async () => {
+   *    tabTitles.push(await browser.getTitle());
+   * });
+   *
+   * @param {!Function} action action that needs to be performed
+   * @return {Promise<void>}
+   */
+  async makeActionAtEveryTab(action: (...args: any) => Promise<any>, handles?: string[]) {
     handles = handles || (await this.getTabs());
     for (const windowHandle of handles) {
-
-      await this.switchTo().window(windowHandle);
+      await this.seleniumDriver.switchTo().window(windowHandle);
       await action();
     }
   }
@@ -218,62 +230,149 @@ class Browser {
     }
   }
 
+  /**
+   *
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.openNewTab('https://www.npmjs.com/package/promod');
+   *
+   * @param {string} url url that needs to open in new browser tab
+   * @return {Promise<void>}
+   */
   async openNewTab(url = 'data:,') {
-    await this.seleniumDriver.executeScript(`window.open(arguments[0], '_blank')`, url);
+    await this.seleniumDriver.executeScript((openUrl) => {
+      window.open(openUrl, '_blank');
+    }, url);
   }
 
-  async setCookies(cookies: { name: string; value: string } | { name: string; value: string }[]) {
+  /**
+   *
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.setCookies({name: 'test', value: 'test'});
+   * @param {TCookie | TCookie[]} cookies cookies object
+   * @returns {Promise<void>}
+   */
+  async setCookies(cookies: TCookie | TCookie[]) {
     const cookiesArr = toArray(cookies);
     for (const cookie of cookiesArr) {
       await (await this.seleniumDriver.manage()).addCookie(cookie);
     }
   }
 
-  public async getCookies() {
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * const cookies = await browser.getCookies();
+   * @return {Promise<Array<TCookie>>} cookies list
+   */
+  async getCookies() {
     return await (await this.seleniumDriver.manage()).getCookies();
   }
 
-  public async getCookieByName(name: string) {
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * const cookie = await browser.getCookieByName('test');
+   * @param {string} name cookie name
+   * @return {Promise<{ name: string; value: string }>}
+   */
+  async getCookieByName(name: string) {
     return await (await this.seleniumDriver.manage()).getCookie(name);
   }
 
-  public async deleteCookie(name: string) {
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.deleteCookie('test');
+   * @param {string} name cookie name
+   * @returns {Promise<void>}
+   */
+  async deleteCookie(name: string) {
     await (await this.seleniumDriver.manage()).deleteCookie(name);
   }
 
-  public async deleteAllCookies() {
+  async deleteAllCookies() {
     await (await this.seleniumDriver.manage()).deleteAllCookies();
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * cosnt title = await browser.getTitle();
+   *
+   * @return {Promise<string>} tab (page) title
+   */
   async getTitle() {
     return await this.seleniumDriver.getTitle();
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * const currentPageUrl = await browser.getCurrentUrl();
+   *
+   * @return {Promise<string>}
+   */
   async getCurrentUrl() {
     return await this.seleniumDriver.getCurrentUrl();
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * cosnt { height, width } = await browser.getWindomSize();
+   *
+   * @return {Promise<{ height: number; width: number }>} window size
+   */
   async getWindomSize(): Promise<{ height: number; width: number }> {
     return await this.seleniumDriver.executeScript(() => ({ height: window.outerHeight, width: window.outerWidth }));
   }
 
   /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * const currentPageScreenshot = await browser.takeScreenshot();
+   *
    * @returns {Promise<Buffer>}
    */
-  async takeScreenshot() {
+  async takeScreenshot(): Promise<Buffer> {
     const res = await this.seleniumDriver.takeScreenshot();
 
     return Buffer.from(res, 'base64');
-  }
-
-  async tabTitle() {
-    return await this.seleniumDriver.getTitle();
   }
 
   async getTabs() {
     return await this.seleniumDriver.getAllWindowHandles();
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * const currentTabsCount = await browser.getTabsCount();
+   *
+   * @returns {Promise<number>}
+   */
   async getTabsCount() {
     return (await this.seleniumDriver.getAllWindowHandles()).length;
   }
@@ -282,12 +381,33 @@ class Browser {
     return await this.seleniumDriver.getWindowHandle();
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.get('https://github.com/Simple-Automation-Testing/promod');
+   *
+   * @param {string} url url that needs to be open
+   * @return {Promise<void>}
+   */
   async get(url: string) {
-    const getUrl = this.resolveUrl(url);
+    const getUrl = resolveUrl(url, this.appBaseUrl);
 
     return await this.seleniumDriver.get(getUrl);
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.setWindowSize(800, 600);
+   *
+   * @param {number} width window width
+   * @param {number} height window height
+   * @return {Promise<void>}
+   */
   async setWindowSize(width: number, height: number) {
     return await this.seleniumDriver.manage().window().setRect({
       width,
@@ -295,6 +415,16 @@ class Browser {
     });
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.sleep(800);
+   *
+   * @param {number} time time in ms
+   * @return {Promise<void>}
+   */
   async sleep(time: number) {
     await (() => new Promise((resolve) => setTimeout(resolve, time)))();
   }
@@ -304,6 +434,17 @@ class Browser {
     return this.seleniumDriver.manage();
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * const result = await browser.executeScript(() => document.body.offsetHeight);
+   *
+   * @param {!Function} script scripts that needs to be executed
+   * @param {any|any[]} [args] function args
+   * @returns {Promise<unknown>}
+   */
   async executeScript(script: ExecuteScriptFn, args?: any | any[]): Promise<any> {
     const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
     const res = await this.seleniumDriver.executeScript(script, recomposedArgs);
@@ -322,23 +463,54 @@ class Browser {
     return res;
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.back();
+   *
+   * @return {Promise<void>}
+   */
   async back() {
     return (await this.seleniumDriver.navigate()).back();
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.forward();
+   *
+   * @return {Promise<void>}
+   */
   async forward() {
     return (await this.seleniumDriver.navigate()).forward();
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.refresh();
+   *
+   * @return {Promise<void>}
+   */
   async refresh() {
     return (await this.seleniumDriver.navigate()).refresh();
   }
 
-  /** @deprecated */
-  switchTo() {
-    return this.seleniumDriver.switchTo();
-  }
-
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.quit();
+   *
+   * @return {Promise<void>}
+   */
   async quit() {
     if (this.drivers && this.drivers.length) {
       const index = this.drivers.findIndex((driver) => driver === this.seleniumDriver);
@@ -348,6 +520,15 @@ class Browser {
     this.seleniumDriver = null;
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.quitAll();
+   *
+   * @return {Promise<void>}
+   */
   async quitAll() {
     if (isArray(this.drivers) && this.drivers.length) {
       for (const driver of this.drivers) {
@@ -364,7 +545,16 @@ class Browser {
     }
   }
 
-  async maximize() {
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.maximize();
+   *
+   * @return {Promise<void>}
+   */
+  async maximize(): Promise<void> {
     const { width, height } = (await this.seleniumDriver.executeScript(() => {
       const { availHeight, availWidth } = window.screen;
       return { width: availWidth, height: availHeight };
@@ -374,57 +564,41 @@ class Browser {
     await manage.window().setRect({ width, height });
   }
 
-  async getBrowserLogs() {
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * const browserLogs = await browser.getBrowserLogs();
+   *
+   * @return {Promise<TLogLevel[] | string>}
+   */
+  async getBrowserLogs(): Promise<TLogLevel[] | string> {
     try {
       // @ts-ignore
       const manage = await this.seleniumDriver.manage();
-      return manage.logs().get('browser');
+
+      return manage.logs().get('browser') as any;
     } catch (e) {
       return 'Comman was failed ' + e.toString();
     }
   }
 
-  async close() {
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.close();
+   *
+   * @return {Promise<void>}
+   */
+  async close(): Promise<void> {
     await this.seleniumDriver.close();
   }
 
   actions() {
     return this.seleniumDriver.actions({ async: true });
-  }
-
-  private async getSeleniumProtocolElement(item) {
-    const webElId = await item.getId();
-    const elementObj = {
-      'element-6066-11e4-a52e-4f735466cecf': webElId,
-      ELEMENT: webElId,
-    };
-
-    return elementObj;
-  }
-
-  private resolveUrl(urlOrPath: string) {
-    let resolved;
-
-    if (!urlOrPath.includes('http') && this.appBaseUrl) {
-      const url = this.appBaseUrl;
-      const path = urlOrPath;
-
-      if (url.endsWith('/') && path.startsWith('/')) {
-        resolved = `${url.replace(/.$/u, '')}${path}`;
-      } else if (url.endsWith('/') && !path.startsWith('/')) {
-        resolved = `${url}${path}`;
-      } else if (!url.endsWith('/') && path.startsWith('/')) {
-        resolved = `${url}${path}`;
-      } else {
-        resolved = `${url}/${path}`;
-      }
-    } else if (urlOrPath === '' || urlOrPath === '/') {
-      return this.baseUrl;
-    } else {
-      resolved = urlOrPath;
-    }
-
-    return resolved;
   }
 }
 

@@ -299,14 +299,6 @@ class PromodElement {
   }
 
   /**
-   * @deprecated
-   */
-  async getLocation() {
-    // await this.getElement();
-    // await this._driverElement();
-  }
-
-  /**
    * @example works with Enter, need improve for another Keys
    *
    * @param value
