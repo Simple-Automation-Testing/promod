@@ -1,8 +1,15 @@
 import * as fs from 'fs';
 import * as computeFsPaths from 'selenium-standalone/lib/compute-fs-paths';
 import * as standAloneDefaultConfig from 'selenium-standalone/lib/default-config';
+import * as getPort from 'get-port';
 
 import { SeleniumServer } from 'selenium-webdriver/remote';
+
+function isDefaultSelenium4() {
+  const defaultConfig = standAloneDefaultConfig();
+
+  return defaultConfig.version.startsWith('4');
+}
 
 function getOptsData(opts: { [k: string]: any } = {}) {
   const defaultConfig = standAloneDefaultConfig();
@@ -104,8 +111,8 @@ const runLocalEnv = async (config) => {
     return config;
   }
   const combinedConfig = getCombinedConfig(config);
-
   const serverConf = combinedConfig.localSeleniumStandaloneOpts || {};
+  const port = combinedConfig.seleniumPort || (await getPort());
 
   if (!serverConf.args) {
     serverConf.args = combinedConfig.seleniumArgs || [];
@@ -116,7 +123,7 @@ const runLocalEnv = async (config) => {
     throw new TypeError('jvmArgs should be an array.');
   }
   if (!serverConf.port) {
-    serverConf.port = combinedConfig.seleniumPort;
+    serverConf.port = port;
   }
 
   if (combinedConfig.chromeDriver) {
@@ -128,12 +135,19 @@ const runLocalEnv = async (config) => {
 
   const server = new SeleniumServer(combinedConfig.seleniumServerJar, serverConf);
 
+  if (isDefaultSelenium4()) {
+    /**
+     * @info selenium SeleniumServer does not work with 4.x selenium standalone
+     */
+    // @ts-ignore
+    server.args_ = [...serverConf.jvmArgs, '-jar', combinedConfig.seleniumServerJar, 'standalone', '--port', `${port}`];
+  }
+
   await server.start(combinedConfig.seleniumServerStartTimeout);
 
   const address = await server.address();
 
   return {
-    server,
     seleniumAddress: address,
     capabilities: combinedConfig.capabilities,
   };

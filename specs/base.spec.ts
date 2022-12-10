@@ -13,11 +13,11 @@ import {
 describe('Base', () => {
   const { $, $$, getDriver, browser } = engine;
 
-  beforeEach(async () => {
+  before(async () => {
     await getDriver(browser);
   });
 
-  afterEach(async () => {
+  after(async () => {
     await browser.quitAll();
   });
 
