@@ -508,10 +508,9 @@ class Browser {
     const { width, height } = await (
       await this._contextWrapper.getCurrentPage()
     ).evaluate(() => {
-      const { width, height } = window.screen;
-      return { width: width + 500, height: height + 500 };
+      const { availHeight, availWidth } = window.screen;
+      return { width: availWidth, height: availHeight };
     });
-
     return (await this._contextWrapper.getCurrentPage()).setViewportSize({ width, height });
   }
 
