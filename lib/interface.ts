@@ -173,7 +173,7 @@ export interface PromodElementType {
         },
   ): Promise<void>;
 
-  sendKeys(...keys: Array<string | number | Promise<string | number>>): Promise<void>;
+  sendKeys(value: string | number, asFill?: boolean): Promise<void>;
 
   /**
    * @example

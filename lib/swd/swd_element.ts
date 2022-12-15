@@ -257,8 +257,8 @@ class PromodSeleniumElement {
     let scrollableClickResult = await this._driverElement.click().catch((err) => err);
 
     if (scrollableClickResult) {
-      const { isIntercepted, isReadyToForce } = await this.isInteractionIntercepted(scrollableClickResult);
-      if (isIntercepted && isReadyToForce && allowForceIfIntercepted) {
+      const { isReadyToForce } = await this.isInteractionIntercepted(scrollableClickResult);
+      if (isReadyToForce && allowForceIfIntercepted) {
         scrollableClickResult = await this.clickByElementCoordinate('left-top').catch((err) => err);
       }
     }
@@ -513,8 +513,10 @@ class PromodSeleniumElement {
     const strErr: string = err.toString();
 
     return {
-      isReadyToForce: (await this.isDisplayed()) && (await this._driverElement.isEnabled()),
-      isIntercepted: strErr.includes('element click intercepted'),
+      isReadyToForce:
+        (await this.isDisplayed()) &&
+        (await this._driverElement.isEnabled()) &&
+        strErr.includes('element click intercepted'),
     };
   }
 }

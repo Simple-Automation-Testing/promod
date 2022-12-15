@@ -5,12 +5,6 @@ import * as getPort from 'get-port';
 
 import { SeleniumServer } from 'selenium-webdriver/remote';
 
-function isDefaultSelenium4() {
-  const defaultConfig = standAloneDefaultConfig();
-
-  return defaultConfig.version.startsWith('4');
-}
-
 function getOptsData(opts: { [k: string]: any } = {}) {
   const defaultConfig = standAloneDefaultConfig();
 
@@ -134,14 +128,6 @@ const runLocalEnv = async (config) => {
   }
 
   const server = new SeleniumServer(combinedConfig.seleniumServerJar, serverConf);
-
-  if (isDefaultSelenium4()) {
-    /**
-     * @info selenium SeleniumServer does not work with 4.x selenium standalone
-     */
-    // @ts-ignore
-    server.args_ = [...serverConf.jvmArgs, '-jar', combinedConfig.seleniumServerJar, 'standalone', '--port', `${port}`];
-  }
 
   await server.start(combinedConfig.seleniumServerStartTimeout);
 

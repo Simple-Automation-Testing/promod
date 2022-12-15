@@ -260,8 +260,8 @@ class PromodElement {
     let scrollableClickResult = await this._driverElement.click(pwOpts).catch((err) => err);
 
     if (scrollableClickResult) {
-      const { isIntercepted, isReadyToForce } = await this.isInteractionIntercepted(scrollableClickResult);
-      if (isIntercepted && isReadyToForce && allowForceIfIntercepted) {
+      const { isReadyToForce } = await this.isInteractionIntercepted(scrollableClickResult);
+      if (isReadyToForce && allowForceIfIntercepted) {
         scrollableClickResult = await this.clickByElementCoordinate('left-top').catch((err) => err);
       }
     }
@@ -303,11 +303,16 @@ class PromodElement {
    *
    * @param value
    */
-  async sendKeys(value: string | number) {
+  async sendKeys(value: string | number, asFill?: boolean) {
     if (!isString(value) && !isNumber(value)) {
       throw new TypeError(`sendKeys(); accepts only string or number value type ${getType(value)}`);
     }
     await this.getElement();
+
+    if (asFill) {
+      return this._driverElement.fill(value.toString());
+    }
+
     const stringValue = value.toString();
     const seleniumEnter = Key.ENTER;
 
@@ -561,7 +566,6 @@ class PromodElement {
 
     return {
       isReadyToForce: strErr.includes('element is visible, enabled and stable'),
-      isIntercepted: strErr.includes('subtree intercepts pointer events'),
     };
   }
 }
