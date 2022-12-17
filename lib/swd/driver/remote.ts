@@ -15,14 +15,14 @@ const _getDriver = async (config) => {
       new _http.Executor(Promise.resolve(config.seleniumAddress).then((url) => new _http.HttpClient(url, null, null))),
     );
 
-    return driver;
+    return { driver, config };
   }
 
   const { seleniumAddress, capabilities = Capabilities.chrome() } = await runLocalEnv(combinedConfig);
 
   const driver = new Builder().usingServer(seleniumAddress).withCapabilities(capabilities).build();
 
-  return driver;
+  return { driver, config: { seleniumAddress, capabilities } };
 };
 
 export { _getDriver };

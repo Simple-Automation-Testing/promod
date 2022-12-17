@@ -1,10 +1,19 @@
-import { toArray, isArray, waitForCondition, isNumber, isAsyncFunction, isString } from 'sat-utils';
+import {
+  toArray,
+  isArray,
+  waitForCondition,
+  isNumber,
+  safeJSONstringify,
+  isAsyncFunction,
+  isNotEmptyObject,
+  compareToPattern,
+} from 'sat-utils';
 import { WebDriver, Key } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { buildBy } from './swd_alignment';
 import { KeysSWD, resolveUrl } from '../mappers';
 
-import type { ExecuteScriptFn, TCookie, TLogLevel } from '../interface';
+import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage } from '../interface';
 
 function validateBrowserCallMethod(browserClass): Browser {
   const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
@@ -34,21 +43,14 @@ or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/in
   return new browserClass();
 }
 
-type IBrowserTab = {
-  index?: number;
-  tabId?: string;
-  expectedQuantity?: number;
-  title?: string;
-  timeout?: number;
-};
-
 class Browser {
   wait = waitForCondition;
   seleniumDriver: WebDriver;
   private appBaseUrl: string;
   private initialTab: any;
   private drivers: WebDriver[];
-  private _createNewDriver: () => Promise<WebDriver>;
+  private _createNewDriver: () => Promise<{ driver: WebDriver }>;
+  private _browserConfig;
 
   constructor() {
     this.wait = waitForCondition;
@@ -80,9 +82,9 @@ class Browser {
       throw new Error('createNewDriver(): seems like create driver method was not inited');
     }
 
-    const newDriver = await this._createNewDriver();
-    this.drivers.push(newDriver);
-    this.seleniumDriver = newDriver;
+    const { driver } = await this._createNewDriver();
+    this.drivers.push(driver);
+    this.seleniumDriver = driver;
   }
 
   async switchToIframe(element: string, jumpToDefaultFirst = false) {
@@ -93,18 +95,38 @@ class Browser {
     await this.seleniumDriver.switchTo().frame(this.seleniumDriver.findElement(buildBy(element)));
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.switchToDefauldIframe();
+   *
+   * @return {Promise<void>}
+   */
   async switchToDefauldIframe() {
     await this.seleniumDriver.switchTo().defaultContent();
   }
 
-  async switchToBrowser({ index, tabTitle }: { index?: number; tabTitle?: string } = {}) {
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.switchToBrowser();
+   *
+   * @return {Promise<void>}
+   */
+  async switchToBrowser(browserData: TSwitchBrowserTabPage = {}) {
+    const { index, ...tabData } = browserData;
     if (isNumber(index) && isArray(this.drivers) && this.drivers.length > index) {
       this.seleniumDriver = this.drivers[index];
       return;
     }
-    if (isString(tabTitle)) {
+
+    if (isNotEmptyObject(tabData)) {
       for (const driver of this.drivers) {
-        const result = await this.switchToBrowserTab({ title: tabTitle })
+        const result = await this.switchToBrowserTab(tabData)
           .then(
             () => true,
             () => false,
@@ -151,13 +173,6 @@ class Browser {
     this.initialTab = null;
   }
 
-  async switchToTab(tabObject: IBrowserTab) {
-    if (!this.initialTab) {
-      this.initialTab = await this.getCurrentTab();
-    }
-    await this.switchToBrowserTab(tabObject);
-  }
-
   private async closeAllTabsExceptInitial() {
     const handles = await this.getTabs();
     handles.splice(handles.indexOf(this.initialTab), 1);
@@ -189,44 +204,60 @@ class Browser {
    * switchToBrowserTab
    * @private
    */
-  private async switchToBrowserTab(tabObject: IBrowserTab) {
-    const { index, expectedQuantity, title, timeout = 5000, tabId } = tabObject;
-    if (tabId) {
-      return await this.seleniumDriver.switchTo().window(tabId);
-    }
-    let tabs = await this.getTabs();
+  private async switchToBrowserTab(tabObject: TSwitchBrowserTabPage = {}) {
+    const { index = 0, expectedQuantity, timeout = 5000, ...titleUrl } = tabObject;
+
     if (isNumber(expectedQuantity)) {
+      let errorMessage;
+
       await waitForCondition(
         async () => {
-          tabs = await this.getTabs();
+          const tabs = await this.getTabs();
+
+          errorMessage = () =>
+            `Expected browser tabs count is ${expectedQuantity}, current browser tabs count is ${tabs.length}`;
+
           return tabs.length === expectedQuantity;
         },
-        {
-          message: `Couldn't wait for ${expectedQuantity} tab(s) to appear. Probably you should pass expectedQuantity`,
-          timeout,
-        },
+        { message: errorMessage, timeout },
       );
     }
 
-    if (tabs.length > 1) {
-      if (title) {
-        await waitForCondition(
-          async () => {
-            tabs = await this.getTabs();
-            for (const tab of tabs) {
-              await this.seleniumDriver.switchTo().window(tab);
-              if ((await this.getTitle()) === title) {
-                return true;
-              }
-            }
-          },
-          { message: `Window with ${title} title was not found during ${timeout}.`, timeout },
-        );
-      } else {
-        await this.seleniumDriver.switchTo().window(tabs[index]);
-      }
-    } else {
-      await this.seleniumDriver.switchTo().window(tabs[0]);
+    if (isNumber(index) && (await this.getTabs()).length < index + 1) {
+      throw new Error(
+        `Index is out available browser tabs count, index is ${index}, current browser tabs count is ${
+          (await this.getTabs()).length
+        }`,
+      );
+    } else if (isNumber(index)) {
+      return await this.seleniumDriver.switchTo().window((await this.getTabs())[index]);
+    }
+
+    if (isNotEmptyObject(titleUrl)) {
+      let errorMessage;
+
+      await waitForCondition(
+        async () => {
+          const tabs = await this.getTabs();
+
+          for (const tab of tabs) {
+            await this.seleniumDriver.switchTo().window(tab);
+
+            const currentBrowserState = {
+              url: await this.getCurrentUrl(),
+              title: await this.getTitle(),
+            };
+
+            const { result } = compareToPattern(currentBrowserState, titleUrl);
+
+            if (result) return true;
+          }
+
+          errorMessage = () =>
+            `Expected browser tab state is ${safeJSONstringify(titleUrl)}, current browser tab states was not met`;
+        },
+        { message: errorMessage, timeout },
+      );
     }
   }
 
@@ -245,6 +276,24 @@ class Browser {
     await this.seleniumDriver.executeScript((openUrl) => {
       window.open(openUrl, '_blank');
     }, url);
+  }
+
+  /**
+   *
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.switchToTab({ index: 2, expectedQuantity: 3 });
+   *
+   * @param {TSwitchBrowserTabPage} tabObject tab description
+   * @return {Promise<void>}
+   */
+  async switchToTab(tabObject: TSwitchBrowserTabPage) {
+    if (!this.initialTab) {
+      this.initialTab = await this.seleniumDriver.getWindowHandle();
+    }
+    await this.switchToBrowserTab(tabObject);
   }
 
   /**
@@ -302,6 +351,14 @@ class Browser {
     await (await this.seleniumDriver.manage()).deleteCookie(name);
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.deleteAllCookies();
+   * @returns {Promise<void>}
+   */
   async deleteAllCookies() {
     await (await this.seleniumDriver.manage()).deleteAllCookies();
   }
@@ -377,10 +434,6 @@ class Browser {
     return (await this.seleniumDriver.getAllWindowHandles()).length;
   }
 
-  async getCurrentTab() {
-    return await this.seleniumDriver.getWindowHandle();
-  }
-
   /**
    * @example
    * const { seleniumWD } = require('promod');
@@ -448,17 +501,6 @@ class Browser {
   async executeScript(script: ExecuteScriptFn, args?: any | any[]): Promise<any> {
     const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
     const res = await this.seleniumDriver.executeScript(script, recomposedArgs);
-
-    return res;
-  }
-
-  /**
-   * @depreacted
-   */
-  async executeAsyncScript(script: ExecuteScriptFn | string, args?: any[]): Promise<any> {
-    const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
-
-    const res = await this.seleniumDriver.executeAsyncScript(script, ...recomposedArgs);
 
     return res;
   }
@@ -595,10 +637,6 @@ class Browser {
    */
   async close(): Promise<void> {
     await this.seleniumDriver.close();
-  }
-
-  actions() {
-    return this.seleniumDriver.actions({ async: true });
   }
 }
 

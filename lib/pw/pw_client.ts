@@ -6,6 +6,8 @@ import {
   isAsyncFunction,
   lengthToIndexesArray,
   asyncForEach,
+  compareToPattern,
+  safeJSONstringify,
 } from 'sat-utils';
 import { Key } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
@@ -13,7 +15,7 @@ import { Locator } from 'playwright-core';
 import { KeysPW, resolveUrl } from '../mappers';
 
 import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
-import type { ExecuteScriptFn, TCookie, TLogLevel } from '../interface';
+import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage } from '../interface';
 
 function validateBrowserCallMethod(browserClass): Browser {
   const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
@@ -41,13 +43,6 @@ or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/in
     }
   }
   return new browserClass();
-}
-
-interface IBrowserTab {
-  index?: number;
-  expectedQuantity?: number;
-  title?: string;
-  timeout?: number;
 }
 
 class PageWrapper {
@@ -98,56 +93,59 @@ class PageWrapper {
     return this._currentPage;
   }
 
-  async switchToNextPage(data: IBrowserTab = {}) {
-    if (isNotEmptyObject(data)) {
-      const { index, expectedQuantity, title, timeout } = data;
+  async switchToNextPage(tabObject: TSwitchBrowserTabPage = {}) {
+    const { index = 0, expectedQuantity, timeout = 5000, ...titleUrl } = tabObject;
 
-      let pages = await this._context.pages();
-      if (isNumber(expectedQuantity)) {
-        await waitForCondition(
-          async () => {
-            pages = await this._context.pages();
-            return pages.length === expectedQuantity;
-          },
-          {
-            message: `Couldn't wait for ${expectedQuantity} tab(s) to appear. Probably you should pass expectedQuantity`,
-            timeout,
-          },
-        );
-      }
-      if (pages.length > 1) {
-        if (title) {
-          await waitForCondition(
-            async () => {
-              pages = await this._context.pages();
-              for (const tab of pages) {
-                if ((await tab.title()) === title) {
-                  this._currentPage = tab;
-                  return true;
-                }
-              }
-            },
-            { message: `Window with ${title} title was not found during ${timeout}.`, timeout },
-          );
-        } else {
-          this._currentPage = pages[index];
-        }
-      } else {
-        this._currentPage = pages[0];
-      }
-    } else {
-      const pages = await this._context.pages();
-      if (pages.length === 1) {
-        return this._currentPage;
-      } else {
-        for (const availablePage of pages) {
-          if (availablePage !== this._currentPage) {
-            this._currentPage = availablePage;
+    if (isNumber(expectedQuantity)) {
+      let errorMessage;
 
-            return this._currentPage;
+      await waitForCondition(
+        async () => {
+          const tabs = await this._context.pages();
+
+          errorMessage = () =>
+            `Expected browser tabs count is ${expectedQuantity}, current browser tabs count is ${tabs.length}`;
+
+          return tabs.length === expectedQuantity;
+        },
+        { message: errorMessage, timeout },
+      );
+    }
+
+    if (isNumber(index) && (await this._context.pages()).length < index + 1) {
+      throw new Error(
+        `Index is out available browser tabs count, index is ${index}, current browser tabs count is ${
+          (await this._context.pages()).length
+        }`,
+      );
+    } else if (isNumber(index)) {
+      this._currentPage = (await this._context.pages())[index];
+    }
+
+    if (isNotEmptyObject(titleUrl)) {
+      let errorMessage;
+      await waitForCondition(
+        async () => {
+          const tabs = await this._context.pages();
+
+          for (const tab of tabs) {
+            this._currentPage = tab;
+
+            const currentBrowserState = {
+              url: await this._currentPage.url(),
+              title: await this._currentPage.title(),
+            };
+
+            const { result } = compareToPattern(currentBrowserState, titleUrl);
+
+            if (result) return true;
           }
-        }
-      }
+
+          errorMessage = () =>
+            `Expected browser tab state is ${safeJSONstringify(titleUrl)}, current browser tab states was not met`;
+        },
+        { message: errorMessage, timeout },
+      );
     }
   }
 }
@@ -172,7 +170,7 @@ class ContextWrapper {
     this._contextConfig = config;
   }
 
-  async switchPage(data: IBrowserTab) {
+  async switchPage(data: TSwitchBrowserTabPage) {
     await this._currentPage.switchToNextPage(data);
   }
 
@@ -202,7 +200,7 @@ class ContextWrapper {
   }
 
   // TODO implement with tab - page title
-  async changeContext({ index, tabTitle }) {
+  async changeContext({ index }) {
     if (isNumber(index)) {
       const contexts = await this.server.contexts();
       this._currentContext = contexts[index];
@@ -226,6 +224,10 @@ class ContextWrapper {
     for (const context of contexts) {
       await context.close();
     }
+  }
+
+  async getContexts() {
+    return await this.server.contexts();
   }
 }
 
@@ -266,13 +268,34 @@ class Browser {
     return await this._contextWrapper.getCurrentPage();
   }
 
-  async runNewBrowser() {
-    await this._contextWrapper.runNewContext();
+  async runNewBrowser(ignoreInitialCapabilities?: boolean) {
+    await this._contextWrapper.runNewContext(ignoreInitialCapabilities);
   }
 
-  // TODO - refactor
-  async switchToBrowser({ index, tabTitle }: { index?: number; tabTitle?: string } = {}) {
-    await this._contextWrapper.changeContext({ index, tabTitle });
+  async switchToBrowser(browserData: TSwitchBrowserTabPage = {}) {
+    const { index, ...tabData } = browserData;
+
+    if (isNumber(index) && (await this._contextWrapper.getContexts()).length > index) {
+      return await this._contextWrapper.changeContext({ index });
+    }
+
+    if (isNotEmptyObject(tabData)) {
+      for (const [index] of (await this._contextWrapper.getContexts()).entries()) {
+        console.log(index);
+        await this._contextWrapper.changeContext({ index });
+        const result = await this.switchToBrowserTab(tabData)
+          .then(
+            () => true,
+            () => false,
+          )
+          .catch(() => false);
+        if (result) {
+          return;
+        }
+      }
+    }
+
+    throw new Error(`switchToBrowser(): required browser was not found`);
   }
 
   setClient({ driver, server, config }) {
@@ -330,7 +353,18 @@ class Browser {
     }, url);
   }
 
-  async switchToTab(tabObject: IBrowserTab) {
+  /**
+   *
+   * @example
+   * const { playwrightWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.switchToTab({ index: 2, expectedQuantity: 3 });
+   *
+   * @param {TSwitchBrowserTabPage} tabObject tab description
+   * @return {Promise<void>}
+   */
+  async switchToTab(tabObject: TSwitchBrowserTabPage) {
     if (!this.initialTab) {
       this.initialTab = await this.getCurrentTab();
     }
@@ -449,7 +483,7 @@ class Browser {
    * switchToBrowserTab
    * @private
    */
-  private async switchToBrowserTab(tabObject: IBrowserTab): Promise<void> {
+  private async switchToBrowserTab(tabObject: TSwitchBrowserTabPage): Promise<void> {
     await this._contextWrapper.switchPage(tabObject);
   }
 
@@ -694,13 +728,6 @@ class Browser {
   }
 
   /**
-   * @deprecated
-   */
-  async executeAsyncScript(script: any, ...args: any[]): Promise<any> {
-    throw new TypeError('Not supported for playwright engine');
-  }
-
-  /**
    * @example
    * const { playwrightWD } = require('promod');
    * const { browser } = playwrightWD;
@@ -749,11 +776,6 @@ class Browser {
    * @return {Promise<void>}
    */
   async quit(): Promise<void> {
-    if (this._engineDrivers && this._engineDrivers.length) {
-      const index = this._engineDrivers.findIndex((driver) => driver === this._engineDriver);
-      if (index !== -1) this._engineDrivers.splice(index, 1);
-    }
-
     await (await this._contextWrapper.getCurrentContext()).close();
     this._engineDriver = null;
   }

@@ -1,5 +1,3 @@
-import type { Keys } from './mappers';
-
 export interface PromodElementsType {
   selector: string;
 
@@ -261,6 +259,14 @@ export interface PromodElementType {
 
   scrollIntoView(position?: boolean | string): Promise<void>;
 }
+
+export type TSwitchBrowserTabPage = {
+  index?: number;
+  expectedQuantity?: number;
+  url?: string;
+  title?: string;
+  timeout?: number;
+};
 
 export type TCookie = {
   name: string;

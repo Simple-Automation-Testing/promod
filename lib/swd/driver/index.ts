@@ -19,7 +19,7 @@ async function getDriver(config: BaseConfSWD | Browser = {}, browser?: Browser):
   // validate config
   validateSeleniumConf(_config);
 
-  const driver = await _getDriver(_config);
+  const { driver, config: envBasedConfig } = await _getDriver(_config);
 
   /**
    * @info
@@ -27,7 +27,7 @@ async function getDriver(config: BaseConfSWD | Browser = {}, browser?: Browser):
    * and init current driver
    */
 
-  _browser.setCreateNewDriver = () => _getDriver(_config);
+  _browser.setCreateNewDriver = () => _getDriver(envBasedConfig);
   _browser.setClient(driver);
 
   if (config.baseUrl) {

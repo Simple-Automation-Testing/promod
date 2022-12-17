@@ -16,17 +16,7 @@ import { getPositionXY } from '../mappers';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
 
-// TODO figure out is this still relevant
-function toSeleniumProtocolElement(webElId) {
-  const elementObj = {
-    'element-6066-11e4-a52e-4f735466cecf': webElId,
-    ELEMENT: webElId,
-  };
-  return elementObj;
-}
-
 const SELENIUM_API_METHODS = [
-  'sendKeys',
   'getTagName',
   'getCssValue',
   'getAttribute',
@@ -266,6 +256,11 @@ class PromodSeleniumElement {
     if (scrollableClickResult) {
       throw scrollableClickResult;
     }
+  }
+
+  async sendKeys(value, asFill) {
+    await this.getElement();
+    await this._driverElement.sendKeys(value);
   }
 
   async hover() {

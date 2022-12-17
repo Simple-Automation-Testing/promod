@@ -14,7 +14,6 @@
 - [sleep](#sleep)
 - [manage](#manage)
 - [executeScript](#executescript)
-- [executeAsyncScript](#executeasyncscript)
 - [navigate](#navigate)
 - [switchTo](#switchto)
 - [quit](#quit)
@@ -208,6 +207,6 @@
 	const {browser} = seleniumWD
 
 	await browser.switchToBrowser({index: 0}); // will switch to browser (not tab) which was started first
-	await browser.switchToBrowser({tabTitle: 'Simple-Automation-Testing/promod: Library for browser manipulation'});
+	await browser.switchToBrowser({title: 'Simple-Automation-Testing/promod: Library for browser manipulation'});
 	// will switch to browser (not tab) which has "Simple-Automation-Testing/promod: Library for browser manipulation" title
 ```
