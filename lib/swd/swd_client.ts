@@ -15,8 +15,13 @@ import { KeysSWD, resolveUrl } from '../mappers';
 
 import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage } from '../interface';
 
+const availableToRunEvenIfCurrentDriverDoesNotExist = ['constructor', 'runNewBrowser', 'switchToBrowser', 'quitAll'];
+
 function validateBrowserCallMethod(browserClass): Browser {
-  const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
+  const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter(
+    (item) => !availableToRunEvenIfCurrentDriverDoesNotExist.includes(item),
+  );
+
   for (const key of protKeys) {
     const descriptor = Object.getOwnPropertyDescriptor(browserClass.prototype, key);
     if (isAsyncFunction(descriptor.value)) {
@@ -74,16 +79,20 @@ class Browser {
   }
 
   async runNewBrowser() {
-    if (!isArray(this.drivers)) {
-      this.drivers = [];
-    }
-    this.drivers.push(this.seleniumDriver);
     if (!this._createNewDriver) {
       throw new Error('createNewDriver(): seems like create driver method was not inited');
     }
 
+    if (!isArray(this.drivers)) {
+      this.drivers = [];
+    }
+
+    if (this.seleniumDriver) {
+      this.drivers.push(this.seleniumDriver);
+    }
+
     const { driver } = await this._createNewDriver();
-    this.drivers.push(driver);
+
     this.seleniumDriver = driver;
   }
 
@@ -119,21 +128,35 @@ class Browser {
    */
   async switchToBrowser(browserData: TSwitchBrowserTabPage = {}) {
     const { index, ...tabData } = browserData;
+
+    if (this.seleniumDriver && this.drivers && this.drivers.length) {
+      this.drivers = [this.seleniumDriver, ...this.drivers];
+      this.seleniumDriver = null;
+    }
+
     if (isNumber(index) && isArray(this.drivers) && this.drivers.length > index) {
-      this.seleniumDriver = this.drivers[index];
+      // TODO find better solution
+      const [driver] = this.drivers.splice(index, 1);
+
+      this.seleniumDriver = driver;
+
       return;
     }
 
     if (isNotEmptyObject(tabData)) {
       for (const driver of this.drivers) {
-        const result = await this.switchToBrowserTab(tabData)
+        this.seleniumDriver = driver;
+
+        const result = await this.switchToBrowserTab({ ...tabData })
           .then(
             () => true,
             () => false,
           )
           .catch(() => false);
+
         if (result) {
-          this.seleniumDriver = driver;
+          const index = this.drivers.findIndex((item) => item === this.seleniumDriver);
+          this.drivers.splice(index, 1);
           return;
         }
       }
@@ -205,7 +228,7 @@ class Browser {
    * @private
    */
   private async switchToBrowserTab(tabObject: TSwitchBrowserTabPage = {}) {
-    const { index = 0, expectedQuantity, timeout = 5000, ...titleUrl } = tabObject;
+    const { index, expectedQuantity, timeout = 5000, ...titleUrl } = tabObject;
 
     if (isNumber(expectedQuantity)) {
       let errorMessage;
@@ -248,7 +271,7 @@ class Browser {
               title: await this.getTitle(),
             };
 
-            const { result } = compareToPattern(currentBrowserState, titleUrl);
+            const { result } = compareToPattern(currentBrowserState, titleUrl, { stringIncludes: true });
 
             if (result) return true;
           }
@@ -572,18 +595,16 @@ class Browser {
    * @return {Promise<void>}
    */
   async quitAll() {
-    if (isArray(this.drivers) && this.drivers.length) {
-      for (const driver of this.drivers) {
-        if (this.seleniumDriver === driver) {
-          this.seleniumDriver = null;
-        }
-        await driver.quit();
-      }
-    }
+    const drivers = toArray(this.drivers);
     this.drivers = [];
+
     if (this.seleniumDriver) {
       await this.seleniumDriver.quit();
-      this.seleniumDriver = null;
+    }
+    this.seleniumDriver = null;
+
+    for (const driver of drivers) {
+      await driver.quit().catch((_) => ({}));
     }
   }
 
@@ -627,6 +648,10 @@ class Browser {
   }
 
   /**
+   * @info
+   * when you close current browser and you still have another browser sessions
+   * you have to switch to another browser manually via switchToBrowser
+   *
    * @example
    * const { seleniumWD } = require('promod');
    * const { browser } = seleniumWD;
@@ -637,6 +662,7 @@ class Browser {
    */
   async close(): Promise<void> {
     await this.seleniumDriver.close();
+    this.seleniumDriver = null;
   }
 }
 

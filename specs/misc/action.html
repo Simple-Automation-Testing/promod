@@ -3,7 +3,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>ACTIONS</title>
   </head>
   <body>
     <button id="hover">blur</button>
@@ -99,15 +99,15 @@
       document.getElementById('resulter').innerText = event.target.innerText;
     }
 
-    focusItem.addEventListener('focus', event => {
+    focusItem.addEventListener('focus', (event) => {
       event.target.style.background = 'pink';
     });
 
-    blurItem.addEventListener('mouseenter', event => {
+    blurItem.addEventListener('mouseenter', (event) => {
       event.target.style.background = 'red';
     });
 
-    clickItem.addEventListener('click', event => {
+    clickItem.addEventListener('click', (event) => {
       event.target.style.background = 'yellow';
     });
   </script>

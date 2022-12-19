@@ -8,6 +8,7 @@ import {
   hoverFocusFile,
   framesFile,
   selectorsFile,
+  actionFile,
 } from './setup';
 
 describe('Base', () => {
@@ -19,6 +20,32 @@ describe('Base', () => {
 
   after(async () => {
     await browser.quitAll();
+  });
+
+  it('browser windows', async () => {
+    await browser.get(iframesFile);
+    await browser.runNewBrowser();
+    await browser.get(actionFile);
+    await browser.runNewBrowser();
+    await browser.get(formsFile);
+
+    await browser.switchToBrowser({ title: 'IFRAMES', timeout: 500 });
+    expect(await browser.getTitle()).toEqual('IFRAMES');
+    expect(await browser.getCurrentUrl()).stringIncludesSubstring(iframesFile);
+
+    await browser.switchToBrowser({ title: 'FORMS', timeout: 500 });
+    expect(await browser.getTitle()).toEqual('FORMS');
+    expect(await browser.getCurrentUrl()).stringIncludesSubstring(formsFile);
+
+    await browser.close();
+    await browser.switchToBrowser({ title: 'ACTIONS' });
+    expect(await browser.getTitle()).toEqual('ACTIONS');
+    expect(await browser.getCurrentUrl()).stringIncludesSubstring(actionFile);
+
+    await browser.close();
+    await browser.switchToBrowser({ title: 'IFRAMES', timeout: 500 });
+    expect(await browser.getTitle()).toEqual('IFRAMES');
+    expect(await browser.getCurrentUrl()).stringIncludesSubstring(iframesFile);
   });
 
   it('iframes', async () => {
@@ -79,7 +106,7 @@ describe('Base', () => {
     expect(logs).stringIncludesSubstring('~~~~~~~~~~~~~~~~~~~~~~~~111111111');
   });
 
-  it('openNewTab', async () => {
+  it('openNewTab/switchToTab', async () => {
     await browser.get(formsFile);
     await browser.openNewTab(hoverFocusFile);
     await browser.switchToTab({ index: 1, expectedQuantity: 2 });
@@ -143,16 +170,16 @@ describe('Base', () => {
     expect(await email.isDisplayed()).toEqual(false);
     expect(await pass.isDisplayed()).toEqual(false);
 
-    await browser.switchToBrowser({ index: 0 });
+    await browser.switchToBrowser({ title: 'FORMS' });
 
     expect(await email.isDisplayed()).toEqual(true);
     expect(await pass.isDisplayed()).toEqual(true);
     await email.sendKeys('A');
     await pass.sendKeys('B');
-    await browser.switchToBrowser({ index: 1 });
+    await browser.switchToBrowser({ title: 'Google' });
     expect(await email.isDisplayed()).toEqual(false);
     expect(await pass.isDisplayed()).toEqual(false);
-    await browser.switchToBrowser({ index: 0 });
+    await browser.switchToBrowser({ title: 'FORMS' });
     expect(await email.isDisplayed()).toEqual(true);
     expect(await pass.isDisplayed()).toEqual(true);
   });

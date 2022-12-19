@@ -136,7 +136,7 @@ class PageWrapper {
               title: await this._currentPage.title(),
             };
 
-            const { result } = compareToPattern(currentBrowserState, titleUrl);
+            const { result } = compareToPattern(currentBrowserState, titleUrl, { stringIncludes: true });
 
             if (result) return true;
           }
@@ -281,7 +281,6 @@ class Browser {
 
     if (isNotEmptyObject(tabData)) {
       for (const [index] of (await this._contextWrapper.getContexts()).entries()) {
-        console.log(index);
         await this._contextWrapper.changeContext({ index });
         const result = await this.switchToBrowserTab(tabData)
           .then(
@@ -777,7 +776,6 @@ class Browser {
    */
   async quit(): Promise<void> {
     await (await this._contextWrapper.getCurrentContext()).close();
-    this._engineDriver = null;
   }
 
   /**

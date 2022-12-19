@@ -6,5 +6,14 @@ const { ENGINE } = process.env;
 
 const engine = ENGINE === 'pw' ? playwrightWD : seleniumWD;
 
-export { iframesFile, logsFile, formsFile, hoverFocusFile, framesFile, selectorsFile } from './misc/setup';
+export {
+  actionFile,
+  collectionFile,
+  hoverFocusFile,
+  framesFile,
+  formsFile,
+  logsFile,
+  selectorsFile,
+  iframesFile,
+} from './misc/setup';
 export { engine, Key, expect };
