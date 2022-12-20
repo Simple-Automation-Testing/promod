@@ -22,7 +22,33 @@ describe('Base', () => {
     await browser.quitAll();
   });
 
-  it('browser windows', async () => {
+  it('browser windows indexes', async () => {
+    await browser.get(iframesFile);
+    await browser.runNewBrowser();
+    await browser.get(actionFile);
+    await browser.runNewBrowser();
+    await browser.get(formsFile);
+
+    await browser.switchToBrowser({ index: 0 });
+    expect(await browser.getTitle()).toEqual('IFRAMES');
+    expect(await browser.getCurrentUrl()).stringIncludesSubstring(iframesFile);
+
+    await browser.switchToBrowser({ index: 2 });
+    expect(await browser.getTitle()).toEqual('FORMS');
+    expect(await browser.getCurrentUrl()).stringIncludesSubstring(formsFile);
+
+    await browser.switchToBrowser({ index: 1 });
+    expect(await browser.getTitle()).toEqual('ACTIONS');
+    expect(await browser.getCurrentUrl()).stringIncludesSubstring(actionFile);
+
+    await browser.switchToBrowser({ index: 2 });
+    await browser.quit();
+    await browser.switchToBrowser({ index: 1 });
+    await browser.quit();
+    await browser.switchToBrowser({ index: 0 });
+  });
+
+  it('browser windows title and urls', async () => {
     await browser.get(iframesFile);
     await browser.runNewBrowser();
     await browser.get(actionFile);
@@ -37,12 +63,12 @@ describe('Base', () => {
     expect(await browser.getTitle()).toEqual('FORMS');
     expect(await browser.getCurrentUrl()).stringIncludesSubstring(formsFile);
 
-    await browser.close();
+    await browser.quit();
     await browser.switchToBrowser({ title: 'ACTIONS' });
     expect(await browser.getTitle()).toEqual('ACTIONS');
     expect(await browser.getCurrentUrl()).stringIncludesSubstring(actionFile);
 
-    await browser.close();
+    await browser.quit();
     await browser.switchToBrowser({ title: 'IFRAMES', timeout: 500 });
     expect(await browser.getTitle()).toEqual('IFRAMES');
     expect(await browser.getCurrentUrl()).stringIncludesSubstring(iframesFile);

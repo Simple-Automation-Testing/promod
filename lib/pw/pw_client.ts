@@ -94,7 +94,7 @@ class PageWrapper {
   }
 
   async switchToNextPage(tabObject: TSwitchBrowserTabPage = {}) {
-    const { index = 0, expectedQuantity, timeout = 5000, ...titleUrl } = tabObject;
+    const { strictEquality = true, index = 0, expectedQuantity, timeout = 5000, ...titleUrl } = tabObject;
 
     if (isNumber(expectedQuantity)) {
       let errorMessage;
@@ -136,7 +136,7 @@ class PageWrapper {
               title: await this._currentPage.title(),
             };
 
-            const { result } = compareToPattern(currentBrowserState, titleUrl, { stringIncludes: true });
+            const { result } = compareToPattern(currentBrowserState, titleUrl, { stringIncludes: !strictEquality });
 
             if (result) return true;
           }

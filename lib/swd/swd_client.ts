@@ -130,15 +130,15 @@ class Browser {
     const { index, ...tabData } = browserData;
 
     if (this.seleniumDriver && this.drivers && this.drivers.length) {
-      this.drivers = [this.seleniumDriver, ...this.drivers];
-      this.seleniumDriver = null;
+      const isDriverInPool = this.drivers.find((item) => item === this.seleniumDriver);
+      if (!isDriverInPool) {
+        this.drivers = [...this.drivers, this.seleniumDriver];
+      }
     }
 
     if (isNumber(index) && isArray(this.drivers) && this.drivers.length > index) {
       // TODO find better solution
-      const [driver] = this.drivers.splice(index, 1);
-
-      this.seleniumDriver = driver;
+      this.seleniumDriver = this.drivers[index];
 
       return;
     }
@@ -156,7 +156,7 @@ class Browser {
 
         if (result) {
           const index = this.drivers.findIndex((item) => item === this.seleniumDriver);
-          this.drivers.splice(index, 1);
+          this.seleniumDriver = this.drivers[index];
           return;
         }
       }
@@ -228,7 +228,7 @@ class Browser {
    * @private
    */
   private async switchToBrowserTab(tabObject: TSwitchBrowserTabPage = {}) {
-    const { index, expectedQuantity, timeout = 5000, ...titleUrl } = tabObject;
+    const { strictEquality = true, index, expectedQuantity, timeout = 5000, ...titleUrl } = tabObject;
 
     if (isNumber(expectedQuantity)) {
       let errorMessage;
@@ -271,7 +271,7 @@ class Browser {
               title: await this.getTitle(),
             };
 
-            const { result } = compareToPattern(currentBrowserState, titleUrl, { stringIncludes: true });
+            const { result } = compareToPattern(currentBrowserState, titleUrl, { stringIncludes: !strictEquality });
 
             if (result) return true;
           }
@@ -582,6 +582,7 @@ class Browser {
       if (index !== -1) this.drivers.splice(index, 1);
     }
     await this.seleniumDriver.quit();
+
     this.seleniumDriver = null;
   }
 
@@ -662,7 +663,6 @@ class Browser {
    */
   async close(): Promise<void> {
     await this.seleniumDriver.close();
-    this.seleniumDriver = null;
   }
 }
 
