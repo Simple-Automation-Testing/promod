@@ -268,6 +268,10 @@ class Browser {
     return await this._contextWrapper.getCurrentPage();
   }
 
+  async getTabs() {
+    return await (await this._contextWrapper.getCurrentContext()).pages();
+  }
+
   async runNewBrowser(ignoreInitialCapabilities?: boolean) {
     await this._contextWrapper.runNewContext(ignoreInitialCapabilities);
   }
