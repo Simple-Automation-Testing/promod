@@ -821,6 +821,20 @@ class Browser {
   async close(): Promise<void> {
     return (await this.getCurrentPage()).close();
   }
+
+  async scrollElementByMouseWheel(element: PromodElementType, x, y, deltaX, deltaY, duration) {
+    const { x: elementX, y: elementY } = await element.getRect();
+
+    (await this.getCurrentPage()).mouse.move(elementX + x, elementY + y);
+
+    (await this.getCurrentPage()).mouse.wheel(deltaX, deltaY);
+  }
+
+  async scrollByMouseWheel(x, y, deltaX, deltaY, duration) {
+    (await this.getCurrentPage()).mouse.move(x, y);
+
+    (await this.getCurrentPage()).mouse.wheel(deltaX, deltaY);
+  }
 }
 
 const browser = validateBrowserCallMethod(Browser);

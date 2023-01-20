@@ -8,5 +8,6 @@ const formsFile = `file://${path.resolve(__dirname, './forms.html')}`;
 const logsFile = `file://${path.resolve(__dirname, './logs.html')}`;
 const selectorsFile = `file://${path.resolve(__dirname, './selectors.html')}`;
 const iframesFile = `file://${path.resolve(__dirname, './iframes.html')}`;
+const scrollFile = `file://${path.resolve(__dirname, './scroll.html')}`;
 
-export { iframesFile, actionFile, collectionFile, hoverFocusFile, framesFile, formsFile, logsFile, selectorsFile };
+export { scrollFile, iframesFile, actionFile, collectionFile, hoverFocusFile, framesFile, formsFile, logsFile, selectorsFile };

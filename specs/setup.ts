@@ -15,5 +15,6 @@ export {
   logsFile,
   selectorsFile,
   iframesFile,
+  scrollFile,
 } from './misc/setup';
 export { engine, Key, expect };

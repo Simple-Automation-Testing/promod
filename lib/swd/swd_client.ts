@@ -70,6 +70,22 @@ class Browser {
     return KeysSWD;
   }
 
+  async scrollElementByMouseWheel(element: PromodElementType, x, y, deltaX, deltaY, duration) {
+    await this.seleniumDriver
+      .actions()
+      // @ts-ignore
+      .scroll(x, y, deltaX, deltaY, await element.getEngineElement(), duration)
+      .perform();
+  }
+
+  async scrollByMouseWheel(x, y, deltaX, deltaY, duration) {
+    await this.seleniumDriver
+      .actions()
+      // @ts-ignore
+      .scroll(x, y, deltaX, deltaY, undefined, duration)
+      .perform();
+  }
+
   async keyDownAndHold(key: string, element?: PromodElementType) {
     if (element) {
       await this.seleniumDriver

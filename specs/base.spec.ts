@@ -9,6 +9,7 @@ import {
   framesFile,
   selectorsFile,
   actionFile,
+  scrollFile,
 } from './setup';
 
 describe('Base', () => {
@@ -20,6 +21,16 @@ describe('Base', () => {
 
   after(async () => {
     await browser.quitAll();
+  });
+
+  it('browser scroll element by mouse whell', async () => {
+    await browser.get(scrollFile);
+    const elementToScroll = $$('[class="scroll_item"]').get(4);
+    const beforeScroll = await elementToScroll.getRect();
+    await browser.scrollElementByMouseWheel(elementToScroll, 0, 0, 0, 200, 200);
+    const afterScroll = await elementToScroll.getRect();
+
+    expect(beforeScroll).toNotDeepEqual(afterScroll);
   });
 
   it('browser windows indexes', async () => {
