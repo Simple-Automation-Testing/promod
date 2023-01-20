@@ -8,12 +8,12 @@ import {
   isNotEmptyObject,
   compareToPattern,
 } from 'sat-utils';
-import { WebDriver, Key } from 'selenium-webdriver';
+import { WebDriver, Key, WebElement } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { buildBy } from './swd_alignment';
 import { KeysSWD, resolveUrl } from '../mappers';
 
-import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage } from '../interface';
+import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage, PromodElementType } from '../interface';
 
 const availableToRunEvenIfCurrentDriverDoesNotExist = ['constructor', 'runNewBrowser', 'switchToBrowser', 'quitAll'];
 
@@ -70,12 +70,28 @@ class Browser {
     return KeysSWD;
   }
 
-  async keyDownAndHold(key: string) {
-    await this.seleniumDriver.actions().keyDown(key).perform();
+  async keyDownAndHold(key: string, element?: PromodElementType) {
+    if (element) {
+      await this.seleniumDriver
+        .actions()
+        .move({ origin: (await element.getEngineElement()) as WebElement })
+        .keyDown(key)
+        .perform();
+    } else {
+      await this.seleniumDriver.actions().keyDown(key).perform();
+    }
   }
 
-  async keyUp(key: string) {
-    await this.seleniumDriver.actions().keyUp(key).perform();
+  async keyUp(key: string, element?: PromodElementType) {
+    if (element) {
+      await this.seleniumDriver
+        .actions()
+        .move({ origin: (await element.getEngineElement()) as any })
+        .keyUp(key)
+        .perform();
+    } else {
+      await this.seleniumDriver.actions().keyUp(key).perform();
+    }
   }
 
   async runNewBrowser() {

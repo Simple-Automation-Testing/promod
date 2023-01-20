@@ -14,8 +14,8 @@ import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { Locator } from 'playwright-core';
 import { KeysPW, resolveUrl } from '../mappers';
 
-import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page } from 'playwright-core';
-import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage } from '../interface';
+import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page, ElementHandle } from 'playwright-core';
+import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage, PromodElementType } from '../interface';
 
 function validateBrowserCallMethod(browserClass): Browser {
   const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
@@ -578,8 +578,13 @@ class Browser {
    * @param {string} key key that needs to press down
    * @return {Promise<void>}
    */
-  async keyDownAndHold(key: string) {
-    return await (await this.getCurrentPage()).keyboard.down(key);
+  async keyDownAndHold(key: string, element?: PromodElementType) {
+    if (element) {
+      ((await element.getEngineElement()) as ElementHandle).hover();
+      return await (await this.getCurrentPage()).keyboard.down(key);
+    } else {
+      return await (await this.getCurrentPage()).keyboard.down(key);
+    }
   }
 
   /**
@@ -592,8 +597,13 @@ class Browser {
    * @param {string} key key that needs to press down
    * @return {Promise<void>}
    */
-  async keyUp(key: string) {
-    return await (await this.getCurrentPage()).keyboard.up(key);
+  async keyUp(key: string, element?: PromodElementType) {
+    if (element) {
+      ((await element.getEngineElement()) as ElementHandle).hover();
+      return await (await this.getCurrentPage()).keyboard.up(key);
+    } else {
+      return await (await this.getCurrentPage()).keyboard.up(key);
+    }
   }
 
   /**
