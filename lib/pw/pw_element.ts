@@ -447,7 +447,7 @@ class PromodElement {
 
   async getText() {
     await this.getElement();
-    return await this._driverElement.textContent();
+    return await this._driverElement.innerText();
   }
 
   /**
