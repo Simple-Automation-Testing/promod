@@ -257,6 +257,18 @@ class Browser {
     return this._engineDriver;
   }
 
+  injectEngine({ context, page }: { context?: BrowserContext; page?: Page }) {
+    if (context) {
+      const browser = context.browser();
+      this._contextWrapper = new ContextWrapper(browser);
+    }
+    if (page) {
+      const context = page.context();
+      const browser = context.browser();
+      this._contextWrapper = new ContextWrapper(browser);
+    }
+  }
+
   async getWorkingContext() {
     if (this._contextFrame) {
       return this._contextFrame;

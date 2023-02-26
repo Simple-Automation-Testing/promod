@@ -70,6 +70,10 @@ class Browser {
     return KeysSWD;
   }
 
+  injectEngine({ driver }: { driver?: WebDriver }) {
+    this.seleniumDriver = driver;
+  }
+
   async scrollElementByMouseWheel(element: PromodElementType, x, y, deltaX, deltaY, duration) {
     await this.seleniumDriver
       .actions()

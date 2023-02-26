@@ -1,3 +1,4 @@
+import { sleep } from 'sat-utils';
 import {
   engine,
   expect,
@@ -27,7 +28,9 @@ describe('Base', () => {
     await browser.get(scrollFile);
     const elementToScroll = $$('[class="scroll_item"]').get(4);
     const beforeScroll = await elementToScroll.getRect();
+    await sleep(500);
     await browser.scrollElementByMouseWheel(elementToScroll, 0, 0, 0, 200, 200);
+    await sleep(500);
     const afterScroll = await elementToScroll.getRect();
 
     expect(beforeScroll).toNotDeepEqual(afterScroll);
