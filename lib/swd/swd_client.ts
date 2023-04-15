@@ -1,6 +1,7 @@
 import {
   toArray,
   isArray,
+  isString,
   waitForCondition,
   isNumber,
   safeJSONstringify,
@@ -54,8 +55,12 @@ class Browser {
   private appBaseUrl: string;
   private initialTab: any;
   private drivers: WebDriver[];
-  private _createNewDriver: () => Promise<{ driver: WebDriver }>;
+  private _createNewDriver: (capabilities?: any) => Promise<{ driver: WebDriver }>;
   private _browserConfig;
+
+  static getBrowser() {
+    return validateBrowserCallMethod(Browser);
+  }
 
   constructor() {
     this.wait = waitForCondition;
@@ -114,7 +119,15 @@ class Browser {
     }
   }
 
-  async runNewBrowser() {
+  /**
+   *
+   * @param {object} [browserDescription] browser descriptions
+   */
+  async runNewBrowser({
+    currentBrowserName,
+    newBrowserName,
+    capabilities,
+  }: { currentBrowserName?: string; newBrowserName?: string; capabilities?: any } = {}) {
     if (!this._createNewDriver) {
       throw new Error('createNewDriver(): seems like create driver method was not inited');
     }
@@ -123,12 +136,18 @@ class Browser {
       this.drivers = [];
     }
 
+    if (this.seleniumDriver && currentBrowserName) {
+      this.seleniumDriver['__promodBrowserName'] = currentBrowserName;
+    }
+
     if (this.seleniumDriver) {
       this.drivers.push(this.seleniumDriver);
     }
 
-    const { driver } = await this._createNewDriver();
-
+    const { driver } = await this._createNewDriver(capabilities);
+    if (newBrowserName) {
+      driver['__promodBrowserName'] = newBrowserName;
+    }
     this.seleniumDriver = driver;
   }
 
@@ -163,13 +182,25 @@ class Browser {
    * @return {Promise<void>}
    */
   async switchToBrowser(browserData: TSwitchBrowserTabPage = {}) {
-    const { index, ...tabData } = browserData;
+    const { index, browserName, ...tabData } = browserData;
 
     if (this.seleniumDriver && this.drivers && this.drivers.length) {
       const isDriverInPool = this.drivers.find((item) => item === this.seleniumDriver);
       if (!isDriverInPool) {
         this.drivers = [...this.drivers, this.seleniumDriver];
       }
+    }
+
+    if (isString(browserName)) {
+      const driver = this.drivers.find((item) => item['__promodBrowserName'] === browserName);
+      // TODO find better solution
+      if (!driver) {
+        throw new Error(`Browser with name ${browserName} not found`);
+      }
+
+      this.seleniumDriver = driver;
+
+      return;
     }
 
     if (isNumber(index) && isArray(this.drivers) && this.drivers.length > index) {
@@ -702,6 +733,6 @@ class Browser {
   }
 }
 
-const browser = validateBrowserCallMethod(Browser);
+const browser = Browser.getBrowser();
 
 export { browser, Browser };

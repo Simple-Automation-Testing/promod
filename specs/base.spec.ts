@@ -224,6 +224,18 @@ describe('Base', () => {
     expect(await pass.isDisplayed()).toEqual(true);
   });
 
+  it('several browsers by browser name', async () => {
+    await browser.get(formsFile);
+
+    await browser.runNewBrowser({ currentBrowserName: 'initial one', newBrowserName: 'google' });
+    await browser.get('https://google.com');
+
+    expect(await browser.getTitle()).stringIncludesSubstring('Google');
+
+    await browser.switchToBrowser({browserName: 'initial one'});
+    expect(await browser.getTitle()).stringIncludesSubstring('FORMS');
+  });
+
   it('element click/sendKeys', async () => {
     await browser.get(formsFile);
     const email = $('input[placeholder="Ім\'я користувача"]');

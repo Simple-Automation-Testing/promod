@@ -8,6 +8,7 @@ import {
   asyncForEach,
   compareToPattern,
   safeJSONstringify,
+  isString,
 } from 'sat-utils';
 import { Key } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
@@ -178,12 +179,20 @@ class ContextWrapper {
     return this._currentPage._logs;
   }
 
-  async runNewContext(ignoreConfig?: boolean) {
-    const config = ignoreConfig ? {} : this._contextConfig;
-
+  async runNewContext(browserData: { currentBrowserName?: string; newBrowserName?: string; capabilities?: any } = {}) {
+    const { currentBrowserName, newBrowserName, capabilities } = browserData;
+    const config = capabilities || this._contextConfig;
     const { userAgent, isMobile, viewport } = config;
 
+    if (isString(currentBrowserName)) {
+      this._currentContext['__promodBrowserName'] = currentBrowserName;
+    }
+
     this._currentContext = await this.server.newContext({ userAgent, isMobile, viewport });
+
+    if (isString(newBrowserName)) {
+      this._currentContext['__promodBrowserName'] = newBrowserName;
+    }
 
     if (!this._currentPage) {
       this._currentPage = new PageWrapper(this._currentContext);
@@ -200,10 +209,22 @@ class ContextWrapper {
   }
 
   // TODO implement with tab - page title
-  async changeContext({ index }) {
+  async changeContext({ index, browserName }: TSwitchBrowserTabPage) {
+    const contexts = await this.server.contexts();
+
     if (isNumber(index)) {
-      const contexts = await this.server.contexts();
       this._currentContext = contexts[index];
+      await this._currentPage.updateContext(this._currentContext);
+    }
+
+    if (browserName) {
+      const driver = contexts.find((item) => item['__promodBrowserName'] === browserName);
+
+      if (!driver) {
+        throw new Error(`Browser with name ${browserName} not found`);
+      }
+
+      this._currentContext = driver;
       await this._currentPage.updateContext(this._currentContext);
     }
   }
@@ -253,6 +274,10 @@ class Browser {
     this.wait = waitForCondition;
   }
 
+  static getBrowser() {
+    return validateBrowserCallMethod(Browser);
+  }
+
   currentClient() {
     return this._engineDriver;
   }
@@ -284,15 +309,18 @@ class Browser {
     return await (await this._contextWrapper.getCurrentContext()).pages();
   }
 
-  async runNewBrowser(ignoreInitialCapabilities?: boolean) {
-    await this._contextWrapper.runNewContext(ignoreInitialCapabilities);
+  async runNewBrowser(browserData: { currentBrowserName?: string; newBrowserName?: string; capabilities?: any } = {}) {
+    await this._contextWrapper.runNewContext(browserData);
   }
 
   async switchToBrowser(browserData: TSwitchBrowserTabPage = {}) {
-    const { index, ...tabData } = browserData;
+    const { index, browserName, ...tabData } = browserData;
 
     if (isNumber(index) && (await this._contextWrapper.getContexts()).length > index) {
       return await this._contextWrapper.changeContext({ index });
+    }
+    if (isString(browserName)) {
+      return await this._contextWrapper.changeContext({ browserName });
     }
 
     if (isNotEmptyObject(tabData)) {
@@ -849,6 +877,6 @@ class Browser {
   }
 }
 
-const browser = validateBrowserCallMethod(Browser);
+const browser = Browser.getBrowser();
 
 export { browser, Browser };

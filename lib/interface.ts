@@ -267,6 +267,7 @@ export type TSwitchBrowserTabPage = {
   title?: string;
   timeout?: number;
   strictEquality?: boolean;
+  browserName?: string;
 };
 
 export type TCookie = {

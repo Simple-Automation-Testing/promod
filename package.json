@@ -6,7 +6,6 @@
   "bin": "./bin/promod_cli",
   "scripts": {
     "pw:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright install --force chrome",
-    "test": "mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:pw": "ENGINE=pw mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:swd": "ENGINE=swd mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:units": "mocha $(find units -name '*.test.*') --require ts-node/register --timeout 500000",
@@ -45,10 +44,10 @@
   },
   "dependencies": {
     "get-port": "5.1.1",
-    "playwright-core": "^1.31.1",
-    "sat-utils": "1.5.3",
+    "playwright-core": "^1.32.3",
+    "sat-utils": "1.8.0",
     "selenium-standalone": "8.3.0",
-    "selenium-webdriver": "4.8.1",
+    "selenium-webdriver": "4.8.2",
     "yargs": "^17.6.0"
   },
   "keywords": [

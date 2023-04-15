@@ -1,5 +1,5 @@
 import { getDriver } from './driver';
-import { $, $$ } from './pw_element';
+import { $, $$, preBindBrowserInstance } from './pw_element';
 import { browser } from './pw_client';
 
 const playwrightWD = {
@@ -7,6 +7,7 @@ const playwrightWD = {
   browser,
   $,
   $$,
+  preBindBrowserInstance,
 };
 
 export { playwrightWD };

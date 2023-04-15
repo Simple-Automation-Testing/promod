@@ -9,7 +9,7 @@ import {
   isObject,
   lengthToIndexesArray,
 } from 'sat-utils';
-import { By, WebElement, WebDriver, Key } from 'selenium-webdriver';
+import { By, WebElement, Key } from 'selenium-webdriver';
 import { browser } from './swd_client';
 import { buildBy } from './swd_alignment';
 import { getPositionXY } from '../mappers';
@@ -31,28 +31,24 @@ const SELENIUM_API_METHODS = [
 ];
 
 class PromodSeleniumElements {
-  private _driver: WebDriver;
   private selector: string;
   private _driverElements: WebElement[];
   private getParent: () => Promise<PromodSeleniumElement & WebElement>;
   private getExecuteScriptArgs: () => any;
+  public _browserInterface: any;
   public parentSelector: string;
 
-  constructor(selector, client, getParent?, getExecuteScriptArgs?) {
-    this._driver = client;
+  constructor(selector, client = browser, getParent?, getExecuteScriptArgs?) {
+    this._browserInterface = client;
     this.selector = selector;
     this.getParent = getParent;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
   }
 
-  setseleniumDriver(client: WebDriver) {
-    this._driver = client;
-  }
-
   get(index): PromodElementType {
     const childElement = new PromodSeleniumElement(
       this.selector,
-      this._driver,
+      this._browserInterface,
       this.getElement.bind(this, index),
       null,
       true,
@@ -70,7 +66,7 @@ class PromodSeleniumElements {
    * @returns
    */
   private async getElement(index?) {
-    this._driver = browser.currentClient();
+    const _driver = this._browserInterface.currentClient();
 
     if (this.getParent) {
       let parent = await this.getParent();
@@ -82,7 +78,7 @@ class PromodSeleniumElements {
 
       this._driverElements = await parent.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
     } else {
-      this._driverElements = await this._driver.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElements = await _driver.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
     }
 
     if (index < 0) {
@@ -150,16 +146,16 @@ class PromodSeleniumElements {
 }
 
 class PromodSeleniumElement {
-  private _driver: WebDriver;
   private selector: string;
   private _driverElement: WebElement;
   private getParent: () => Promise<PromodElementType>;
   private getExecuteScriptArgs: () => any;
   private useParent: boolean;
+  public _browserInterface: any;
   public parentSelector: string;
 
-  constructor(selector, client, getParent?, getExecuteScriptArgs?, useParent?) {
-    this._driver = client;
+  constructor(selector, client = browser, getParent?, getExecuteScriptArgs?, useParent?) {
+    this._browserInterface = client;
     this.selector = selector;
     this.getParent = getParent;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
@@ -176,18 +172,14 @@ class PromodSeleniumElement {
     });
   }
 
-  setseleniumDriver(client: WebDriver) {
-    this._driver = client;
-  }
-
   $(selector): PromodElementType {
-    const childElement = new PromodSeleniumElement(selector, this._driver, this.getElement.bind(this));
+    const childElement = new PromodSeleniumElement(selector, this._browserInterface, this.getElement.bind(this));
     childElement.parentSelector = this.selector;
     return childElement as any;
   }
 
   $$(selector): PromodElementsType {
-    const childElements = new PromodSeleniumElements(selector, this._driver, this.getElement.bind(this));
+    const childElements = new PromodSeleniumElements(selector, this._browserInterface, this.getElement.bind(this));
     childElements.parentSelector = this.selector;
     return childElements as any;
   }
@@ -322,7 +314,7 @@ class PromodSeleniumElement {
 
   async scrollIntoView(position?: 'end' | 'start' | 'center') {
     await this.getElement();
-    await this._driver.executeScript(
+    await this._browserInterface.executeScript(
       ([elem, scrollPosition]) => {
         let position;
 
@@ -337,7 +329,7 @@ class PromodSeleniumElement {
   }
 
   async getElement() {
-    this._driver = browser.currentClient();
+    const _driver = (this._browserInterface || browser).currentClient();
     if (this.getParent) {
       let parent = (await this.getParent()) as any;
       if (!parent) {
@@ -357,7 +349,7 @@ class PromodSeleniumElement {
         this._driverElement = await parent.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
       }
     } else {
-      this._driverElement = await this._driver.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElement = await _driver.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
     }
 
     return this._driverElement;
@@ -555,7 +547,7 @@ const $ = (
 ): PromodElementType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
 
-  return new PromodSeleniumElement(selector, null, ...restArgs) as any;
+  return new PromodSeleniumElement(selector, browser, ...restArgs) as any;
 };
 
 const $$ = (
@@ -565,7 +557,38 @@ const $$ = (
 ): PromodElementsType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
 
-  return new PromodSeleniumElements(selector, null, ...restArgs) as any;
+  return new PromodSeleniumElements(selector, browser, ...restArgs) as any;
 };
 
-export { $, $$, PromodSeleniumElement, PromodSeleniumElements, By };
+function preBindBrowserInstance(browserThaNeedsToBeBinded) {
+  const $$ = (
+    selector: string | By | ((...args: any[]) => any) | Promise<any>,
+    root?: PromodElementType | any,
+    ...rest: any[]
+  ): PromodElementsType => {
+    const restArgs = getInitElementRest(selector, root, ...rest);
+
+    const collection = new PromodSeleniumElements(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
+
+    return collection;
+  };
+
+  const $ = (
+    selector: string | By | ((...args: any[]) => any) | Promise<any>,
+    root?: PromodElementType | any,
+    ...rest: any[]
+  ): PromodElementType => {
+    const restArgs = getInitElementRest(selector, root, ...rest);
+
+    const element = new PromodSeleniumElement(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
+
+    return element;
+  };
+  return {
+    browser: browserThaNeedsToBeBinded,
+    $$,
+    $,
+  };
+}
+
+export { $, $$, PromodSeleniumElement, PromodSeleniumElements, By, preBindBrowserInstance };

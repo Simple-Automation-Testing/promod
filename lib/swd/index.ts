@@ -1,5 +1,5 @@
 import { getDriver } from './driver';
-import { $, $$ } from './swd_element';
+import { $, $$, preBindBrowserInstance } from './swd_element';
 import { browser } from './swd_client';
 
 const seleniumWD = {
@@ -7,6 +7,7 @@ const seleniumWD = {
   browser,
   $,
   $$,
+  preBindBrowserInstance,
 };
 
 export { seleniumWD };

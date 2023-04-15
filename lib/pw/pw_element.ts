@@ -50,20 +50,23 @@ class PromodElements {
   private getExecuteScriptArgs: () => any;
   private selector: string;
   public parentSelector: string;
+  public _browserInterface: any;
 
   constructor(selector, client, getParent?, getExecuteScriptArgs?) {
-    this._driver = client;
+    this._browserInterface = client;
     this.selector = selector;
     this.getParent = getParent;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
   }
 
-  set_driver(client: Page) {
-    this._driver = client;
-  }
-
   get(index): PromodElementType {
-    const childElement = new PromodElement(this.selector, this._driver, this.getElement.bind(this, index), null, true);
+    const childElement = new PromodElement(
+      this.selector,
+      this._browserInterface,
+      this.getElement.bind(this, index),
+      null,
+      true,
+    );
     if (this.parentSelector) {
       childElement.parentSelector = this.parentSelector || this.selector;
     }
@@ -79,7 +82,7 @@ class PromodElements {
   }
 
   private async getElement(index?) {
-    this._driver = await browser.getWorkingContext();
+    const _driver = await browser.getWorkingContext();
 
     const getElementArgs = buildBy(this.selector, this.getExecuteScriptArgs);
     const shouldUserDocumentRoot = this.selector.toString().startsWith('xpath=//');
@@ -89,11 +92,11 @@ class PromodElements {
       // @ts-ignore
       if (parent.getEngineElement) {
         // @ts-ignore
-        parent = shouldUserDocumentRoot ? this._driver : await parent.getEngineElement();
+        parent = shouldUserDocumentRoot ? _driver : await parent.getEngineElement();
       }
 
       // TODO improve this solution
-      this._driverElements = (await (shouldUserDocumentRoot ? this._driver : parent).$$(
+      this._driverElements = (await (shouldUserDocumentRoot ? _driver : parent).$$(
         getElementArgs,
       )) as any as ElementHandle[];
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
@@ -106,14 +109,14 @@ class PromodElements {
         resolved.push(await item);
       }
       // @ts-ignore
-      const handlesByFunctionSearch = await this._driver.evaluateHandle(
+      const handlesByFunctionSearch = await _driver.evaluateHandle(
         getElementArgs[0],
         resolved.length === 1 ? resolved[0] : resolved,
       );
       // @ts-ignore
-      const availableHandlesLength = await this._driver.evaluate((nodes) => nodes.length, handlesByFunctionSearch);
+      const availableHandlesLength = await _driver.evaluate((nodes) => nodes.length, handlesByFunctionSearch);
       for (const index of lengthToIndexesArray(availableHandlesLength)) {
-        const handle = await this._driver.evaluateHandle(
+        const handle = await _driver.evaluateHandle(
           // @ts-ignore
           ([nodes, itemIndex]) => nodes[itemIndex],
           [handlesByFunctionSearch, index],
@@ -123,7 +126,7 @@ class PromodElements {
 
       this._driverElements = elementHandles.filter(Boolean);
     } else {
-      this._driverElements = await this._driver.$$(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElements = await _driver.$$(buildBy(this.selector, this.getExecuteScriptArgs));
     }
 
     if (index < 0) {
@@ -189,27 +192,24 @@ class PromodElement {
   private useParent: boolean;
   public selector: string;
   public parentSelector: string;
+  public _browserInterface: any;
 
   constructor(selector, client, getParent?, getExecuteScriptArgs?, useParent?) {
-    this._driver = client;
+    this._browserInterface = client;
     this.selector = selector;
     this.getParent = getParent;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
     this.useParent = useParent;
   }
 
-  set_driver(client: Page) {
-    this._driver = client;
-  }
-
   $(selector): PromodElementType {
-    const childElement = new PromodElement(selector, this._driver, this.getElement.bind(this));
+    const childElement = new PromodElement(selector, this._browserInterface, this.getElement.bind(this));
     childElement.parentSelector = this.selector;
     return childElement as any;
   }
 
   $$(selector): PromodElementsType {
-    const childElements = new PromodElements(selector, this._driver, this.getElement.bind(this));
+    const childElements = new PromodElements(selector, this._browserInterface, this.getElement.bind(this));
     childElements.parentSelector = this.selector;
     return childElements as any;
   }
@@ -273,7 +273,8 @@ class PromodElement {
 
   async getTagName() {
     await this.getElement();
-    return this._driver.evaluate((item) => item.nodeName.toLowerCase(), this._driverElement);
+    const _driver = await this._browserInterface.getWorkingContext();
+    return _driver.evaluate((item) => item.nodeName.toLowerCase(), this._driverElement);
   }
 
   async getCssValue() {}
@@ -609,7 +610,7 @@ const $ = (
 ): PromodElementType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
 
-  return new PromodElement(selector, null, ...restArgs) as any;
+  return new PromodElement(selector, browser, ...restArgs) as any;
 };
 
 const $$ = (
@@ -619,7 +620,35 @@ const $$ = (
 ): PromodElementsType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
 
-  return new PromodElements(selector, null, ...restArgs) as any;
+  return new PromodElements(selector, browser, ...restArgs) as any;
 };
 
-export { $, $$, PromodElement, PromodElements };
+function preBindBrowserInstance(browserThaNeedsToBeBinded) {
+  const $ = (
+    selector: string | ((...args: any[]) => any) | Promise<any>,
+    root?: PromodElementType | any,
+    ...rest: any[]
+  ): PromodElementType => {
+    const restArgs = getInitElementRest(selector, root, ...rest);
+
+    return new PromodElement(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
+  };
+
+  const $$ = (
+    selector: string | ((...args: any[]) => any) | Promise<any>,
+    root?: PromodElementType | any,
+    ...rest: any[]
+  ): PromodElementsType => {
+    const restArgs = getInitElementRest(selector, root, ...rest);
+
+    return new PromodElements(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
+  };
+
+  return {
+    $,
+    $$,
+    browser: browserThaNeedsToBeBinded,
+  };
+}
+
+export { $, $$, PromodElement, PromodElements, preBindBrowserInstance };
