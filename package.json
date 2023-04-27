@@ -1,6 +1,6 @@
 {
   "name": "promod",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Library for automation testing",
   "main": "./built/index.js",
   "bin": "./bin/promod_cli",
@@ -44,10 +44,10 @@
   },
   "dependencies": {
     "get-port": "5.1.1",
-    "playwright-core": "^1.32.3",
+    "playwright-core": "^1.33.0",
     "sat-utils": "1.8.0",
     "selenium-standalone": "8.3.0",
-    "selenium-webdriver": "4.8.2",
+    "selenium-webdriver": "4.9.0",
     "yargs": "^17.6.0"
   },
   "keywords": [

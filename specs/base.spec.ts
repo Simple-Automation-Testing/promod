@@ -157,8 +157,8 @@ describe('Base', () => {
 
   it('by js function', async () => {
     await browser.get(formsFile);
-    const button = $('form').$$('xpath=//button');
-    expect(await button.get(1).getText()).toEqual('Зареєструватися');
+    const buttons = $('form').$$('xpath=//button');
+    expect(await buttons.get(1).getText()).toEqual('Зареєструватися');
   });
 
   it('by js function', async () => {
@@ -232,7 +232,7 @@ describe('Base', () => {
 
     expect(await browser.getTitle()).stringIncludesSubstring('Google');
 
-    await browser.switchToBrowser({browserName: 'initial one'});
+    await browser.switchToBrowser({ browserName: 'initial one' });
     expect(await browser.getTitle()).stringIncludesSubstring('FORMS');
   });
 

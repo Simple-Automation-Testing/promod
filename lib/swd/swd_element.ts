@@ -68,7 +68,10 @@ class PromodSeleniumElements {
   private async getElement(index?) {
     const _driver = this._browserInterface.currentClient();
 
-    if (this.getParent) {
+    const ignoreParent = this.selector.startsWith('ignore-parent=');
+    const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
+
+    if (this.getParent && !ignoreParent) {
       let parent = await this.getParent();
 
       if (parent.getEngineElement) {
@@ -76,9 +79,9 @@ class PromodSeleniumElements {
         parent = await parent.getEngineElement();
       }
 
-      this._driverElements = await parent.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElements = await parent.findElements(buildBy(selector, this.getExecuteScriptArgs));
     } else {
-      this._driverElements = await _driver.findElements(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElements = await _driver.findElements(buildBy(selector, this.getExecuteScriptArgs));
     }
 
     if (index < 0) {
@@ -330,7 +333,11 @@ class PromodSeleniumElement {
 
   async getElement() {
     const _driver = (this._browserInterface || browser).currentClient();
-    if (this.getParent) {
+
+    const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
+    const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
+
+    if (this.getParent && !ignoreParent) {
       let parent = (await this.getParent()) as any;
       if (!parent) {
         throw new Error(
@@ -346,10 +353,10 @@ class PromodSeleniumElement {
       if (this.useParent) {
         this._driverElement = parent;
       } else {
-        this._driverElement = await parent.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
+        this._driverElement = await parent.findElement(buildBy(selector, this.getExecuteScriptArgs));
       }
     } else {
-      this._driverElement = await _driver.findElement(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElement = await _driver.findElement(buildBy(selector, this.getExecuteScriptArgs));
     }
 
     return this._driverElement;

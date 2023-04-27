@@ -84,10 +84,13 @@ class PromodElements {
   private async getElement(index?) {
     const _driver = await browser.getWorkingContext();
 
-    const getElementArgs = buildBy(this.selector, this.getExecuteScriptArgs);
-    const shouldUserDocumentRoot = this.selector.toString().startsWith('xpath=//');
+    const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
+    const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
 
-    if (this.getParent) {
+    const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
+    const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
+
+    if (this.getParent && !ignoreParent) {
       let parent = await this.getParent();
       // @ts-ignore
       if (parent.getEngineElement) {
@@ -490,10 +493,14 @@ class PromodElement {
 
   async getElement() {
     this._driver = await browser.getWorkingContext();
-    const getElementArgs = buildBy(this.selector, this.getExecuteScriptArgs);
-    const shouldUserDocumentRoot = this.selector.toString().startsWith('xpath=//');
 
-    if (this.getParent) {
+    const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
+    const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
+
+    const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
+    const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
+
+    if (this.getParent && !ignoreParent) {
       let parent = (await this.getParent()) as any;
       if (!parent) {
         throw new Error(
