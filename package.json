@@ -1,11 +1,11 @@
 {
   "name": "promod",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Library for automation testing",
   "main": "./built/index.js",
   "bin": "./bin/promod_cli",
   "scripts": {
-    "pw:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright install --force chrome",
+    "pw:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright-core install --force chrome",
     "test:pw": "ENGINE=pw mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:swd": "ENGINE=swd mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:units": "mocha $(find units -name '*.test.*') --require ts-node/register --timeout 500000",
@@ -44,10 +44,10 @@
   },
   "dependencies": {
     "get-port": "5.1.1",
-    "playwright-core": "^1.33.0",
+    "playwright-core": "^1.34.3",
     "sat-utils": "1.8.0",
     "selenium-standalone": "8.3.0",
-    "selenium-webdriver": "4.9.0",
+    "selenium-webdriver": "4.9.2",
     "yargs": "^17.6.0"
   },
   "keywords": [
