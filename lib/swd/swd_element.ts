@@ -13,6 +13,7 @@ import { By, WebElement, Key } from 'selenium-webdriver';
 import { browser } from './swd_client';
 import { buildBy } from './swd_alignment';
 import { getPositionXY } from '../mappers';
+import { promodLogger } from '../internals';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
 
@@ -46,6 +47,7 @@ class PromodSeleniumElements {
   }
 
   get(index): PromodElementType {
+    promodLogger.engineLog(`[SWD] Promod elements interface calls method "get" from wrapped API, args: `, index);
     const childElement = new PromodSeleniumElement(
       this.selector,
       this._browserInterface,
@@ -66,6 +68,7 @@ class PromodSeleniumElements {
    * @returns
    */
   private async getElement(index?) {
+    promodLogger.engineLog(`[SWD] Promod elements interface calls method "getElement" from wrapped API, args: `, index);
     const _driver = this._browserInterface.currentClient();
 
     const ignoreParent = this.selector.startsWith('ignore-parent=');
@@ -92,10 +95,12 @@ class PromodSeleniumElements {
   }
 
   last(): PromodElementType {
+    promodLogger.engineLog(`[SWD] Promod elements interface calls method "last" from wrapped API`);
     return this.get(-1) as any;
   }
 
   first(): PromodElementType {
+    promodLogger.engineLog(`[SWD] Promod elements interface calls method "first" from wrapped API`);
     return this.get(0) as any;
   }
 
@@ -106,12 +111,14 @@ class PromodSeleniumElements {
   }
 
   async getEngineElements() {
+    promodLogger.engineLog(`[SWD] Promod elements interface calls method "getEngineElements" from wrapped API`);
     await this.getElement(0);
 
     return this._driverElements;
   }
 
   async each(cb: (item: PromodElementType, index?: number) => Promise<void>): Promise<any> {
+    promodLogger.engineLog(`[SWD] Promod elements interface calls method "each" from wrapped API, args: `, cb);
     await this.getElement(0);
 
     for (let i = 0; i < this._driverElements.length; i++) {
@@ -120,6 +127,7 @@ class PromodSeleniumElements {
   }
 
   async map<T>(cb: (item: PromodElementType, index?: number) => Promise<T>): Promise<T[]> {
+    promodLogger.engineLog(`[SWD] Promod elements interface calls method "map" from wrapped API, args: `, cb);
     await this.getElement(0);
     const res = [];
 
@@ -131,6 +139,7 @@ class PromodSeleniumElements {
   }
 
   async find(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<PromodElementType> {
+    promodLogger.engineLog(`[SWD] Promod elements interface calls method "find" from wrapped API, args: `, cb);
     await this.getElement(0);
 
     for (let i = 0; i < this._driverElements.length; i++) {
@@ -142,9 +151,17 @@ class PromodSeleniumElements {
   }
 
   async count(): Promise<number> {
+    promodLogger.engineLog(`[SWD] Promod elements interface calls method "count" from wrapped API`);
     return this.getElement()
       .then(() => this._driverElements.length)
-      .catch(() => 0);
+      .catch((error) => {
+        promodLogger.engineLog(
+          `Promod elements interface gets error after method "count" from wrapped API, error: `,
+          error,
+        );
+
+        return 0;
+      });
   }
 }
 
@@ -168,6 +185,10 @@ class PromodSeleniumElement {
 
     SELENIUM_API_METHODS.forEach(function (methodName) {
       self[methodName] = (...args: any[]) => {
+        promodLogger.engineLog(
+          `Promod element interface calls method "${methodName}" from selenium native API, args: `,
+          ...args,
+        );
         const action = () => self._driverElement[methodName].call(self._driverElement, ...args);
 
         return self.callElementAction(action);
@@ -176,12 +197,14 @@ class PromodSeleniumElement {
   }
 
   $(selector): PromodElementType {
+    promodLogger.engineLog('Create new promod child element, selector: ', selector);
     const childElement = new PromodSeleniumElement(selector, this._browserInterface, this.getElement.bind(this));
     childElement.parentSelector = this.selector;
     return childElement as any;
   }
 
   $$(selector): PromodElementsType {
+    promodLogger.engineLog('Create new promod child elements, selector: ', selector);
     const childElements = new PromodSeleniumElements(selector, this._browserInterface, this.getElement.bind(this));
     childElements.parentSelector = this.selector;
     return childElements as any;
@@ -223,6 +246,7 @@ class PromodSeleniumElement {
       trial?: boolean;
     } = { clickCount: 1 },
   ) {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "click" from wrapped API, args: `, opts);
     if (!isObject(opts) && !isUndefined(opts)) {
       throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
     }
@@ -254,11 +278,13 @@ class PromodSeleniumElement {
   }
 
   async sendKeys(value, asFill) {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "sendKeys" from wrapped API, args: `, value);
     await this.getElement();
     await this._driverElement.sendKeys(value);
   }
 
   async hover() {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "hover" from wrapped API`);
     await browser
       .currentClient()
       .actions()
@@ -278,6 +304,10 @@ class PromodSeleniumElement {
       | 'left-top'
       | 'left-bottom' = 'center',
   ) {
+    promodLogger.engineLog(
+      `Promod element interface calls method "clickByElementCoordinate" from wrapped API, args: `,
+      position,
+    );
     const { x, y } = await this.getElementCoordinates(position);
 
     await browser
@@ -300,6 +330,10 @@ class PromodSeleniumElement {
       | 'left-top'
       | 'left-bottom' = 'center',
   ) {
+    promodLogger.engineLog(
+      `Promod element interface calls method "getElementCoordinates" from wrapped API, args: `,
+      position,
+    );
     await this.getElement();
     const { x, y, width, height } = await this._driverElement.getRect();
 
@@ -307,6 +341,7 @@ class PromodSeleniumElement {
   }
 
   async focus() {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "focus" from wrapped API`);
     await browser
       .currentClient()
       .actions()
@@ -316,6 +351,7 @@ class PromodSeleniumElement {
   }
 
   async scrollIntoView(position?: 'end' | 'start' | 'center') {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "scrollIntoView" from wrapped API, args: `, position);
     await this.getElement();
     await this._browserInterface.executeScript(
       ([elem, scrollPosition]) => {
@@ -332,6 +368,7 @@ class PromodSeleniumElement {
   }
 
   async getElement() {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "getElement" from wrapped API`);
     const _driver = (this._browserInterface || browser).currentClient();
 
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
@@ -370,9 +407,17 @@ class PromodSeleniumElement {
    * @returns {Promise<boolean>} button is present
    */
   async isDisplayed() {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "isDisplayed" from wrapped API`);
     return this.getElement()
       .then(() => this._driverElement.isDisplayed())
-      .catch(() => false);
+      .catch((error) => {
+        promodLogger.engineLog(
+          `Promod element interface gets error after method "isDisplayed" from wrapped API, error: `,
+          error,
+        );
+
+        return false;
+      });
   }
 
   /**
@@ -388,6 +433,11 @@ class PromodSeleniumElement {
    * @returns {Promise<void>}
    */
   async clearViaBackspace(repeat: number = 1, focus?: boolean) {
+    promodLogger.engineLog(
+      `Promod element interface calls method "clearViaBackspace" from wrapped API, args: `,
+      repeat,
+      focus,
+    );
     await this.getElement();
     if (focus) {
       await this.click({ withScroll: true });
@@ -409,6 +459,7 @@ class PromodSeleniumElement {
    * @returns {Promise<void>}
    */
   async pressEnter(focus?: boolean) {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "pressEnter" from wrapped API, args: `, focus);
     await this.getElement();
     if (focus) {
       await this.click({ withScroll: true });
@@ -426,6 +477,7 @@ class PromodSeleniumElement {
         }
       | string,
   ) {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "selectOption" from wrapped API, args: `, optValue);
     await this.getElement();
     // open options list
     await this.click({ withScroll: true });
@@ -472,9 +524,16 @@ class PromodSeleniumElement {
    * @returns {Promise<boolean>} button is present
    */
   async isPresent() {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "isPresent" from wrapped API`);
     return this.getElement()
       .then(() => true)
-      .catch(() => false);
+      .catch((error) => {
+        promodLogger.engineLog(
+          `Promod element interface gets error after method "isPresent" from wrapped API, error: `,
+          error,
+        );
+        return false;
+      });
   }
 
   private async callElementAction(action) {
@@ -484,12 +543,14 @@ class PromodSeleniumElement {
   }
 
   async getId() {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "getId" from wrapped API`);
     await this.getElement();
     // @ts-ignore
     return this._driverElement.id_;
   }
 
   async getEngineElement() {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "getEngineElement" from wrapped API`);
     await this.getElement();
 
     return this._driverElement;
@@ -553,6 +614,7 @@ const $ = (
   ...rest: any[]
 ): PromodElementType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
+  promodLogger.engineLog('Create new Promod element interface, args: ', ...restArgs);
 
   return new PromodSeleniumElement(selector, browser, ...restArgs) as any;
 };
@@ -563,6 +625,7 @@ const $$ = (
   ...rest: any[]
 ): PromodElementsType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
+  promodLogger.engineLog('Create new Promod element interfaces, args: ', ...restArgs);
 
   return new PromodSeleniumElements(selector, browser, ...restArgs) as any;
 };

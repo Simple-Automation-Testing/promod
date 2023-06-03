@@ -13,6 +13,7 @@ import { WebDriver, Key, WebElement } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { buildBy } from './swd_alignment';
 import { KeysSWD, resolveUrl } from '../mappers';
+import { promodLogger } from '../internals';
 
 import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage, PromodElementType } from '../interface';
 
@@ -80,6 +81,15 @@ class Browser {
   }
 
   async scrollElementByMouseWheel(element: PromodElementType, x, y, deltaX, deltaY, duration) {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "scrollElementByMouseWheel" from wrapped API, args: `,
+      element,
+      x,
+      y,
+      deltaX,
+      deltaY,
+      duration,
+    );
     await this.seleniumDriver
       .actions()
       // @ts-ignore
@@ -88,6 +98,14 @@ class Browser {
   }
 
   async scrollByMouseWheel(x, y, deltaX, deltaY, duration) {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "scrollByMouseWheel" from wrapped API, args: `,
+      x,
+      y,
+      deltaX,
+      deltaY,
+      duration,
+    );
     await this.seleniumDriver
       .actions()
       // @ts-ignore
@@ -96,6 +114,11 @@ class Browser {
   }
 
   async keyDownAndHold(key: string, element?: PromodElementType) {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "keyDownAndHold" from wrapped API, args: `,
+      key,
+      element,
+    );
     if (element) {
       await this.seleniumDriver
         .actions()
@@ -108,6 +131,7 @@ class Browser {
   }
 
   async keyUp(key: string, element?: PromodElementType) {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "keyUp" from wrapped API, args: `, key, element);
     if (element) {
       await this.seleniumDriver
         .actions()
@@ -128,6 +152,12 @@ class Browser {
     newBrowserName,
     capabilities,
   }: { currentBrowserName?: string; newBrowserName?: string; capabilities?: any } = {}) {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "runNewBrowser" from wrapped API, args: `,
+      currentBrowserName,
+      newBrowserName,
+      capabilities,
+    );
     if (!this._createNewDriver) {
       throw new Error('createNewDriver(): seems like create driver method was not inited');
     }
@@ -152,6 +182,11 @@ class Browser {
   }
 
   async switchToIframe(element: string, jumpToDefaultFirst = false) {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "switchToIframe" from wrapped API, args: `,
+      element,
+      jumpToDefaultFirst,
+    );
     if (jumpToDefaultFirst) {
       await this.switchToDefauldIframe();
     }
@@ -169,6 +204,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async switchToDefauldIframe() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "switchToDefauldIframe" from wrapped API`);
     await this.seleniumDriver.switchTo().defaultContent();
   }
 
@@ -182,6 +218,10 @@ class Browser {
    * @return {Promise<void>}
    */
   async switchToBrowser(browserData: TSwitchBrowserTabPage = {}) {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "switchToBrowser" from wrapped API, args: `,
+      browserData,
+    );
     const { index, browserName, ...tabData } = browserData;
 
     if (this.seleniumDriver && this.drivers && this.drivers.length) {
@@ -253,6 +293,7 @@ class Browser {
   }
 
   async returnToInitialTab() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "returnToInitialTab" from wrapped API`);
     // there was no switching in test
     if (!this.initialTab) {
       return;
@@ -264,6 +305,7 @@ class Browser {
   }
 
   private async closeAllTabsExceptInitial() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "closeAllTabsExceptInitial" from wrapped API`);
     const handles = await this.getTabs();
     handles.splice(handles.indexOf(this.initialTab), 1);
     await this.makeActionAtEveryTab(async () => this.close(), handles);
@@ -283,6 +325,10 @@ class Browser {
    * @return {Promise<void>}
    */
   async makeActionAtEveryTab(action: (...args: any) => Promise<any>, handles?: string[]) {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "makeActionAtEveryTab" from wrapped API, args: `,
+      action,
+    );
     handles = handles || (await this.getTabs());
     for (const windowHandle of handles) {
       await this.seleniumDriver.switchTo().window(windowHandle);
@@ -363,6 +409,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async openNewTab(url = 'data:,') {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "openNewTab" from wrapped API, args: `, url);
     await this.seleniumDriver.executeScript((openUrl) => {
       window.open(openUrl, '_blank');
     }, url);
@@ -380,6 +427,10 @@ class Browser {
    * @return {Promise<void>}
    */
   async switchToTab(tabObject: TSwitchBrowserTabPage) {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "switchToTab" from wrapped API, args: `,
+      tabObject,
+    );
     if (!this.initialTab) {
       this.initialTab = await this.seleniumDriver.getWindowHandle();
     }
@@ -397,6 +448,7 @@ class Browser {
    * @returns {Promise<void>}
    */
   async setCookies(cookies: TCookie | TCookie[]) {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "setCookies" from wrapped API, args: `, cookies);
     const cookiesArr = toArray(cookies);
     for (const cookie of cookiesArr) {
       await (await this.seleniumDriver.manage()).addCookie(cookie);
@@ -412,6 +464,7 @@ class Browser {
    * @return {Promise<Array<TCookie>>} cookies list
    */
   async getCookies() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "getCookies" from wrapped API`);
     return await (await this.seleniumDriver.manage()).getCookies();
   }
 
@@ -425,6 +478,10 @@ class Browser {
    * @return {Promise<{ name: string; value: string }>}
    */
   async getCookieByName(name: string) {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "getCookieByName" from wrapped API, args: `,
+      name,
+    );
     return await (await this.seleniumDriver.manage()).getCookie(name);
   }
 
@@ -438,6 +495,7 @@ class Browser {
    * @returns {Promise<void>}
    */
   async deleteCookie(name: string) {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "deleteCookie" from wrapped API, args: `, name);
     await (await this.seleniumDriver.manage()).deleteCookie(name);
   }
 
@@ -450,6 +508,7 @@ class Browser {
    * @returns {Promise<void>}
    */
   async deleteAllCookies() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "deleteAllCookies" from wrapped API`);
     await (await this.seleniumDriver.manage()).deleteAllCookies();
   }
 
@@ -463,6 +522,7 @@ class Browser {
    * @return {Promise<string>} tab (page) title
    */
   async getTitle() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "getTitle" from wrapped API`);
     return await this.seleniumDriver.getTitle();
   }
 
@@ -476,6 +536,7 @@ class Browser {
    * @return {Promise<string>}
    */
   async getCurrentUrl() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "getCurrentUrl" from wrapped API`);
     return await this.seleniumDriver.getCurrentUrl();
   }
 
@@ -489,6 +550,7 @@ class Browser {
    * @return {Promise<{ height: number; width: number }>} window size
    */
   async getWindomSize(): Promise<{ height: number; width: number }> {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "getWindomSize" from wrapped API`);
     return await this.seleniumDriver.executeScript(() => ({ height: window.outerHeight, width: window.outerWidth }));
   }
 
@@ -502,12 +564,14 @@ class Browser {
    * @returns {Promise<Buffer>}
    */
   async takeScreenshot(): Promise<Buffer> {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "takeScreenshot" from wrapped API`);
     const res = await this.seleniumDriver.takeScreenshot();
 
     return Buffer.from(res, 'base64');
   }
 
   async getTabs() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "getTabs" from wrapped API`);
     return await this.seleniumDriver.getAllWindowHandles();
   }
 
@@ -521,6 +585,7 @@ class Browser {
    * @returns {Promise<number>}
    */
   async getTabsCount() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "getTabsCount" from wrapped API`);
     return (await this.seleniumDriver.getAllWindowHandles()).length;
   }
 
@@ -535,6 +600,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async get(url: string) {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "get" from wrapped API`);
     const getUrl = resolveUrl(url, this.appBaseUrl);
 
     return await this.seleniumDriver.get(getUrl);
@@ -552,6 +618,11 @@ class Browser {
    * @return {Promise<void>}
    */
   async setWindowSize(width: number, height: number) {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "setWindowSize" from wrapped API, args: `,
+      width,
+      height,
+    );
     return await this.seleniumDriver.manage().window().setRect({
       width,
       height,
@@ -569,6 +640,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async sleep(time: number) {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "sleep" from wrapped API, args: `, time);
     await (() => new Promise((resolve) => setTimeout(resolve, time)))();
   }
 
@@ -589,6 +661,11 @@ class Browser {
    * @returns {Promise<unknown>}
    */
   async executeScript(script: ExecuteScriptFn, args?: any | any[]): Promise<any> {
+    promodLogger.engineLog(
+      `[SWD] Promod client interface calls method "executeScript" from wrapped API, args: `,
+      script,
+      args,
+    );
     const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
     const res = await this.seleniumDriver.executeScript(script, recomposedArgs);
 
@@ -605,6 +682,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async back() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "back" from wrapped API`);
     return (await this.seleniumDriver.navigate()).back();
   }
 
@@ -618,6 +696,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async forward() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "forward" from wrapped API`);
     return (await this.seleniumDriver.navigate()).forward();
   }
 
@@ -631,6 +710,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async refresh() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "refresh" from wrapped API`);
     return (await this.seleniumDriver.navigate()).refresh();
   }
 
@@ -644,6 +724,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async quit() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "quit" from wrapped API`);
     if (this.drivers && this.drivers.length) {
       const index = this.drivers.findIndex((driver) => driver === this.seleniumDriver);
       if (index !== -1) this.drivers.splice(index, 1);
@@ -663,6 +744,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async quitAll() {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "quitAll" from wrapped API`);
     const drivers = toArray(this.drivers);
     this.drivers = [];
 
@@ -686,6 +768,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async maximize(): Promise<void> {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "maximize" from wrapped API`);
     const { width, height } = (await this.seleniumDriver.executeScript(() => {
       const { availHeight, availWidth } = window.screen;
       return { width: availWidth, height: availHeight };
@@ -705,6 +788,7 @@ class Browser {
    * @return {Promise<TLogLevel[] | string>}
    */
   async getBrowserLogs(): Promise<TLogLevel[] | string> {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "getBrowserLogs" from wrapped API`);
     try {
       // @ts-ignore
       const manage = await this.seleniumDriver.manage();
@@ -729,6 +813,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async close(): Promise<void> {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "close" from wrapped API`);
     await this.seleniumDriver.close();
   }
 }
