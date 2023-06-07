@@ -203,8 +203,6 @@ class PromodSeleniumElement {
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
 
-    console.log(this.useParent, 'SHOULD USE PARENT?', this.getParent, this.selector.toString());
-
     /**
      * !@info
      * selector should be a string type to proceed inside if block
@@ -618,7 +616,6 @@ function getInitElementRest(
     isFunction(selector) ||
     isPromise(selector)
   ) {
-    console.log('In promise <<<<<<<<<<<<<,,', rest);
     getExecuteScriptArgs = function getExecuteScriptArgs() {
       const localRest = rest.map((item) => (item && item.getEngineElement ? item.getEngineElement() : item));
       const rootPromiseIfRequired = root && root.getEngineElement ? root.getEngineElement() : root;

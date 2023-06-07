@@ -179,7 +179,6 @@ describe('Base', () => {
     try {
       const body = $(() => document.querySelector('body'));
       const email = $((parent) => {
-        console.log(parent);
         return parent.querySelector('input[placeholder="Ім\'я користувача"]');
       }, body.getEngineElement());
 
@@ -358,7 +357,6 @@ describe('Base', () => {
     await signIn.click();
     const lastRow = $$('tr').last();
     const beforeScroll = await lastRow.getRect();
-    console.log(beforeScroll);
     await browser.sleep(5500);
     await lastRow.scrollIntoView();
     await browser.sleep(5500);
