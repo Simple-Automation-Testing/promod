@@ -71,10 +71,10 @@ class PromodSeleniumElements {
     promodLogger.engineLog(`[SWD] Promod elements interface calls method "getElement" from wrapped API, args: `, index);
     const _driver = this._browserInterface.currentClient();
 
-    const ignoreParent = this.selector.startsWith('ignore-parent=');
+    const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
 
-    if (this.getParent && !ignoreParent) {
+    if (this.getParent && !ignoreParent && isString(selector)) {
       let parent = await this.getParent();
 
       if (parent.getEngineElement) {
@@ -196,16 +196,66 @@ class PromodSeleniumElement {
     });
   }
 
-  $(selector): PromodElementType {
-    promodLogger.engineLog('Create new promod child element, selector: ', selector);
-    const childElement = new PromodSeleniumElement(selector, this._browserInterface, this.getElement.bind(this));
+  async getElement() {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "getElement" from wrapped API`);
+    const _driver = (this._browserInterface || browser).currentClient();
+
+    const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
+    const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
+
+    console.log(this.useParent, 'SHOULD USE PARENT?', this.getParent, this.selector.toString());
+
+    /**
+     * !@info
+     * selector should be a string type to proceed inside if block
+     */
+    if (this.getParent && !ignoreParent && isString(selector)) {
+      let parent = (await this.getParent()) as any;
+      if (!parent) {
+        throw new Error(
+          this.useParent
+            ? `Any element with selector ${this.selector} was not found`
+            : `Parent element with selector ${this.parentSelector} was not found`,
+        );
+      }
+      if (parent.getEngineElement) {
+        parent = await parent.getEngineElement();
+      }
+
+      if (this.useParent) {
+        this._driverElement = parent;
+      } else {
+        this._driverElement = await parent.findElement(buildBy(selector, this.getExecuteScriptArgs));
+      }
+    } else {
+      this._driverElement = await _driver.findElement(buildBy(selector, this.getExecuteScriptArgs));
+    }
+
+    return this._driverElement;
+  }
+
+  $(selector, ...rest): PromodElementType {
+    promodLogger.engineLog('[SWD] Create new promod child element, selector: ', selector);
+    const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
+    const childElement = new PromodSeleniumElement(
+      selector,
+      this._browserInterface,
+      this.getElement.bind(this),
+      executeScriptArgsGetter,
+    );
     childElement.parentSelector = this.selector;
     return childElement as any;
   }
 
-  $$(selector): PromodElementsType {
-    promodLogger.engineLog('Create new promod child elements, selector: ', selector);
-    const childElements = new PromodSeleniumElements(selector, this._browserInterface, this.getElement.bind(this));
+  $$(selector, ...rest): PromodElementsType {
+    promodLogger.engineLog('[SWD] Create new promod child elements, selector: ', selector);
+    const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
+    const childElements = new PromodSeleniumElements(
+      selector,
+      this._browserInterface,
+      this.getElement.bind(this),
+      executeScriptArgsGetter,
+    );
     childElements.parentSelector = this.selector;
     return childElements as any;
   }
@@ -351,7 +401,10 @@ class PromodSeleniumElement {
   }
 
   async scrollIntoView(position?: 'end' | 'start' | 'center') {
-    promodLogger.engineLog(`[SWD] Promod element interface calls method "scrollIntoView" from wrapped API, args: `, position);
+    promodLogger.engineLog(
+      `[SWD] Promod element interface calls method "scrollIntoView" from wrapped API, args: `,
+      position,
+    );
     await this.getElement();
     await this._browserInterface.executeScript(
       ([elem, scrollPosition]) => {
@@ -365,38 +418,6 @@ class PromodSeleniumElement {
       },
       [await this.getEngineElement(), position],
     );
-  }
-
-  async getElement() {
-    promodLogger.engineLog(`[SWD] Promod element interface calls method "getElement" from wrapped API`);
-    const _driver = (this._browserInterface || browser).currentClient();
-
-    const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
-    const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
-
-    if (this.getParent && !ignoreParent) {
-      let parent = (await this.getParent()) as any;
-      if (!parent) {
-        throw new Error(
-          this.useParent
-            ? `Any element with selector ${this.selector} was not found`
-            : `Parent element with selector ${this.parentSelector} was not found`,
-        );
-      }
-      if (parent.getEngineElement) {
-        parent = await parent.getEngineElement();
-      }
-
-      if (this.useParent) {
-        this._driverElement = parent;
-      } else {
-        this._driverElement = await parent.findElement(buildBy(selector, this.getExecuteScriptArgs));
-      }
-    } else {
-      this._driverElement = await _driver.findElement(buildBy(selector, this.getExecuteScriptArgs));
-    }
-
-    return this._driverElement;
   }
 
   /**
@@ -477,7 +498,10 @@ class PromodSeleniumElement {
         }
       | string,
   ) {
-    promodLogger.engineLog(`[SWD] Promod element interface calls method "selectOption" from wrapped API, args: `, optValue);
+    promodLogger.engineLog(
+      `[SWD] Promod element interface calls method "selectOption" from wrapped API, args: `,
+      optValue,
+    );
     await this.getElement();
     // open options list
     await this.click({ withScroll: true });
@@ -594,10 +618,16 @@ function getInitElementRest(
     isFunction(selector) ||
     isPromise(selector)
   ) {
+    console.log('In promise <<<<<<<<<<<<<,,', rest);
     getExecuteScriptArgs = function getExecuteScriptArgs() {
       const localRest = rest.map((item) => (item && item.getEngineElement ? item.getEngineElement() : item));
       const rootPromiseIfRequired = root && root.getEngineElement ? root.getEngineElement() : root;
-      return [rootPromiseIfRequired, ...localRest];
+
+      if (rootPromiseIfRequired) {
+        return [rootPromiseIfRequired, ...localRest];
+      }
+
+      return localRest;
     };
   } else if (root && root instanceof PromodSeleniumElement) {
     getParent = function getParent() {

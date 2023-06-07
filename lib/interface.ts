@@ -236,8 +236,8 @@ export interface PromodElementType {
    */
   pressEnter(): Promise<void>;
 
-  $(selector: string | ((...args: any[]) => any) | Promise<any>): PromodElementType;
-  $$(selector: string | ((...args: any[]) => any) | Promise<any>): PromodElementsType;
+  $(selector: string | ((...args: any[]) => any) | Promise<any>, ...rest: any[]): PromodElementType;
+  $$(selector: string | ((...args: any[]) => any) | Promise<any>, ...rest: any[]): PromodElementsType;
 
   isEnabled(): Promise<boolean>;
 

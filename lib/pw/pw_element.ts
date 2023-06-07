@@ -14,6 +14,7 @@ import {
 } from 'sat-utils';
 import { browser } from './pw_client';
 import { getPositionXY } from '../mappers';
+import { promodLogger } from '../internals';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
 import type { ElementHandle, Page } from 'playwright-core';
@@ -59,28 +60,6 @@ class PromodElements {
     this.getExecuteScriptArgs = getExecuteScriptArgs;
   }
 
-  get(index): PromodElementType {
-    const childElement = new PromodElement(
-      this.selector,
-      this._browserInterface,
-      this.getElement.bind(this, index),
-      null,
-      true,
-    );
-    if (this.parentSelector) {
-      childElement.parentSelector = this.parentSelector || this.selector;
-    }
-    return childElement as any;
-  }
-
-  last(): PromodElementType {
-    return this.get(-1) as any;
-  }
-
-  first(): PromodElementType {
-    return this.get(0) as any;
-  }
-
   private async getElement(index?) {
     const _driver = await browser.getWorkingContext();
 
@@ -90,7 +69,7 @@ class PromodElements {
     const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
     const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
 
-    if (this.getParent && !ignoreParent) {
+    if (this.getParent && !ignoreParent && isString(selector)) {
       let parent = await this.getParent();
       // @ts-ignore
       if (parent.getEngineElement) {
@@ -137,6 +116,28 @@ class PromodElements {
     }
 
     return this._driverElements[index];
+  }
+
+  get(index): PromodElementType {
+    const childElement = new PromodElement(
+      this.selector,
+      this._browserInterface,
+      this.getElement.bind(this, index),
+      null,
+      true,
+    );
+    if (this.parentSelector) {
+      childElement.parentSelector = this.parentSelector || this.selector;
+    }
+    return childElement as any;
+  }
+
+  last(): PromodElementType {
+    return this.get(-1) as any;
+  }
+
+  first(): PromodElementType {
+    return this.get(0) as any;
   }
 
   async getEngineElements() {
@@ -205,14 +206,74 @@ class PromodElement {
     this.useParent = useParent;
   }
 
-  $(selector): PromodElementType {
-    const childElement = new PromodElement(selector, this._browserInterface, this.getElement.bind(this));
+  private async getElement() {
+    this._driver = await browser.getWorkingContext();
+
+    const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
+    const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
+
+    const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
+    const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
+
+    if (this.getParent && !ignoreParent && isString(selector)) {
+      let parent = (await this.getParent()) as any;
+      if (!parent) {
+        throw new Error(
+          this.useParent
+            ? `Any element with selector ${this.selector} was not found`
+            : `Parent element with selector ${this.parentSelector} was not found`,
+        );
+      }
+      if (parent.getEngineElement) {
+        parent = shouldUserDocumentRoot ? this._driver : await parent.getEngineElement();
+      }
+
+      if (this.useParent) {
+        this._driverElement = parent;
+      } else {
+        const element = await (shouldUserDocumentRoot ? this._driver : parent).$(getElementArgs);
+        this._driverElement = element ? await element.asElement() : element;
+      }
+    } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
+      const resolved = [];
+      const callArgs = toArray(getElementArgs[1]);
+
+      for (const item of callArgs) {
+        // TODO refactor resolver
+        resolved.push(await item);
+      }
+      this._driverElement = (
+        await this._driver.evaluateHandle(getElementArgs[0], resolved.length === 1 ? resolved[0] : resolved)
+      ).asElement();
+    } else {
+      this._driverElement = await (await this._driver.$(getElementArgs)).asElement();
+    }
+
+    return this._driverElement;
+  }
+
+  $(selector, ...rest: any[]): PromodElementType {
+    promodLogger.engineLog('[PW] Create new promod child element, selector: ', selector);
+    const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
+    const childElement = new PromodElement(
+      selector,
+      this._browserInterface,
+      this.getElement.bind(this),
+      executeScriptArgsGetter,
+    );
     childElement.parentSelector = this.selector;
     return childElement as any;
   }
 
-  $$(selector): PromodElementsType {
-    const childElements = new PromodElements(selector, this._browserInterface, this.getElement.bind(this));
+  $$(selector, ...rest: any[]): PromodElementsType {
+    promodLogger.engineLog('[PW] Create new promod child elements, selector: ', selector);
+    const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
+    const childElements = new PromodElements(
+      selector,
+      this._browserInterface,
+      this.getElement.bind(this),
+      executeScriptArgsGetter,
+    );
     childElements.parentSelector = this.selector;
     return childElements as any;
   }
@@ -491,52 +552,6 @@ class PromodElement {
     return this._driverElement;
   }
 
-  async getElement() {
-    this._driver = await browser.getWorkingContext();
-
-    const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
-    const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
-
-    const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
-    const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
-
-    if (this.getParent && !ignoreParent) {
-      let parent = (await this.getParent()) as any;
-      if (!parent) {
-        throw new Error(
-          this.useParent
-            ? `Any element with selector ${this.selector} was not found`
-            : `Parent element with selector ${this.parentSelector} was not found`,
-        );
-      }
-      if (parent.getEngineElement) {
-        parent = shouldUserDocumentRoot ? this._driver : await parent.getEngineElement();
-      }
-
-      if (this.useParent) {
-        this._driverElement = parent;
-      } else {
-        const element = await (shouldUserDocumentRoot ? this._driver : parent).$(getElementArgs);
-        this._driverElement = element ? await element.asElement() : element;
-      }
-    } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
-      const resolved = [];
-      const callArgs = toArray(getElementArgs[1]);
-
-      for (const item of callArgs) {
-        // TODO refactor resolver
-        resolved.push(await item);
-      }
-      this._driverElement = (
-        await this._driver.evaluateHandle(getElementArgs[0], resolved.length === 1 ? resolved[0] : resolved)
-      ).asElement();
-    } else {
-      this._driverElement = await (await this._driver.$(getElementArgs)).asElement();
-    }
-
-    return this._driverElement;
-  }
-
   /**
    * @returns {Promise<boolean>} button is present
    * @example
@@ -599,7 +614,10 @@ function getInitElementRest(
     getExecuteScriptArgs = function getExecuteScriptArgs() {
       const localRest = rest.map((item) => (item && item.getEngineElement ? item.getEngineElement() : item));
       const rootPromiseIfRequired = root && root.getEngineElement ? root.getEngineElement() : root;
-      return [rootPromiseIfRequired, ...localRest];
+      if (rootPromiseIfRequired) {
+        return [rootPromiseIfRequired, ...localRest];
+      }
+      return localRest;
     };
   } else if (root && root instanceof PromodElement) {
     getParent = function getParent() {

@@ -191,6 +191,33 @@ describe('Base', () => {
     }
   });
 
+  it('by js function from parent with parent', async () => {
+    await browser.get(formsFile);
+    try {
+      const body = $(() => {
+        return document.querySelector('body');
+      });
+
+      expect(await body.isDisplayed()).toEqual(true, 'Bodu should be visible');
+
+      const email = body.$((parent) => {
+        return parent.querySelector('input[placeholder="Ім\'я користувача"]');
+      }, body);
+
+      const emails = body.$$((parent) => {
+        return parent.querySelectorAll('input[placeholder="Ім\'я користувача"]');
+      }, body.getEngineElement());
+
+      expect(await email.getTagName()).toEqual('input');
+      expect(await email.isDisplayed()).toEqual(true);
+      expect(await email.isPresent()).toEqual(true);
+      expect(await emails.count()).toEqual(1);
+    } catch (error) {
+      console.log(error);
+      await browser.sleep(2500000);
+    }
+  });
+
   it('isDisplayed', async () => {
     await browser.get(formsFile);
     const email = $('input[placeholder="Ім\'я lol"]');
