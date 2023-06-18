@@ -14,6 +14,7 @@ import { Key } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { Locator } from 'playwright-core';
 import { KeysPW, resolveUrl } from '../mappers';
+import { promodLogger } from '../internals';
 
 import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page, ElementHandle } from 'playwright-core';
 import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage, PromodElementType } from '../interface';
@@ -294,22 +295,40 @@ class Browser {
     }
   }
 
-  async getWorkingContext() {
+  /** @private */
+  private async getWorkingContext() {
     if (this._contextFrame) {
       return this._contextFrame;
     }
     return await this._contextWrapper.getCurrentPage();
   }
 
-  async getCurrentPage() {
+  /** @private */
+  private async getCurrentPage() {
     return await this._contextWrapper.getCurrentPage();
   }
 
+  /**
+   * @example
+   * const { playwrightWD } = require('promod');
+   * const { browser } = playwrightWD;
+   *
+   * const currentPageScreenshot = await browser.getTabs();
+   *
+   * @returns {Promise<any[]>}
+   */
   async getTabs() {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "getTabs" from wrapped API`);
     return await (await this._contextWrapper.getCurrentContext()).pages();
   }
 
   async runNewBrowser(browserData: { currentBrowserName?: string; newBrowserName?: string; capabilities?: any } = {}) {
+    promodLogger.engineLog(
+      `[PW] Promod client interface calls method "runNewBrowser" from wrapped API, args: `,
+      browserData.currentBrowserName,
+      browserData.newBrowserName,
+      browserData.capabilities,
+    );
     await this._contextWrapper.runNewContext(browserData);
   }
 
@@ -408,6 +427,10 @@ class Browser {
    * @return {Promise<void>}
    */
   async switchToTab(tabObject: TSwitchBrowserTabPage) {
+    promodLogger.engineLog(
+      `[PW] Promod client interface calls method "switchToTab" from wrapped API, args: `,
+      tabObject,
+    );
     if (!this.initialTab) {
       this.initialTab = await this.getCurrentTab();
     }
@@ -566,6 +589,7 @@ class Browser {
    * @returns {Promise<Buffer>}
    */
   async takeScreenshot(): Promise<Buffer> {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "takeScreenshot" from wrapped API`);
     return (await this._contextWrapper.getCurrentPage()).screenshot();
   }
 
@@ -619,6 +643,11 @@ class Browser {
    * @return {Promise<void>}
    */
   async keyDownAndHold(key: string, element?: PromodElementType) {
+    promodLogger.engineLog(
+      `[PW] Promod client interface calls method "keyDownAndHold" from wrapped API, args: `,
+      key,
+      element,
+    );
     if (element) {
       ((await element.getEngineElement()) as ElementHandle).hover();
       return await (await this.getCurrentPage()).keyboard.down(key);
@@ -638,6 +667,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async keyUp(key: string, element?: PromodElementType) {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "keyUp" from wrapped API, args: `, key, element);
     if (element) {
       ((await element.getEngineElement()) as ElementHandle).hover();
       return await (await this.getCurrentPage()).keyboard.up(key);
@@ -656,6 +686,7 @@ class Browser {
    * @return {Promise<{ height: number; width: number }>} window size
    */
   async getWindomSize(): Promise<{ height: number; width: number }> {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "getWindomSize" from wrapped API`);
     return await (
       await this._contextWrapper.getCurrentPage()
     ).evaluate(() => ({ height: window.outerHeight, width: window.outerWidth }));
@@ -706,6 +737,11 @@ class Browser {
    * @return {Promise<void>}
    */
   async switchToIframe(selector: string, jumpToDefaultFirst = false): Promise<void> {
+    promodLogger.engineLog(
+      `[PW] Promod client interface calls method "switchToIframe" from wrapped API, args: `,
+      selector,
+      jumpToDefaultFirst,
+    );
     if (jumpToDefaultFirst) {
       await this.switchToDefauldIframe();
     }
@@ -728,6 +764,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async switchToDefauldIframe(): Promise<void> {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "switchToDefauldIframe" from wrapped API`);
     this._contextFrame = null;
     this._contextFrameHolder = null;
   }
@@ -744,6 +781,11 @@ class Browser {
    * @return {Promise<void>}
    */
   async setWindowSize(width: number, height: number): Promise<void> {
+    promodLogger.engineLog(
+      `[PW] Promod client interface calls method "setWindowSize" from wrapped API, args: `,
+      width,
+      height,
+    );
     (await this._contextWrapper.getCurrentPage()).setViewportSize({ width, height });
   }
 
@@ -758,6 +800,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async sleep(time: number) {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "sleep" from wrapped API, args: `, time);
     await (() => new Promise((resolve) => setTimeout(resolve, time)))();
   }
 
@@ -773,6 +816,11 @@ class Browser {
    * @returns {Promise<unknown>}
    */
   async executeScript(script: ExecuteScriptFn, args?: any | any[]): Promise<any> {
+    promodLogger.engineLog(
+      `[PW] Promod client interface calls method "executeScript" from wrapped API, args: `,
+      script,
+      args,
+    );
     const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
 
     const res = await (await this.getWorkingContext()).evaluate(script, recomposedArgs);
@@ -790,6 +838,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async back(): Promise<void> {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "back" from wrapped API`);
     return (await this._contextWrapper.getCurrentPage()).goBack() as any;
   }
 
@@ -803,6 +852,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async forward(): Promise<void> {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "forward" from wrapped API`);
     return (await this._contextWrapper.getCurrentPage()).goForward() as any;
   }
 
@@ -816,6 +866,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async refresh(): Promise<void> {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "refresh" from wrapped API`);
     return (await this._contextWrapper.getCurrentPage()).reload() as any;
   }
 
@@ -829,6 +880,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async quit(): Promise<void> {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "quit" from wrapped API`);
     await (await this._contextWrapper.getCurrentContext()).close();
   }
 
@@ -859,10 +911,20 @@ class Browser {
    * @return {Promise<void>}
    */
   async close(): Promise<void> {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "close" from wrapped API`);
     return (await this.getCurrentPage()).close();
   }
 
   async scrollElementByMouseWheel(element: PromodElementType, x, y, deltaX, deltaY, duration) {
+    promodLogger.engineLog(
+      `[PW] Promod client interface calls method "scrollElementByMouseWheel" from wrapped API, args: `,
+      element,
+      x,
+      y,
+      deltaX,
+      deltaY,
+      duration,
+    );
     const { x: elementX, y: elementY } = await element.getRect();
 
     (await this.getCurrentPage()).mouse.move(elementX + x, elementY + y);
@@ -871,6 +933,14 @@ class Browser {
   }
 
   async scrollByMouseWheel(x, y, deltaX, deltaY, duration) {
+    promodLogger.engineLog(
+      `[PW] Promod client interface calls method "scrollByMouseWheel" from wrapped API, args: `,
+      x,
+      y,
+      deltaX,
+      deltaY,
+      duration,
+    );
     (await this.getCurrentPage()).mouse.move(x, y);
 
     (await this.getCurrentPage()).mouse.wheel(deltaX, deltaY);

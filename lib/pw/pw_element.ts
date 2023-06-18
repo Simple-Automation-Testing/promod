@@ -60,8 +60,16 @@ class PromodElements {
     this.getExecuteScriptArgs = getExecuteScriptArgs;
   }
 
+  /**
+   * @private
+   *
+   * @info if index is less than zero we will get element from the end
+   * @param {number} index
+   * @returns {Promise<ElementHandle>}
+   */
   private async getElement(index?) {
-    const _driver = await browser.getWorkingContext();
+    promodLogger.engineLog(`[PW] Promod elements interface calls method "getElement" from wrapped API, args: `, index);
+    const _driver = await browser['getWorkingContext']();
 
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
@@ -118,6 +126,15 @@ class PromodElements {
     return this._driverElements[index];
   }
 
+  /**
+   * @example
+   *
+   * const buttons = $$('button');
+   * await buttons.get(0).click();
+   *
+   * @param {number} index
+   * @returns {PromodElementType}
+   */
   get(index): PromodElementType {
     const childElement = new PromodElement(
       this.selector,
@@ -132,26 +149,58 @@ class PromodElements {
     return childElement as any;
   }
 
+  /**
+   * @example
+   *
+   * const buttons = $$('button');
+   * await buttons.last().click();
+   *
+   * @param {number} index
+   * @returns {PromodElementType}
+   */
   last(): PromodElementType {
+    promodLogger.engineLog(`[PW] Promod elements interface calls method "last" from wrapped API`);
     return this.get(-1) as any;
   }
 
+  /**
+   * @example
+   *
+   * const buttons = $$('button');
+   * await buttons.first().click();
+   *
+   * @param {number} index
+   * @returns {PromodElementType}
+   */
   first(): PromodElementType {
+    promodLogger.engineLog(`[PW] Promod elements interface calls method "first" from wrapped API`);
     return this.get(0) as any;
   }
 
+  /**
+   * @example
+   * const buttons = $$('button');
+   *
+   * const nativeElements = await buttons.getEngineElements();
+   *
+   * @returns {Promise<ElementHandle[]>}
+   */
   async getEngineElements() {
+    promodLogger.engineLog(`[PW] Promod elements interface calls method "getEngineElements" from wrapped API`);
     await this.getElement();
     return this._driverElements;
   }
 
-  async getIds() {
-    await this.getElement();
-    // @ts-ignore
-    return this._driverElements.map((item) => item.id_);
-  }
-
-  async each(cb: (item: PromodElementType, index?: number) => Promise<void>): Promise<any> {
+  /**
+   * @example
+   *
+   * const buttons = $$('button');
+   * await buttons.each(async (button) => await button.click());
+   *
+   * @param {(item, index) => Promise<void>} cb
+   */
+  async each(cb: (item: PromodElementType, index?: number) => Promise<void>): Promise<void> {
+    promodLogger.engineLog(`[PW] Promod elements interface calls method "each" from wrapped API, args: `, cb);
     await this.getElement(0);
 
     for (let i = 0; i < this._driverElements.length; i++) {
@@ -159,7 +208,16 @@ class PromodElements {
     }
   }
 
+  /**
+   * @example
+   * const buttons = $$('button');
+   * const buttonsText = await buttons.map(async (button) => await button.getText());
+   *
+   * @param {(item, index) => Promise<any>} cb
+   * @returns {Promise<any[]>}
+   */
   async map<T>(cb: (item: PromodElementType, index?: number) => Promise<T>): Promise<T[]> {
+    promodLogger.engineLog(`[PW] Promod elements interface calls method "map" from wrapped API, args: `, cb);
     await this.getElement(0);
     const res = [];
 
@@ -170,7 +228,16 @@ class PromodElements {
     return res;
   }
 
+  /**
+   * @example
+   * const buttons = $$('button');
+   * const button = await buttons.find(async (button) => await button.getText() === 'Click me');
+   *
+   * @param {(item, index) => Promise<any>} cb
+   * @returns {Promise<PromodElementType>}
+   */
   async find(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<PromodElementType> {
+    promodLogger.engineLog(`[PW] Promod elements interface calls method "find" from wrapped API, args: `, cb);
     await this.getElement(0);
 
     for (let i = 0; i < this._driverElements.length; i++) {
@@ -179,12 +246,29 @@ class PromodElements {
         return el;
       }
     }
+
+    throw new Error(`Element with selector ${this.selector} was not found`);
   }
 
+  /**
+   * @example
+   * const buttons = $$('button');
+   * const buttonsCount = await buttons.count();
+   *
+   * @returns {Promise<number>}
+   */
   async count(): Promise<number> {
+    promodLogger.engineLog(`[PW] Promod elements interface calls method "count" from wrapped API`);
     return this.getElement()
       .then(() => this._driverElements.length)
-      .catch(() => 0);
+      .catch((error) => {
+        promodLogger.engineLog(
+          `Promod elements interface gets error after method "count" from wrapped API, error: `,
+          error,
+        );
+
+        return 0;
+      });
   }
 }
 
@@ -206,8 +290,13 @@ class PromodElement {
     this.useParent = useParent;
   }
 
+  /**
+   * @private
+   * @returns {Promise<ElementHandle<Node>>}
+   */
   private async getElement() {
-    this._driver = await browser.getWorkingContext();
+    promodLogger.engineLog(`[PW] Promod element interface calls method "getElement" from wrapped API`);
+    this._driver = await browser['getWorkingContext']();
 
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
@@ -252,6 +341,14 @@ class PromodElement {
     return this._driverElement;
   }
 
+  /**
+   * @example
+   * const button = $('button');
+   *
+   * @param {string|Function} selector
+   * @param {any[]} rest
+   * @returns {PromodElementType}
+   */
   $(selector, ...rest: any[]): PromodElementType {
     promodLogger.engineLog('[PW] Create new promod child element, selector: ', selector);
     const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
@@ -265,6 +362,14 @@ class PromodElement {
     return childElement as any;
   }
 
+  /**
+   * @example
+   * const buttons = $$('button');
+   *
+   * @param {string|Function} selector
+   * @param {any[]} rest
+   * @returns {PromodElementsType}
+   */
   $$(selector, ...rest: any[]): PromodElementsType {
     promodLogger.engineLog('[PW] Create new promod child elements, selector: ', selector);
     const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
@@ -279,6 +384,10 @@ class PromodElement {
   }
 
   /**
+   * @example
+   * const button = $('button');
+   * await button.click();
+   *
    * @param {object} [opts] clickOpts
    * @param {boolean} [opts.withScroll] withScroll
    * @param {'left' | 'right' | 'middle'} [opts.button] button
@@ -307,6 +416,7 @@ class PromodElement {
       trial?: boolean;
     } = { clickCount: 1, timeout: 500 },
   ) {
+    promodLogger.engineLog(`[PW] Promod element interface calls method "click" from wrapped API, args: `, opts);
     if (!isObject(opts) && !isUndefined(opts)) {
       throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
     }
@@ -335,9 +445,19 @@ class PromodElement {
     }
   }
 
+  /**
+   *
+   * @example
+   * const button = $('button');
+   * const tag = await button.getTagName();
+   *
+   * @returns {Promise<string>}
+   */
   async getTagName() {
+    promodLogger.engineLog(`[PW] Promod element interface calls method "getTagName" from wrapped API`);
     await this.getElement();
     const _driver = await this._browserInterface.getWorkingContext();
+
     return _driver.evaluate((item) => item.nodeName.toLowerCase(), this._driverElement);
   }
 
@@ -369,6 +489,7 @@ class PromodElement {
    * @param value
    */
   async sendKeys(value: string | number, asFill?: boolean) {
+    promodLogger.engineLog(`[PW] Promod element interface calls method "sendKeys" from wrapped API, args: `, value);
     if (!isString(value) && !isNumber(value)) {
       throw new TypeError(`sendKeys(); accepts only string or number value type ${getType(value)}`);
     }
@@ -383,8 +504,10 @@ class PromodElement {
 
     if (stringValue.includes(seleniumEnter)) {
       const splitedValues = stringValue.split(seleniumEnter);
+
       for (const [index, valueItem] of splitedValues.entries()) {
         await this._driverElement.type(valueItem, { delay: 25 });
+
         if (index !== splitedValues.length - 1) await this.pressEnter();
       }
     } else {
@@ -392,11 +515,27 @@ class PromodElement {
     }
   }
 
+  /**
+   * @example
+   * const button = $('button')
+   * await button.hover()
+   *
+   * @returns {Promise<void>}
+   */
   async hover() {
+    promodLogger.engineLog(`[PW] Promod element interface calls method "hover" from wrapped API`);
     await this.getElement();
     await this._driverElement.hover();
   }
 
+  /**
+   * @example
+   * const button = $('button')
+   * await button.clickByElementCoordinate('center-top')
+   *
+   * @param {string} position
+   * @returns {Promise<void>}
+   */
   async clickByElementCoordinate(
     position:
       | 'center'
@@ -409,9 +548,13 @@ class PromodElement {
       | 'left-top'
       | 'left-bottom' = 'center',
   ) {
+    promodLogger.engineLog(
+      `Promod element interface calls method "clickByElementCoordinate" from wrapped API, args: `,
+      position,
+    );
     const { x, y } = await this.getElementCoordinates(position);
 
-    await (await browser.getCurrentPage()).mouse.click(x, y);
+    await (await browser['getCurrentPage']()).mouse.click(x, y);
   }
 
   async getElementCoordinates(
@@ -426,6 +569,10 @@ class PromodElement {
       | 'left-top'
       | 'left-bottom' = 'center',
   ) {
+    promodLogger.engineLog(
+      `Promod element interface calls method "clickByElementCoordinate" from wrapped API, args: `,
+      position,
+    );
     await this.getElement();
     const { x, y, width, height } = await this._driver.evaluate(
       // @ts-ignore
@@ -437,11 +584,24 @@ class PromodElement {
   }
 
   async focus() {
+    promodLogger.engineLog(`[PW] Promod element interface calls method "focus" from wrapped API`);
     await this.getElement();
     await this._driverElement.focus();
   }
 
+  /**
+   * @example
+   * const txt = '123';
+   * const inpt = $('input');
+   * await inpt.sendKeys(txt);
+   * await inpt.pressEnter(true);
+   *
+   * @param {boolean} [focus] should element got focus event before execute enter
+   *
+   * @returns {Promise<void>}
+   */
   async pressEnter(focus: boolean = true) {
+    promodLogger.engineLog(`[PW] Promod element interface calls method "pressEnter" from wrapped API, args: `, focus);
     await this.getElement();
     if (focus) {
       await this._driverElement.focus();
@@ -449,7 +609,24 @@ class PromodElement {
     await this._driver.keyboard.press('Enter');
   }
 
+  /**
+   * @example
+   * const txt = '123';
+   * const inpt = $('input');
+   * await inpt.sendKeys(txt);
+   * await inpt.clearViaBackspace(txt.length, true);
+   *
+   * @param {number} repeat how many times execute back space
+   * @param {boolean} [focus] should element got focus event before execute back space
+   *
+   * @returns {Promise<void>}
+   */
   async clearViaBackspace(repeat: number = 1, focus = true) {
+    promodLogger.engineLog(
+      `Promod element interface calls method "clearViaBackspace" from wrapped API, args: `,
+      repeat,
+      focus,
+    );
     await this.getElement();
     if (focus) {
       await this._driverElement.focus();

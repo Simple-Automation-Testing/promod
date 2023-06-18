@@ -181,17 +181,17 @@ class Browser {
     this.seleniumDriver = driver;
   }
 
-  async switchToIframe(element: string, jumpToDefaultFirst = false) {
+  async switchToIframe(selector: string | any, jumpToDefaultFirst = false) {
     promodLogger.engineLog(
       `[SWD] Promod client interface calls method "switchToIframe" from wrapped API, args: `,
-      element,
+      selector,
       jumpToDefaultFirst,
     );
     if (jumpToDefaultFirst) {
       await this.switchToDefauldIframe();
     }
 
-    await this.seleniumDriver.switchTo().frame(this.seleniumDriver.findElement(buildBy(element)));
+    await this.seleniumDriver.switchTo().frame(this.seleniumDriver.findElement(buildBy(selector)));
   }
 
   /**
@@ -570,6 +570,15 @@ class Browser {
     return Buffer.from(res, 'base64');
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * const currentPageScreenshot = await browser.getTabs();
+   *
+   * @returns {Promise<any[]>}
+   */
   async getTabs() {
     promodLogger.engineLog(`[SWD] Promod client interface calls method "getTabs" from wrapped API`);
     return await this.seleniumDriver.getAllWindowHandles();
@@ -642,11 +651,6 @@ class Browser {
   async sleep(time: number) {
     promodLogger.engineLog(`[SWD] Promod client interface calls method "sleep" from wrapped API, args: `, time);
     await (() => new Promise((resolve) => setTimeout(resolve, time)))();
-  }
-
-  /** @depreacted */
-  manage() {
-    return this.seleniumDriver.manage();
   }
 
   /**
