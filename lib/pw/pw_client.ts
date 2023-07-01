@@ -103,7 +103,13 @@ class PageWrapper {
 
       await waitForCondition(
         async () => {
-          const tabs = await this._context.pages();
+          /**
+           * @warning this is workaround for context pages actualization
+           * default pages() call does not return latest
+           */
+          const page = await this._context.newPage();
+          await page.close();
+          const tabs = this._context.pages();
 
           errorMessage = () =>
             `Expected browser tabs count is ${expectedQuantity}, current browser tabs count is ${tabs.length}`;
@@ -128,7 +134,13 @@ class PageWrapper {
       let errorMessage;
       await waitForCondition(
         async () => {
-          const tabs = await this._context.pages();
+          /**
+           * @warning this is workaround for context pages actualization
+           * default pages() call does not return latest
+           */
+          const page = await this._context.newPage();
+          await page.close();
+          const tabs = this._context.pages();
 
           for (const tab of tabs) {
             this._currentPage = tab;

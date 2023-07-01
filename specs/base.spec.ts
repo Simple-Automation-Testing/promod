@@ -24,6 +24,16 @@ describe('Base', () => {
     await browser.quitAll();
   });
 
+  it('switchToBrowserTab', async () => {
+    await browser.get(scrollFile);
+    await browser.openNewTab('https://playwright.dev/');
+    await browser.switchToTab({ index: 1, expectedQuantity: 2 });
+    expect(await browser.getCurrentUrl()).toEqual('https://playwright.dev/');
+    await browser.close();
+    await browser.switchToTab({ index: 0, expectedQuantity: 1 });
+    expect(await browser.getCurrentUrl()).toEqual(scrollFile);
+  });
+
   it('browser scroll element by mouse whell', async () => {
     await browser.get(scrollFile);
     const elementToScroll = $$('[class="scroll_item"]').get(4);
