@@ -103,12 +103,6 @@ class PageWrapper {
 
       await waitForCondition(
         async () => {
-          /**
-           * @warning this is workaround for context pages actualization
-           * default pages() call does not return latest
-           */
-          const page = await this._context.newPage();
-          await page.close();
           const tabs = this._context.pages();
 
           errorMessage = () =>
@@ -120,26 +114,20 @@ class PageWrapper {
       );
     }
 
-    if (isNumber(index) && (await this._context.pages()).length < index + 1) {
+    if (isNumber(index) && this._context.pages().length < index + 1) {
       throw new Error(
         `Index is out available browser tabs count, index is ${index}, current browser tabs count is ${
-          (await this._context.pages()).length
+          this._context.pages().length
         }`,
       );
     } else if (isNumber(index)) {
-      this._currentPage = (await this._context.pages())[index];
+      this._currentPage = this._context.pages()[index];
     }
 
     if (isNotEmptyObject(titleUrl)) {
       let errorMessage;
       await waitForCondition(
         async () => {
-          /**
-           * @warning this is workaround for context pages actualization
-           * default pages() call does not return latest
-           */
-          const page = await this._context.newPage();
-          await page.close();
           const tabs = this._context.pages();
 
           for (const tab of tabs) {
@@ -218,6 +206,11 @@ class ContextWrapper {
     if (!this._currentContext) {
       await this.runNewContext();
     }
+    this._currentContext.on('page', async (page) => {
+      // @ts-ignore
+      this._currentContext._pages.add(page);
+    });
+
     return this._currentContext;
   }
 
