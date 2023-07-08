@@ -200,16 +200,17 @@ class ContextWrapper {
     } else {
       await this._currentPage.updateContext(this._currentContext);
     }
+
+    this._currentContext.on('page', async (page) => {
+      // @ts-ignore
+      this._currentContext._pages.add(page);
+    });
   }
 
   async getCurrentContext() {
     if (!this._currentContext) {
       await this.runNewContext();
     }
-    this._currentContext.on('page', async (page) => {
-      // @ts-ignore
-      this._currentContext._pages.add(page);
-    });
 
     return this._currentContext;
   }
@@ -218,19 +219,23 @@ class ContextWrapper {
   async changeContext({ index, browserName }: TSwitchBrowserTabPage) {
     const contexts = await this.server.contexts();
 
-    if (isNumber(index)) {
+    if (isNumber(index) && contexts[index]) {
+      this._currentContext.removeListener('page', () => {});
       this._currentContext = contexts[index];
+      this._currentContext.on('page', async (page) => {
+        // @ts-ignore
+        this._currentContext._pages.add(page);
+      });
       await this._currentPage.updateContext(this._currentContext);
     }
 
-    if (browserName) {
-      const driver = contexts.find((item) => item['__promodBrowserName'] === browserName);
-
-      if (!driver) {
-        throw new Error(`Browser with name ${browserName} not found`);
-      }
-
-      this._currentContext = driver;
+    if (browserName && contexts.find((item) => item['__promodBrowserName'] === browserName)) {
+      this._currentContext.removeListener('page', () => {});
+      this._currentContext = contexts.find((item) => item['__promodBrowserName'] === browserName);
+      this._currentContext.on('page', async (page) => {
+        // @ts-ignore
+        this._currentContext._pages.add(page);
+      });
       await this._currentPage.updateContext(this._currentContext);
     }
   }

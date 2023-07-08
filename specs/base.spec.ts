@@ -26,9 +26,9 @@ describe('Base', () => {
 
   it('switchToBrowserTab', async () => {
     await browser.get(scrollFile);
-    await browser.openNewTab('https://playwright.dev/');
+    await browser.openNewTab(actionFile);
     await browser.switchToTab({ index: 1, expectedQuantity: 2 });
-    expect(await browser.getCurrentUrl()).toEqual('https://playwright.dev/');
+    expect(await browser.getCurrentUrl()).toEqual(actionFile);
     await browser.close();
     await browser.switchToTab({ index: 0, expectedQuantity: 1 });
     expect(await browser.getCurrentUrl()).toEqual(scrollFile);
