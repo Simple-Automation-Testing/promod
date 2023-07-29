@@ -622,7 +622,7 @@ class Browser {
       const { availHeight, availWidth } = window.screen;
       return { width: availWidth, height: availHeight };
     });
-    return (await this._contextWrapper.getCurrentPage()).setViewportSize({ width, height });
+    (await this._contextWrapper.getCurrentPage()).setViewportSize({ width, height });
   }
 
   /**
@@ -660,9 +660,9 @@ class Browser {
     );
     if (element) {
       ((await element.getEngineElement()) as ElementHandle).hover();
-      return await (await this.getCurrentPage()).keyboard.down(key);
+      await (await this.getCurrentPage()).keyboard.down(key);
     } else {
-      return await (await this.getCurrentPage()).keyboard.down(key);
+      await (await this.getCurrentPage()).keyboard.down(key);
     }
   }
 
@@ -732,7 +732,7 @@ class Browser {
   async get(url: string): Promise<void> {
     const getUrl = resolveUrl(url, this.appBaseUrl);
 
-    return (await this._contextWrapper.getCurrentPage()).goto(getUrl) as any;
+    (await this._contextWrapper.getCurrentPage()).goto(getUrl) as any;
   }
 
   /**
@@ -849,7 +849,7 @@ class Browser {
    */
   async back(): Promise<void> {
     promodLogger.engineLog(`[PW] Promod client interface calls method "back" from wrapped API`);
-    return (await this._contextWrapper.getCurrentPage()).goBack() as any;
+    (await this._contextWrapper.getCurrentPage()).goBack() as any;
   }
 
   /**
@@ -863,7 +863,7 @@ class Browser {
    */
   async forward(): Promise<void> {
     promodLogger.engineLog(`[PW] Promod client interface calls method "forward" from wrapped API`);
-    return (await this._contextWrapper.getCurrentPage()).goForward() as any;
+    (await this._contextWrapper.getCurrentPage()).goForward() as any;
   }
 
   /**
@@ -877,7 +877,7 @@ class Browser {
    */
   async refresh(): Promise<void> {
     promodLogger.engineLog(`[PW] Promod client interface calls method "refresh" from wrapped API`);
-    return (await this._contextWrapper.getCurrentPage()).reload() as any;
+    (await this._contextWrapper.getCurrentPage()).reload() as any;
   }
 
   /**
@@ -922,7 +922,7 @@ class Browser {
    */
   async close(): Promise<void> {
     promodLogger.engineLog(`[PW] Promod client interface calls method "close" from wrapped API`);
-    return (await this.getCurrentPage()).close();
+    (await this.getCurrentPage()).close();
   }
 
   async scrollElementByMouseWheel(element: PromodElementType, x, y, deltaX, deltaY, duration) {
