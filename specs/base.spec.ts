@@ -1,4 +1,4 @@
-import { sleep } from 'sat-utils';
+import { sleep, waitForCondition } from 'sat-utils';
 import {
   engine,
   expect,
@@ -26,6 +26,7 @@ describe('Base', () => {
 
   it('switchToBrowserTab', async () => {
     await browser.get(scrollFile);
+    await waitForCondition(() => $('body').isDisplayed());
     await browser.openNewTab(actionFile);
     await browser.switchToTab({ index: 1, expectedQuantity: 2 });
     expect(await browser.getCurrentUrl()).toEqual(actionFile);
@@ -36,6 +37,7 @@ describe('Base', () => {
 
   it('browser scroll element by mouse whell', async () => {
     await browser.get(scrollFile);
+    await waitForCondition(() => $$('[class="scroll_item"]').get(4).isDisplayed());
     const elementToScroll = $$('[class="scroll_item"]').get(4);
     const beforeScroll = await elementToScroll.getRect();
     await sleep(500);
@@ -48,10 +50,13 @@ describe('Base', () => {
 
   it('browser windows indexes', async () => {
     await browser.get(iframesFile);
+    await waitForCondition(() => $('body').isDisplayed());
     await browser.runNewBrowser();
     await browser.get(actionFile);
+    await waitForCondition(() => $('body').isDisplayed());
     await browser.runNewBrowser();
     await browser.get(formsFile);
+    await waitForCondition(() => $('body').isDisplayed());
 
     await browser.switchToBrowser({ index: 0 });
     expect(await browser.getTitle()).toEqual('IFRAMES');
@@ -120,7 +125,7 @@ describe('Base', () => {
 
   it('selectors', async () => {
     await browser.get(selectorsFile);
-    expect(await $('body').$('[id="target"]').isDisplayed()).toEqual(true);
+    expect(await waitForCondition(() => $('body').$('[id="target"]').isDisplayed())).toEqual(true);
     expect(await $('select').$('[id="target"]').isDisplayed()).toEqual(false);
     expect(await $('select').$('xpath=//*[@id="target"]').isDisplayed()).toEqual(true);
     expect(await $('select').$('xpath=.//*[@id="target"]').isDisplayed()).toEqual(false);
@@ -130,18 +135,21 @@ describe('Base', () => {
   it('getTagName', async () => {
     await browser.get(selectorsFile);
     const select = $('select');
+    await waitForCondition(() => select.isDisplayed());
     expect(await select.getTagName()).toEqual('select');
   });
 
   it('select', async () => {
     await browser.get(selectorsFile);
     const select = $('select');
+    await waitForCondition(() => select.isDisplayed());
     await select.selectOption('2');
     expect(await $('#target').getText()).toEqual('2');
   });
 
   it('maximize', async () => {
     await browser.get(logsFile);
+    await waitForCondition(() => $('body').isDisplayed());
     const sizeBeforeMaximize = await browser.getWindomSize();
     await browser.maximize();
     const sizeAfterMaximize = await browser.getWindomSize();
@@ -158,7 +166,9 @@ describe('Base', () => {
 
   it('openNewTab/switchToTab', async () => {
     await browser.get(formsFile);
+    await waitForCondition(() => $('body').isDisplayed());
     await browser.openNewTab(hoverFocusFile);
+    await waitForCondition(() => $('body').isDisplayed());
     await browser.switchToTab({ index: 1, expectedQuantity: 2 });
     expect(await browser.getCurrentUrl()).toEqual(hoverFocusFile);
     await browser.switchToTab({ index: 0, expectedQuantity: 2 });
@@ -167,6 +177,7 @@ describe('Base', () => {
 
   it('by js function', async () => {
     await browser.get(formsFile);
+    await waitForCondition(() => $('form').$$('xpath=//button').count());
     const buttons = $('form').$$('xpath=//button');
     expect(await buttons.get(1).getText()).toEqual('Зареєструватися');
   });
@@ -175,7 +186,7 @@ describe('Base', () => {
     await browser.get(formsFile);
     const email = $(() => document.querySelector('input[placeholder="Ім\'я користувача"]'));
 
-    expect(await email.isDisplayed()).toEqual(true);
+    expect(await waitForCondition(() => email.isDisplayed())).toEqual(true);
     expect(await email.isPresent()).toEqual(true);
 
     const email1 = $(() => document.querySelector('input[placeholder="Ім\'ssssя користувача"]'));
@@ -188,11 +199,12 @@ describe('Base', () => {
     await browser.get(formsFile);
     try {
       const body = $(() => document.querySelector('body'));
+      await waitForCondition(() => body.isDisplayed());
       const email = $((parent) => {
         return parent.querySelector('input[placeholder="Ім\'я користувача"]');
       }, body.getEngineElement());
 
-      expect(await email.isDisplayed()).toEqual(true);
+      expect(await waitForCondition(() => email.isDisplayed())).toEqual(true);
       expect(await email.isPresent()).toEqual(true);
     } catch (error) {
       console.log(error);
@@ -207,7 +219,7 @@ describe('Base', () => {
         return document.querySelector('body');
       });
 
-      expect(await body.isDisplayed()).toEqual(true, 'Bodu should be visible');
+      expect(await waitForCondition(() => body.isDisplayed())).toEqual(true, 'Bodu should be visible');
 
       const email = body.$((parent) => {
         return parent.querySelector('input[placeholder="Ім\'я користувача"]');
@@ -265,7 +277,7 @@ describe('Base', () => {
 
     await browser.runNewBrowser({ currentBrowserName: 'initial one', newBrowserName: 'google' });
     await browser.get('https://google.com');
-
+    await waitForCondition(() => $('body').isDisplayed());
     expect(await browser.getTitle()).stringIncludesSubstring('Google');
 
     await browser.switchToBrowser({ browserName: 'initial one' });
@@ -274,6 +286,7 @@ describe('Base', () => {
 
   it('element click/sendKeys', async () => {
     await browser.get(formsFile);
+    await waitForCondition(() => $('body').isDisplayed());
     const email = $('input[placeholder="Ім\'я користувача"]');
     const pass = $('input[placeholder="Пароль"]');
     const signIn = $('.login_form .btn-primary');
@@ -284,6 +297,7 @@ describe('Base', () => {
 
   it('execute script str', async () => {
     await browser.get(formsFile);
+    await waitForCondition(() => $('body').isDisplayed());
     await $('input[placeholder="Пароль"]').sendKeys('test');
     const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="Пароль"]')]);
     expect(item).toEqual('test');
@@ -291,6 +305,7 @@ describe('Base', () => {
 
   it('execute script fn', async () => {
     await browser.get(formsFile);
+    await waitForCondition(() => $('body').isDisplayed());
     await $('input[placeholder="Пароль"]').sendKeys('test');
     const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="Пароль"]')]);
     expect(item).toEqual('test');
@@ -299,6 +314,7 @@ describe('Base', () => {
   it('execute script els', async () => {
     await browser.get(formsFile);
     const btns = $$('button');
+    await waitForCondition(() => $('body').isDisplayed());
     // @ts-ignore
     const item = await browser.executeScript((items) => Array.from(items).map((i) => i.innerText), btns);
     expect(item).toDeepEqual(['Увійти', 'Зареєструватися', 'Увійти']);
@@ -306,6 +322,7 @@ describe('Base', () => {
 
   it('$$ each', async () => {
     const btns = $$('button');
+    await waitForCondition(() => $('body').isDisplayed());
     await btns.each(async (item) => {
       expect(await item.$$('a').count()).toEqual(0);
     });
@@ -313,12 +330,14 @@ describe('Base', () => {
 
   it('count', async () => {
     await browser.get(formsFile);
+    await waitForCondition(() => $('body').isDisplayed());
     const notExistingElements = $('.not_existing_item0').$('.not_existing_item1').$$('button');
     expect(await notExistingElements.count()).toEqual(0);
   });
 
   it('isPresent', async () => {
     await browser.get(formsFile);
+    await waitForCondition(() => $('body').isDisplayed());
     expect(await $('button.super.not.exist').$$('a').get(1).isPresent()).toEqual(false);
     expect(await $$('button').get(0).isPresent()).toEqual(true);
   });
@@ -326,9 +345,11 @@ describe('Base', () => {
   it('by js function with argument', async () => {
     await browser.get(formsFile);
     expect(
-      await $((selector) => {
-        return document.querySelector(selector);
-      }, 'button').isPresent(),
+      await waitForCondition(() =>
+        $((selector) => {
+          return document.querySelector(selector);
+        }, 'button').isPresent(),
+      ),
     ).toEqual(true);
   });
 
@@ -389,7 +410,7 @@ describe('Base', () => {
     ];
     for (const position of positions) {
       await browser.get(hoverFocusFile);
-
+      await waitForCondition(() => $('body').isDisplayed());
       await clickElement.clickByElementCoordinate(position as any);
       // @ts-ignore
       const data = await browser.executeScript(() => document.querySelector('#click').style.background);
@@ -399,6 +420,7 @@ describe('Base', () => {
 
   it('focus', async () => {
     await browser.get(hoverFocusFile);
+    await waitForCondition(() => $('body').isDisplayed());
     const focus = $('#focus');
     await focus.focus();
     // @ts-ignore
@@ -409,6 +431,7 @@ describe('Base', () => {
   it('hover', async () => {
     const hover = $('#hover');
     await browser.get(hoverFocusFile);
+    await waitForCondition(() => $('body').isDisplayed());
     await hover.hover();
     // @ts-ignore
     const data = await browser.executeScript(() => document.querySelector('#hover').style.background);
@@ -422,10 +445,13 @@ describe('Base', () => {
 
   it('iframes', async () => {
     await browser.get(framesFile);
+    await waitForCondition(() => $('body').isDisplayed());
     expect(await $('#test').isDisplayed()).toEqual(true);
     await browser.switchToIframe('#test');
+    await waitForCondition(() => $('body').isDisplayed());
     expect(await $('#hover').isDisplayed()).toEqual(true);
     await browser.switchToDefauldIframe();
+    await waitForCondition(() => $('body').isDisplayed());
     expect(await $('#hover').isDisplayed()).toEqual(false);
     expect(await $('#main').isDisplayed()).toEqual(true);
   });
