@@ -328,6 +328,18 @@ describe('Base', () => {
     });
   });
 
+  it.only('$$ map', async () => {
+    await browser.get(formsFile);
+    const btns = $$('button');
+
+    await waitForCondition(() => $('body').isDisplayed());
+
+    const result = await btns.map(async (item) => {
+      return await item.getText();
+    });
+    console.log(result, '<')
+  });
+
   it('count', async () => {
     await browser.get(formsFile);
     await waitForCondition(() => $('body').isDisplayed());

@@ -748,16 +748,16 @@ const $ = (
   return new PromodSeleniumElement(selector, browser, ...restArgs) as any;
 };
 
-const $$ = (
+function $$(
   selector: string | By | ((...args: any[]) => any) | Promise<any>,
   root?: PromodElementType | any,
   ...rest: any[]
-): PromodElementsType => {
+): PromodElementsType {
   const restArgs = getInitElementRest(selector, root, ...rest);
   promodLogger.engineLog('Create new Promod element interfaces, args: ', ...restArgs);
 
   return new PromodSeleniumElements(selector, browser, ...restArgs) as any;
-};
+}
 
 function preBindBrowserInstance(browserThaNeedsToBeBinded) {
   const $$ = (
@@ -772,17 +772,17 @@ function preBindBrowserInstance(browserThaNeedsToBeBinded) {
     return collection;
   };
 
-  const $ = (
+  function $(
     selector: string | By | ((...args: any[]) => any) | Promise<any>,
     root?: PromodElementType | any,
     ...rest: any[]
-  ): PromodElementType => {
+  ): PromodElementType {
     const restArgs = getInitElementRest(selector, root, ...rest);
 
     const element = new PromodSeleniumElement(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
 
     return element;
-  };
+  }
   return {
     browser: browserThaNeedsToBeBinded,
     $$,

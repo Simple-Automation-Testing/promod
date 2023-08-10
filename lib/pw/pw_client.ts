@@ -251,7 +251,9 @@ class ContextWrapper {
   }
 
   async closeAllContexts() {
-    await this._currentContext.close();
+    if (this._currentContext) {
+      await this._currentContext.close();
+    }
     const contexts = await this.server.contexts();
     for (const context of contexts) {
       await context.close();
