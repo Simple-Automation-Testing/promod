@@ -113,6 +113,17 @@ class Browser {
       .perform();
   }
 
+
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.keyDownAndHold(browser.keyboard.PageDown)
+   *
+   * @param {string} key key that needs to press down
+   * @return {Promise<void>}
+   */
   async keyDownAndHold(key: string, element?: PromodElementType) {
     promodLogger.engineLog(
       `[SWD] Promod client interface calls method "keyDownAndHold" from wrapped API, args: `,
@@ -130,6 +141,16 @@ class Browser {
     }
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.keyUp(browser.keyboard.PageDown)
+   *
+   * @param {string} key key that needs to press down
+   * @return {Promise<void>}
+   */
   async keyUp(key: string, element?: PromodElementType) {
     promodLogger.engineLog(`[SWD] Promod client interface calls method "keyUp" from wrapped API, args: `, key, element);
     if (element) {
@@ -140,6 +161,30 @@ class Browser {
         .perform();
     } else {
       await this.seleniumDriver.actions().keyUp(key).perform();
+    }
+  }
+
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.keyDownAndUp(browser.keyboard.PageDown)
+   *
+   * @param {string} key key that needs to press down
+   * @return {Promise<void>}
+   */
+  async keyDownAndUp(key: string, element?: PromodElementType) {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "keyUp" from wrapped API, args: `, key, element);
+    if (element) {
+      await this.seleniumDriver
+        .actions()
+        .move({ origin: (await element.getEngineElement()) as any })
+        .keyDown(key)
+        .keyUp(key)
+        .perform();
+    } else {
+      await this.seleniumDriver.actions().keyDown(key).keyUp(key).perform();
     }
   }
 

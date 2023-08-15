@@ -688,6 +688,30 @@ class Browser {
     }
   }
 
+
+  /**
+   * @example
+   * const { playwrightWD } = require('promod');
+   * const { browser } = playwrightWD;
+   *
+   * await browser.keyDownAndUp(browser.keyboard.PageDown)
+   *
+   * @param {string} key key that needs to press down
+   * @return {Promise<void>}
+   */
+  async keyDownAndUp(key: string, element?: PromodElementType) {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "keyUp" from wrapped API, args: `, key, element);
+    if (element) {
+      ((await element.getEngineElement()) as ElementHandle).hover();
+
+      await (await this.getCurrentPage()).keyboard.down(key);
+      await (await this.getCurrentPage()).keyboard.up(key);
+    } else {
+      await (await this.getCurrentPage()).keyboard.down(key);
+      await (await this.getCurrentPage()).keyboard.up(key);
+    }
+  }
+
   /**
    * @example
    * const { playwrightWD } = require('promod');
@@ -957,7 +981,19 @@ class Browser {
 
     (await this.getCurrentPage()).mouse.wheel(deltaX, deltaY);
   }
+
+  async keyboardPressEsc() {
+    await (await this.getCurrentPage()).keyboard.down('Escape');
+    await (await this.getCurrentPage()).keyboard.up('Escape');
+  }
+
+  async keyboardPressEnter() {
+    await (await this.getCurrentPage()).keyboard.down('Enter');
+    await (await this.getCurrentPage()).keyboard.up('Enter');
+  }
 }
+
+new Browser().keyboard
 
 const browser = Browser.getBrowser();
 
