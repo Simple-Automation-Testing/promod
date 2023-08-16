@@ -539,7 +539,7 @@ class Browser {
    */
   async getCookieByName(name: string): Promise<{ name: string; value: string }> {
     const ctx = await this._contextWrapper.getCurrentContext();
-    const requiredCookie = (await ctx.cookies()).find((cookie) => cookie.name !== name);
+    const requiredCookie = (await ctx.cookies()).find((cookie) => cookie.name === name);
 
     return requiredCookie;
   }
@@ -688,7 +688,6 @@ class Browser {
     }
   }
 
-
   /**
    * @example
    * const { playwrightWD } = require('promod');
@@ -783,11 +782,19 @@ class Browser {
     }
 
     const currentWorkingContext = this._contextFrameHolder ? this._contextFrameHolder : await this.getWorkingContext();
-
     const requiredFrame = await currentWorkingContext.frameLocator(selector).locator('*').first();
-    this._contextFrameHolder = requiredFrame;
 
-    this._contextFrame = (await requiredFrame.elementHandle()) as any as Page;
+    const page = await this.getCurrentPage();
+    const frames = await page.frames();
+
+    for (const frame of frames) {
+      if ((await frame.locator('*').first().innerHTML()) === (await requiredFrame.innerHTML())) {
+        this._contextFrameHolder = requiredFrame;
+        this._contextFrame = frame as any as Page;
+        return;
+      }
+    }
+    throw new Error(`switchToIframe('${selector}'): required iframe was not found`);
   }
 
   /**
@@ -849,7 +856,7 @@ class Browser {
    *
    * @param {!Function} script scripts that needs to be executed
    * @param {any|any[]} [args] function args
-   * @returns {Promise<unknown>}
+   * @returns {Promise<any>}
    */
   async executeScript(script: ExecuteScriptFn, args?: any | any[]): Promise<any> {
     promodLogger.engineLog(
@@ -857,11 +864,10 @@ class Browser {
       script,
       args,
     );
+
     const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
 
-    const res = await (await this.getWorkingContext()).evaluate(script, recomposedArgs);
-
-    return res;
+    return await (await this.getWorkingContext()).evaluate(script, recomposedArgs);
   }
 
   /**
@@ -993,7 +999,7 @@ class Browser {
   }
 }
 
-new Browser().keyboard
+new Browser().keyboard;
 
 const browser = Browser.getBrowser();
 

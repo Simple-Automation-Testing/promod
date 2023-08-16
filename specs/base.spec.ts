@@ -103,26 +103,6 @@ describe('Base', () => {
     expect(await browser.getCurrentUrl()).stringIncludesSubstring(iframesFile);
   });
 
-  it('iframes', async () => {
-    await browser.get(iframesFile);
-
-    await browser.switchToIframe('[name="first"]');
-    const list = $('ul').$$('li');
-    const listSecond = $('#list').$$('span');
-    expect(await list.count()).toEqual(3);
-
-    await browser.switchToDefauldIframe();
-    expect(await list.count()).toEqual(0);
-    await browser.switchToIframe('#first');
-    await browser.switchToIframe('#second');
-
-    expect(await listSecond.count()).toEqual(3);
-    expect(await list.count()).toEqual(0);
-    await browser.switchToDefauldIframe();
-    expect(await list.count()).toEqual(0);
-    expect(await listSecond.count()).toEqual(0);
-  });
-
   it('selectors', async () => {
     await browser.get(selectorsFile);
     expect(await waitForCondition(() => $('body').$('[id="target"]').isDisplayed())).toEqual(true);
@@ -328,7 +308,7 @@ describe('Base', () => {
     });
   });
 
-  it.only('$$ map', async () => {
+  it('$$ map', async () => {
     await browser.get(formsFile);
     const btns = $$('button');
 
@@ -337,7 +317,7 @@ describe('Base', () => {
     const result = await btns.map(async (item) => {
       return await item.getText();
     });
-    console.log(result, '<')
+    expect(result).toDeepEqual(['Увійти', 'Зареєструватися', 'Увійти']);
   });
 
   it('count', async () => {
@@ -455,12 +435,35 @@ describe('Base', () => {
     await browser.takeScreenshot();
   });
 
+  it('iframes nested', async () => {
+    await browser.get(iframesFile);
+
+    await waitForCondition(() => $('[name="first"]').isDisplayed());
+    await browser.switchToIframe('[name="first"]');
+    const list = $('ul').$$('li');
+    const listSecond = $('#list').$$('span');
+    expect(await list.count()).toEqual(3);
+
+    await browser.switchToDefauldIframe();
+    expect(await list.count()).toEqual(0);
+    await browser.switchToIframe('#first');
+    await browser.switchToIframe('#second');
+
+    expect(await listSecond.count()).toEqual(3);
+    expect(await list.count()).toEqual(0);
+    await browser.switchToDefauldIframe();
+    expect(await list.count()).toEqual(0);
+    expect(await listSecond.count()).toEqual(0);
+  });
+
   it('iframes', async () => {
+    const resulter = $('body').$('#resulter');
     await browser.get(framesFile);
     await waitForCondition(() => $('body').isDisplayed());
     expect(await $('#test').isDisplayed()).toEqual(true);
     await browser.switchToIframe('#test');
-    await waitForCondition(() => $('body').isDisplayed());
+    await waitForCondition(() => resulter.isDisplayed());
+    await browser.executeScript((...args) => console.log(...args), [resulter.getEngineElement()]);
     expect(await $('#hover').isDisplayed()).toEqual(true);
     await browser.switchToDefauldIframe();
     await waitForCondition(() => $('body').isDisplayed());
