@@ -782,16 +782,18 @@ class Browser {
     }
 
     const currentWorkingContext = this._contextFrameHolder ? this._contextFrameHolder : await this.getWorkingContext();
-    const requiredFrame = await currentWorkingContext.frameLocator(selector).locator('*').first();
+    const requiredFrames = await currentWorkingContext.frameLocator(selector).first().locator('*').all();
 
     const page = await this.getCurrentPage();
     const frames = await page.frames();
 
     for (const frame of frames) {
-      if ((await frame.locator('*').first().innerHTML()) === (await requiredFrame.innerHTML())) {
-        this._contextFrameHolder = requiredFrame;
-        this._contextFrame = frame as any as Page;
-        return;
+      for (const requiredFrame of requiredFrames) {
+        if ((await frame.locator('*').first().innerHTML()) === (await requiredFrame.innerHTML())) {
+          this._contextFrameHolder = requiredFrame;
+          this._contextFrame = frame as any as Page;
+          return;
+        }
       }
     }
     throw new Error(`switchToIframe('${selector}'): required iframe was not found`);
