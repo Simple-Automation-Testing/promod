@@ -289,4 +289,9 @@ export type TLogLevel = {
   message: any | any[];
 };
 
+export type TSwitchToIframe = {
+  timeout?: number;
+  message?: string;
+};
+
 export type ExecuteScriptFn = (data: any | any[]) => unknown;

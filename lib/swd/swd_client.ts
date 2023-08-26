@@ -15,7 +15,14 @@ import { buildBy } from './swd_alignment';
 import { KeysSWD, resolveUrl } from '../mappers';
 import { promodLogger } from '../internals';
 
-import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage, PromodElementType } from '../interface';
+import type {
+  TSwitchToIframe,
+  ExecuteScriptFn,
+  TCookie,
+  TLogLevel,
+  TSwitchBrowserTabPage,
+  PromodElementType,
+} from '../interface';
 
 const availableToRunEvenIfCurrentDriverDoesNotExist = ['constructor', 'runNewBrowser', 'switchToBrowser', 'quitAll'];
 
@@ -269,7 +276,11 @@ class Browser {
    * @param {boolean} [jumpToDefaultFirst] should switch to top frame first
    * @return {Promise<void>}
    */
-  async switchToIframe(selector: string | any, jumpToDefaultFirst = false) {
+  async switchToIframe(
+    selector: string | any,
+    jumpToDefaultFirst = false,
+    { timeout = 30_000, message = '' }: TSwitchToIframe = {},
+  ) {
     promodLogger.engineLog(
       `[SWD] Promod client interface calls method "switchToIframe" from wrapped API, args: `,
       selector,
@@ -285,9 +296,11 @@ class Browser {
         return elements.length > 0;
       },
       {
-        timeout: 30_000,
+        timeout,
         message: (t, e = 'without error') =>
-          `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e}`,
+          `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e} ${
+            message ? '\n' + message : ''
+          } `,
       },
     );
 

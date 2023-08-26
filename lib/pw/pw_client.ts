@@ -18,7 +18,14 @@ import { KeysPW, resolveUrl } from '../mappers';
 import { promodLogger } from '../internals';
 
 import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page, ElementHandle } from 'playwright-core';
-import type { ExecuteScriptFn, TCookie, TLogLevel, TSwitchBrowserTabPage, PromodElementType } from '../interface';
+import type {
+  TSwitchToIframe,
+  ExecuteScriptFn,
+  TCookie,
+  TLogLevel,
+  TSwitchBrowserTabPage,
+  PromodElementType,
+} from '../interface';
 
 function validateBrowserCallMethod(browserClass): Browser {
   const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
@@ -788,7 +795,11 @@ class Browser {
    * @param {boolean} [jumpToDefaultFirst] should switch to top frame first
    * @return {Promise<void>}
    */
-  async switchToIframe(selector: string, jumpToDefaultFirst = false): Promise<void> {
+  async switchToIframe(
+    selector: string,
+    jumpToDefaultFirst = false,
+    { timeout = 30_000, message = '' }: TSwitchToIframe = {},
+  ): Promise<void> {
     promodLogger.engineLog(
       `[PW] Promod client interface calls method "switchToIframe" from wrapped API, args: `,
       selector,
@@ -825,9 +836,11 @@ class Browser {
         }
       },
       {
-        timeout: 30_000,
+        timeout,
         message: (t, e = 'without error') =>
-          `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e}`,
+          `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e} ${
+            message ? '\n' + message : ''
+          } `,
       },
     );
   }
