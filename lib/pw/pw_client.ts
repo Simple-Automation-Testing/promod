@@ -9,6 +9,7 @@ import {
   compareToPattern,
   safeJSONstringify,
   isString,
+  asyncMap,
 } from 'sat-utils';
 import { Key } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
@@ -318,6 +319,22 @@ class Browser {
   /** @private */
   private async getCurrentPage() {
     return await this._contextWrapper.getCurrentPage();
+  }
+
+  async setBasicAuth(authData: { username: string; password: string }, dontThrowOnError: boolean = true) {
+    try {
+      const page = await this.getCurrentPage();
+
+      await page.setExtraHTTPHeaders({
+        Authorization: `Basic ${Buffer.from(`${authData.username}:${authData.password}`).toString('base64')}`,
+      });
+    } catch (error) {
+      if (dontThrowOnError) {
+        console.error(error);
+      } else {
+        throw error;
+      }
+    }
   }
 
   /**
@@ -781,22 +798,38 @@ class Browser {
       await this.switchToDefauldIframe();
     }
 
-    const currentWorkingContext = this._contextFrameHolder ? this._contextFrameHolder : await this.getWorkingContext();
-    const requiredFrames = await currentWorkingContext.frameLocator(selector).first().locator('*').all();
+    await waitForCondition(
+      async () => {
+        const page = await this.getCurrentPage();
+        const frames = await page.frames();
 
-    const page = await this.getCurrentPage();
-    const frames = await page.frames();
+        for (const [_index, frame] of frames.entries()) {
+          const allElements = await frame
+            .frameLocator(selector)
+            .first()
+            .locator('*')
+            .all()
+            .catch(() => []);
 
-    for (const frame of frames) {
-      for (const requiredFrame of requiredFrames) {
-        if ((await frame.locator('*').first().innerHTML()) === (await requiredFrame.innerHTML())) {
-          this._contextFrameHolder = requiredFrame;
-          this._contextFrame = frame as any as Page;
-          return;
+          const res = (await asyncMap(allElements, async (item) => await item.isVisible())).some(
+            (item) => item === true,
+          );
+
+          if (res) {
+            this._contextFrame = (await (
+              await frame.frameLocator(selector).first().locator('*').first().elementHandle({ timeout: 25 })
+            ).ownerFrame()) as any as Page;
+
+            return true;
+          }
         }
-      }
-    }
-    throw new Error(`switchToIframe('${selector}'): required iframe was not found`);
+      },
+      {
+        timeout: 30_000,
+        message: (t, e = 'without error') =>
+          `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e}`,
+      },
+    );
   }
 
   /**
@@ -1000,8 +1033,6 @@ class Browser {
     await (await this.getCurrentPage()).keyboard.up('Enter');
   }
 }
-
-new Browser().keyboard;
 
 const browser = Browser.getBrowser();
 

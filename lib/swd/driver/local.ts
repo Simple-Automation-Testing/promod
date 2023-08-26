@@ -5,7 +5,7 @@ import * as getPort from 'get-port';
 
 import { SeleniumServer } from 'selenium-webdriver/remote';
 
-function getOptsData(opts: { [k: string]: any } = {}) {
+async function getOptsData(opts: { [k: string]: any } = {}) {
   const defaultConfig = standAloneDefaultConfig();
 
   if (!opts.version) {
@@ -21,7 +21,7 @@ function getOptsData(opts: { [k: string]: any } = {}) {
     opts.drivers = defaultConfig.drivers;
   }
 
-  const fsPaths = computeFsPaths({
+  const fsPaths = await computeFsPaths({
     seleniumVersion: opts.version,
     drivers: opts.drivers,
     basePath: opts.basePath,
@@ -35,33 +35,34 @@ const throwInstructionError = (additional = '') => {
   );
 };
 
-const checkIfUpdateRequired = (driverName, opts) => {
+async function checkIfUpdateRequired(driverName, opts) {
+  const optsData = await getOptsData(opts);
   if (driverName === 'selenium') {
-    if (!fs.existsSync(getOptsData(opts).selenium.installPath)) {
+    if (!fs.existsSync(optsData.selenium.installPath)) {
       throwInstructionError();
     }
   }
 
   if (driverName === 'chrome') {
-    if (!fs.existsSync(getOptsData(opts).chrome.installPath)) {
+    if (!fs.existsSync(optsData.chrome.installPath)) {
       throwInstructionError();
     }
   }
 
   if (driverName === 'firefox') {
-    if (!fs.existsSync(getOptsData(opts).firefox.installPath)) {
+    if (!fs.existsSync(optsData.firefox.installPath)) {
       throwInstructionError();
     }
   }
-};
+}
 
-const checkIfDriverOrServerExists = (pathTo) => {
+function checkIfDriverOrServerExists(pathTo) {
   if (!fs.existsSync(pathTo)) {
     throwInstructionError(`${pathTo} does not exists \n`);
   }
-};
+}
 
-const getCombinedConfig = (config: any = {}) => {
+async function getCombinedConfig(config: any = {}) {
   const combinedConfig = config;
 
   if (!config.seleniumServerStartTimeout) {
@@ -74,37 +75,40 @@ const getCombinedConfig = (config: any = {}) => {
       : combinedConfig.capabilities;
 
   if (!combinedConfig.seleniumServerJar) {
+    const optsData = await getOptsData(config.selenium);
     checkIfUpdateRequired('selenium', config.selenium);
-    const pathToServer = getOptsData(config.selenium).selenium.installPath;
+    const pathToServer = optsData.selenium.installPath;
 
     checkIfDriverOrServerExists(pathToServer);
     combinedConfig.seleniumServerJar = pathToServer;
   }
 
   if (!combinedConfig.chromeDriver && combinedConfig.capabilities.browserName === 'chrome') {
+    const optsData = await getOptsData(config.selenium);
     checkIfUpdateRequired('chrome', config.selenium);
-    const pathToChromedriver = getOptsData(config.selenium).chrome.installPath;
+    const pathToChromedriver = optsData.chrome.installPath;
 
     checkIfDriverOrServerExists(pathToChromedriver);
     combinedConfig.chromeDriver = pathToChromedriver;
   }
 
   if (!combinedConfig.geckoDriver && combinedConfig.capabilities.browserName === 'firefox') {
+    const optsData = await getOptsData(config.selenium);
     checkIfUpdateRequired('firefox', config.selenium);
-    const pathTogeckoDriver = getOptsData(config.selenium).firefox.installPath;
+    const pathTogeckoDriver = optsData.firefox.installPath;
 
     checkIfDriverOrServerExists(pathTogeckoDriver);
     combinedConfig.geckoDriver = pathTogeckoDriver;
   }
 
   return combinedConfig;
-};
+}
 
-const runLocalEnv = async (config) => {
+async function runLocalEnv(config) {
   if (config.seleniumAddress) {
     return config;
   }
-  const combinedConfig = getCombinedConfig(config);
+  const combinedConfig = await getCombinedConfig(config);
   const serverConf = combinedConfig.localSeleniumStandaloneOpts || {};
   const port = combinedConfig.seleniumPort || (await getPort());
 
@@ -137,6 +141,6 @@ const runLocalEnv = async (config) => {
     seleniumAddress: address,
     capabilities: combinedConfig.capabilities,
   };
-};
+}
 
 export { runLocalEnv };

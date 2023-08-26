@@ -80,6 +80,29 @@ class Browser {
     this.seleniumDriver = driver;
   }
 
+  async setBasicAuth(authData: { username: string; password: string }, dontThrowOnError: boolean = true) {
+    try {
+      const page = await this.seleniumDriver.createCDPConnection('page');
+      await this.seleniumDriver.register(authData.username, authData.password, page);
+    } catch (error) {
+      if (dontThrowOnError) {
+        console.error(error);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser, $ } = seleniumWD;
+   *
+   * await browser.scrollByMouseWheel($('.scroll.me'), 10, 10, 1, 1, 250)
+   *
+   * @param {string} key key that needs to press down
+   * @return {Promise<void>}
+   */
   async scrollElementByMouseWheel(element: PromodElementType, x, y, deltaX, deltaY, duration) {
     promodLogger.engineLog(
       `[SWD] Promod client interface calls method "scrollElementByMouseWheel" from wrapped API, args: `,
@@ -97,6 +120,16 @@ class Browser {
       .perform();
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.scrollByMouseWheel(10, 10, 1, 1, 250)
+   *
+   * @param {string} key key that needs to press down
+   * @return {Promise<void>}
+   */
   async scrollByMouseWheel(x, y, deltaX, deltaY, duration) {
     promodLogger.engineLog(
       `[SWD] Promod client interface calls method "scrollByMouseWheel" from wrapped API, args: `,
@@ -112,7 +145,6 @@ class Browser {
       .scroll(x, y, deltaX, deltaY, undefined, duration)
       .perform();
   }
-
 
   /**
    * @example
@@ -226,6 +258,17 @@ class Browser {
     this.seleniumDriver = driver;
   }
 
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser } = seleniumWD;
+   *
+   * await browser.switchToIframe('my-iframe');
+   *
+   * @param {string} selector iframe selector
+   * @param {boolean} [jumpToDefaultFirst] should switch to top frame first
+   * @return {Promise<void>}
+   */
   async switchToIframe(selector: string | any, jumpToDefaultFirst = false) {
     promodLogger.engineLog(
       `[SWD] Promod client interface calls method "switchToIframe" from wrapped API, args: `,
@@ -235,6 +278,18 @@ class Browser {
     if (jumpToDefaultFirst) {
       await this.switchToDefauldIframe();
     }
+    await waitForCondition(
+      async () => {
+        const elements = await this.seleniumDriver.findElements(buildBy(selector));
+
+        return elements.length > 0;
+      },
+      {
+        timeout: 30_000,
+        message: (t, e = 'without error') =>
+          `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e}`,
+      },
+    );
 
     await this.seleniumDriver.switchTo().frame(this.seleniumDriver.findElement(buildBy(selector)));
   }
