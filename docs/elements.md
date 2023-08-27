@@ -8,6 +8,8 @@ Elements has "lazy" interface (as it was in protractor)
 - [last](#last)
 - [each](#each)
 - [map](#map)
+- [some](#some)
+- [every](#every)
 
 ## searchStragegy
 
@@ -71,7 +73,7 @@ const someButton = $$('button').last();
 	})()
 ```
 
-## each
+## map
 
 ```js
 	const {seleniumWD} = require('promod');
@@ -81,6 +83,34 @@ const someButton = $$('button').last();
 	;(async () => {
 		const allButtonTexts = await someButtons.map((button) => {
 			return await someButton.getText()
+		})
+	})()
+```
+
+## some
+
+```js
+	const {seleniumWD} = require('promod');
+	const {$$} = seleniumWD
+	const someButtons = $$('button');
+
+	;(async () => {
+		const isSomeButtonVisible = await someButtons.some((button) => {
+			return await someButton.isDisplayed()
+		})
+	})()
+```
+
+## every
+
+```js
+	const {seleniumWD} = require('promod');
+	const {$$} = seleniumWD
+	const someButtons = $$('button');
+
+	;(async () => {
+		const isEveryButtonVisible = await someButtons.every((button) => {
+			return await someButton.isDisplayed()
 		})
 	})()
 ```

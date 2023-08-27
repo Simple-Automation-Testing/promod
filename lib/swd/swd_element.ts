@@ -188,6 +188,50 @@ class PromodSeleniumElements {
   /**
    * @example
    * const buttons = $$('button');
+   * const isSomeButtonDisplayed = await buttons.some(async (button) => await button.isDisplayed());
+   *
+   * @param {(item, index) => Promise<any>} cb
+   * @returns {Promise<boolean>}
+   */
+  async some(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<boolean> {
+    promodLogger.engineLog(`[PW] Promod elements interface calls method "some" from wrapped API, args: `, cb);
+    await this.getElement(0);
+
+    for (let i = 0; i < this._driverElements.length; i++) {
+      const res = await cb(this.get(i), i).catch(() => false);
+      if (res) {
+        return res;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * @example
+   * const buttons = $$('button');
+   * const isEveryButtonDisplayed = await buttons.every(async (button) => await button.isDisplayed());
+   *
+   * @param {(item, index) => Promise<any>} cb
+   * @returns {Promise<boolean>}
+   */
+  async every(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<boolean> {
+    promodLogger.engineLog(`[PW] Promod elements interface calls method "every" from wrapped API, args: `, cb);
+    await this.getElement(0);
+
+    for (let i = 0; i < this._driverElements.length; i++) {
+      const res = await cb(this.get(i), i).catch(() => false);
+      if (!res) {
+        return res;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * @example
+   * const buttons = $$('button');
    * const button = await buttons.find(async (button) => await button.getText() === 'Click me');
    *
    * @param {(item, index) => Promise<any>} cb

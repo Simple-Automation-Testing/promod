@@ -24,6 +24,8 @@ describe('Base', () => {
     await browser.quitAll();
   });
 
+  it('')
+
   it('switchToBrowserTab', async () => {
     await browser.get(scrollFile);
     await waitForCondition(() => $('body').isDisplayed());
@@ -306,6 +308,30 @@ describe('Base', () => {
     await btns.each(async (item) => {
       expect(await item.$$('a').count()).toEqual(0);
     });
+  });
+
+  it('$$ every', async () => {
+    await browser.get(formsFile);
+    const btns = $$('button');
+
+    await waitForCondition(() => $('body').isDisplayed());
+
+    const result = await btns.every(async (item) => {
+      return await item.isDisplayed();
+    });
+    expect(result).toDeepEqual(true);
+  });
+
+  it('$$ some', async () => {
+    await browser.get(formsFile);
+    const btns = $$('button');
+
+    await waitForCondition(() => $('body').isDisplayed());
+
+    const result = await btns.some(async (item) => {
+      return await item.isDisplayed();
+    });
+    expect(result).toDeepEqual(true);
   });
 
   it('$$ map', async () => {

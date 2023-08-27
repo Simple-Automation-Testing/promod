@@ -34,8 +34,36 @@ export interface PromodElementsType {
 
   each(cb: (item: PromodElementType, index?: number) => Promise<void>): Promise<void>;
 
+  /**
+   * @example
+   * const buttons = $$('button');
+   * const isEveryButtonDisplayed = await buttons.every(async (button) => await button.isDisplayed());
+   *
+   * @param {(item, index) => Promise<any>} cb
+   * @returns {Promise<boolean>}
+   */
+  every(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<boolean>;
+
+  /**
+   * @example
+   * const buttons = $$('button');
+   * const isSomeButtonDisplayed = await buttons.some(async (button) => await button.isDisplayed());
+   *
+   * @param {(item, index) => Promise<any>} cb
+   * @returns {Promise<boolean>}
+   */
+  some(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<boolean>;
+
   map<T>(cb: (item: PromodElementType, index?: number) => Promise<T>): Promise<T[]>;
 
+  /**
+   * @example
+   * const buttons = $$('button');
+   * const button = await buttons.find(async (button) => await button.getText() === 'Click me');
+   *
+   * @param {(item, index) => Promise<any>} cb
+   * @returns {Promise<PromodElementType>}
+   */
   find(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<PromodElementType>;
 
   /**
