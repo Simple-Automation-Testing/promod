@@ -277,7 +277,7 @@ class Browser {
   wait = waitForCondition;
   _engineDriver: PWBrowser;
   _contextWrapper: ContextWrapper;
-  _contextFrame: Page;
+  _contextFrame: Page | (() => Promise<Page>);
   _contextFrameHolder: Locator;
 
   /** @private */
@@ -316,10 +316,11 @@ class Browser {
   }
 
   /** @private */
-  private async getWorkingContext() {
-    if (this._contextFrame) {
-      return this._contextFrame;
+  private async getWorkingContext(): Promise<Page> {
+    if (isAsyncFunction(this._contextFrame)) {
+      return await (this._contextFrame as () => Promise<Page>)();
     }
+
     return await this._contextWrapper.getCurrentPage();
   }
 
@@ -809,40 +810,40 @@ class Browser {
       await this.switchToDefauldIframe();
     }
 
-    await waitForCondition(
-      async () => {
-        const page = await this.getCurrentPage();
-        const frames = await page.frames();
+    this._contextFrame = async () => {
+      return await waitForCondition(
+        async () => {
+          const page = await this.getCurrentPage();
+          const frames = await page.frames();
 
-        for (const [_index, frame] of frames.entries()) {
-          const allElements = await frame
-            .frameLocator(selector)
-            .first()
-            .locator('*')
-            .all()
-            .catch(() => []);
+          for (const [_index, frame] of frames.entries()) {
+            const allElements = await frame
+              .frameLocator(selector)
+              .first()
+              .locator('*')
+              .all()
+              .catch(() => []);
 
-          const res = (await asyncMap(allElements, async (item) => await item.isVisible())).some(
-            (item) => item === true,
-          );
+            const res = (await asyncMap(allElements, async (item) => await item.isVisible())).some(
+              (item) => item === true,
+            );
 
-          if (res) {
-            this._contextFrame = (await (
-              await frame.frameLocator(selector).first().locator('*').first().elementHandle({ timeout: 25 })
-            ).ownerFrame()) as any as Page;
-
-            return true;
+            if (res) {
+              return (await (
+                await frame.frameLocator(selector).first().locator('*').first().elementHandle({ timeout: 25 })
+              ).ownerFrame()) as any as Page;
+            }
           }
-        }
-      },
-      {
-        timeout,
-        message: (t, e = 'without error') =>
-          `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e} ${
-            message ? '\n' + message : ''
-          } `,
-      },
-    );
+        },
+        {
+          timeout,
+          message: (t, e = 'without error') =>
+            `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e} ${
+              message ? '\n' + message : ''
+            } `,
+        },
+      );
+    };
   }
 
   /**
