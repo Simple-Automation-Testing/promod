@@ -62,6 +62,13 @@ function checkIfDriverOrServerExists(pathTo) {
   }
 }
 
+function mapToObject(map) {
+  return Array.from(map).reduce((acc, [key, value]) => {
+    acc[key] = value;
+    return acc;
+  }, {});
+}
+
 async function getCombinedConfig(config: any = {}) {
   const combinedConfig = config;
 
@@ -71,7 +78,7 @@ async function getCombinedConfig(config: any = {}) {
 
   combinedConfig.capabilities =
     combinedConfig.capabilities.map_ instanceof Map
-      ? Object.fromEntries(combinedConfig.capabilities.map_)
+      ? mapToObject(combinedConfig.capabilities.map_)
       : combinedConfig.capabilities;
 
   if (!combinedConfig.seleniumServerJar) {

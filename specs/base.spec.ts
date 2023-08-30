@@ -24,8 +24,6 @@ describe('Base', () => {
     await browser.quitAll();
   });
 
-  it('')
-
   it('switchToBrowserTab', async () => {
     await browser.get(scrollFile);
     await waitForCondition(() => $('body').isDisplayed());

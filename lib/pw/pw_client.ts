@@ -6,10 +6,11 @@ import {
   isAsyncFunction,
   lengthToIndexesArray,
   asyncForEach,
+  asyncSome,
   compareToPattern,
   safeJSONstringify,
   isString,
-  asyncMap,
+  asyncFilter,
 } from 'sat-utils';
 import { Key } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
@@ -814,7 +815,19 @@ class Browser {
       return await waitForCondition(
         async () => {
           const page = await this.getCurrentPage();
-          const frames = await page.frames();
+          const pageFrames = await page.frames();
+          const frames = await asyncFilter(
+            pageFrames,
+            async (frame) =>
+              (
+                await frame
+                  .frameLocator(selector)
+                  .first()
+                  .locator('*')
+                  .all()
+                  .catch(() => [])
+              ).length > 0,
+          );
 
           for (const [_index, frame] of frames.entries()) {
             const allElements = await frame
@@ -824,9 +837,7 @@ class Browser {
               .all()
               .catch(() => []);
 
-            const res = (await asyncMap(allElements, async (item) => await item.isVisible())).some(
-              (item) => item === true,
-            );
+            const res = await asyncSome(allElements, async (item) => await item.isVisible());
 
             if (res) {
               return (await (
