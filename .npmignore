@@ -1,5 +1,7 @@
 specs
 specs/*
+units/*
+units*
 ./units
 ./lib
 .eslin*
