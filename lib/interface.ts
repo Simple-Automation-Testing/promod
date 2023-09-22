@@ -1,6 +1,8 @@
 export interface PromodElementsType {
   selector: string;
 
+  getEngineElements(): Promise<unknown>;
+
   /**
    * @example
    * const els = $$('a')
@@ -280,8 +282,6 @@ export interface PromodElementType {
   isDisplayed(): Promise<boolean>;
 
   takeScreenshot(opt_scroll?: boolean): Promise<string>;
-
-  getEngineElements(): Promise<unknown>;
 
   getEngineElement(): Promise<unknown>;
 

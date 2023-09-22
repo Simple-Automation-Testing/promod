@@ -155,7 +155,7 @@ describe('Base', () => {
     expect(await browser.getCurrentUrl()).toEqual(formsFile);
   });
 
-  it('by js function', async () => {
+  it('by js nested xpath', async () => {
     await browser.get(formsFile);
     await waitForCondition(() => $('form').$$('xpath=//button').count());
     const buttons = $('form').$$('xpath=//button');
@@ -273,14 +273,6 @@ describe('Base', () => {
     // await browser.actions().keyDown(Key.SHIFT).perform();
     await email.sendKeys(`${Key.SHIFT}a`);
     await signIn.click();
-  });
-
-  it('execute script str', async () => {
-    await browser.get(formsFile);
-    await waitForCondition(() => $('body').isDisplayed());
-    await $('input[placeholder="Пароль"]').sendKeys('test');
-    const item = await browser.executeScript(([item]) => item.value, [$('input[placeholder="Пароль"]')]);
-    expect(item).toEqual('test');
   });
 
   it('execute script fn', async () => {

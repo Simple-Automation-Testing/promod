@@ -10,9 +10,9 @@ import {
   compareToPattern,
   safeJSONstringify,
   isString,
+  isArray,
   asyncFilter,
 } from 'sat-utils';
-import { Key } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { Locator } from 'playwright-core';
 import { KeysPW, resolveUrl } from '../mappers';
@@ -160,7 +160,6 @@ class PageWrapper {
     }
   }
 }
-
 class ContextWrapper {
   server: PWBrowser;
 
@@ -413,7 +412,7 @@ class Browser {
   }
 
   get Key() {
-    return Key;
+    return KeysPW;
   }
 
   get baseUrl() {
@@ -925,9 +924,22 @@ class Browser {
       args,
     );
 
-    const recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
+    let recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
+    if (isArray(recomposedArgs)) {
+      for (const [index, item] of Object.entries(recomposedArgs)) {
+        recomposedArgs[index] = (item as any)?.elementHandle ? await (item as any)?.elementHandle() : item;
+      }
+    } else {
+      recomposedArgs = recomposedArgs?.elementHandle ? await recomposedArgs.elementHandle() : recomposedArgs;
+    }
 
-    return await (await this.getWorkingContext()).evaluate(script, recomposedArgs);
+    const result = await (await this.getWorkingContext()).evaluate(script, recomposedArgs);
+
+    for (const item of toArray(recomposedArgs)) {
+      (item as any)?.dispose && (await (item as any)?.dispose());
+    }
+
+    return result;
   }
 
   /**

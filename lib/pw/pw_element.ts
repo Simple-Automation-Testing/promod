@@ -17,7 +17,7 @@ import { getPositionXY } from '../mappers';
 import { promodLogger } from '../internals';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
-import type { ElementHandle, Page } from 'playwright-core';
+import type { Page, Locator } from 'playwright-core';
 
 const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
   getExecuteScriptArgs = isFunction(getExecuteScriptArgs) ? getExecuteScriptArgs : () => [];
@@ -46,7 +46,7 @@ const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
 
 class PromodElements {
   private _driver: Page;
-  private _driverElements: ElementHandle[];
+  private _driverElements: Locator[];
   private getParent: () => Promise<PromodElement>;
   private getExecuteScriptArgs: () => any;
   private selector: string;
@@ -78,17 +78,14 @@ class PromodElements {
     const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
 
     if (this.getParent && !ignoreParent && isString(selector)) {
-      let parent = await this.getParent();
-      // @ts-ignore
-      if (parent.getEngineElement) {
-        // @ts-ignore
-        parent = shouldUserDocumentRoot ? _driver : await parent.getEngineElement();
-      }
+      let parent: any = await this.getParent();
 
+      if (parent.getEngineElement) {
+        parent = (shouldUserDocumentRoot ? _driver : await parent.getEngineElement()) as any as Locator;
+      }
       // TODO improve this solution
-      this._driverElements = (await (shouldUserDocumentRoot ? _driver : parent).$$(
-        getElementArgs,
-      )) as any as ElementHandle[];
+      const items = await (shouldUserDocumentRoot ? _driver : parent).locator(getElementArgs);
+      this._driverElements = await (items as Locator).all();
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
       const elementHandles = [];
       const resolved = [];
@@ -116,7 +113,7 @@ class PromodElements {
 
       this._driverElements = elementHandles.filter(Boolean);
     } else {
-      this._driverElements = await _driver.$$(buildBy(this.selector, this.getExecuteScriptArgs));
+      this._driverElements = await _driver.locator(buildBy(this.selector, this.getExecuteScriptArgs)).all();
     }
 
     if (index < 0) {
@@ -318,7 +315,7 @@ class PromodElements {
 
 class PromodElement {
   private _driver: Page;
-  private _driverElement: ElementHandle;
+  private _driverElement: Locator;
   private getParent: () => Promise<PromodElementType>;
   private getExecuteScriptArgs: () => any;
   private useParent: boolean;
@@ -364,8 +361,7 @@ class PromodElement {
       if (this.useParent) {
         this._driverElement = parent;
       } else {
-        const element = await (shouldUserDocumentRoot ? this._driver : parent).$(getElementArgs);
-        this._driverElement = element ? await element.asElement() : element;
+        this._driverElement = (await (shouldUserDocumentRoot ? this._driver : parent).locator(getElementArgs).all())[0];
       }
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
       const resolved = [];
@@ -379,7 +375,7 @@ class PromodElement {
         await this._driver.evaluateHandle(getElementArgs[0], resolved.length === 1 ? resolved[0] : resolved)
       ).asElement();
     } else {
-      this._driverElement = await (await this._driver.$(getElementArgs)).asElement();
+      this._driverElement = (await this._driver.locator(getElementArgs).all())[0];
     }
 
     return this._driverElement;
@@ -502,7 +498,7 @@ class PromodElement {
     await this.getElement();
     const _driver = await this._browserInterface.getWorkingContext();
 
-    return _driver.evaluate((item) => item.nodeName.toLowerCase(), this._driverElement);
+    return await this._driverElement.evaluate((item) => item.nodeName.toLowerCase());
   }
 
   async getCssValue() {}
@@ -550,12 +546,12 @@ class PromodElement {
       const splitedValues = stringValue.split(seleniumEnter);
 
       for (const [index, valueItem] of splitedValues.entries()) {
-        await this._driverElement.type(valueItem, { delay: 25 });
+        await this._driverElement.pressSequentially(valueItem, { delay: 10 });
 
         if (index !== splitedValues.length - 1) await this.pressEnter();
       }
     } else {
-      await this._driverElement.type(stringValue, { delay: 25 });
+      await this._driverElement.pressSequentially(stringValue, { delay: 10 });
     }
   }
 
@@ -618,11 +614,7 @@ class PromodElement {
       position,
     );
     await this.getElement();
-    const { x, y, width, height } = await this._driver.evaluate(
-      // @ts-ignore
-      (el) => el.getBoundingClientRect(),
-      await this.getEngineElement(),
-    );
+    const { x, y, width, height } = await this._driverElement.evaluate((el) => el.getBoundingClientRect());
 
     return getPositionXY(position, { x, y, width, height });
   }
@@ -703,13 +695,13 @@ class PromodElement {
   ) {
     await this.getElement();
     if (isString(value)) {
-      const opts = await this._driverElement.$$('option');
+      const opts = await this._driverElement.locator('option').all();
       for (const opt of opts) {
         const content = (await opt.textContent()).trim();
         // @ts-ignore
         const res = strictTextOptionEqual ? content === value.trim() : content.includes(value);
         if (res) {
-          return this._driverElement.selectOption(opt);
+          return this._driverElement.selectOption(content);
         }
       }
 
@@ -768,7 +760,7 @@ class PromodElement {
     );
   }
 
-  private async getEngineElement() {
+  async getEngineElement() {
     await this.getElement();
     return this._driverElement;
   }
