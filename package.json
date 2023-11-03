@@ -1,11 +1,11 @@
 {
   "name": "promod",
-  "version": "1.9.7",
+  "version": "1.9.8",
   "description": "Library for automation testing",
   "main": "./built/index.js",
   "bin": "./bin/promod_cli",
   "scripts": {
-    "pw:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright-core install --force chrome",
+    "pw:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright install chrome",
     "test:pw": "ENGINE=pw mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:swd": "ENGINE=swd mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:units": "mocha $(find units -name '*.test.*') --require ts-node/register --timeout 500000",

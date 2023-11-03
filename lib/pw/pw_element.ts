@@ -743,7 +743,7 @@ class PromodElement {
    */
   async scrollIntoView(position?: 'end' | 'start' | 'center' | 'nearest') {
     await this.getElement();
-    await this._driver.evaluateHandle(
+    await browser.executeScript(
       ([elem, scrollPosition]) => {
         let position = true;
 
