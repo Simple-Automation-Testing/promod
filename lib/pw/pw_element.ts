@@ -11,13 +11,14 @@ import {
   isAsyncFunction,
   isPromise,
   lengthToIndexesArray,
+  getRandomString,
 } from 'sat-utils';
 import { browser } from './pw_client';
 import { getPositionXY } from '../mappers';
 import { promodLogger } from '../internals';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
-import type { Page, Locator } from 'playwright-core';
+import type { Page, Locator, ElementHandle } from 'playwright-core';
 
 const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
   getExecuteScriptArgs = isFunction(getExecuteScriptArgs) ? getExecuteScriptArgs : () => [];
@@ -37,7 +38,7 @@ const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
     return [(selector as string).replace('js=', ''), ...getExecuteScriptArgs()];
   } else if (isPromise(selector)) {
     return selector;
-  } else if (isFunction(selector)) {
+  } else if (isFunction(selector) || isAsyncFunction(selector)) {
     return [selector, ...getExecuteScriptArgs()];
   }
 
@@ -83,6 +84,7 @@ class PromodElements {
       if (parent.getEngineElement) {
         parent = (shouldUserDocumentRoot ? _driver : await parent.getEngineElement()) as any as Locator;
       }
+
       // TODO improve this solution
       const items = await (shouldUserDocumentRoot ? _driver : parent).locator(getElementArgs);
       this._driverElements = await (items as Locator).all();
@@ -93,7 +95,9 @@ class PromodElements {
 
       for (const item of callArgs) {
         // TODO refactor resolver
-        resolved.push(await item);
+        const resolvedItem = await item;
+
+        resolved.push(resolvedItem?.elementHandle ? await resolvedItem.elementHandle() : resolvedItem);
       }
       // @ts-ignore
       const handlesByFunctionSearch = await _driver.evaluateHandle(
@@ -369,11 +373,38 @@ class PromodElement {
 
       for (const item of callArgs) {
         // TODO refactor resolver
-        resolved.push(await item);
+        const resolvedItem = await item;
+        resolved.push(resolvedItem?.elementHandle ? await resolvedItem.elementHandle() : resolvedItem);
       }
-      this._driverElement = (
+      const result: ElementHandle = (
         await this._driver.evaluateHandle(getElementArgs[0], resolved.length === 1 ? resolved[0] : resolved)
       ).asElement();
+
+      let tempLocatorDataAttribute = `${getRandomString(25, { letters: true })}`;
+
+      const locatoDataAttribute = await result.evaluate((n, item) => {
+        // @ts-ignore
+        if (n.dataset.promod_element_item) {
+          // @ts-ignore
+          return n.dataset.promod_element_item;
+        } else {
+          // @ts-ignore
+          n.dataset.promod_element_item = `${item}`;
+        }
+
+        // @ts-ignore
+        return n.dataset.promod_element_item;
+      }, tempLocatorDataAttribute);
+
+      await result.dispose();
+
+      for (const resolvedItem of resolved) {
+        if (resolvedItem.dispose) {
+          await resolvedItem.dispose();
+        }
+      }
+
+      this._driverElement = (await this._driver.locator(`[data-promod_element_item="${locatoDataAttribute}"]`).all())[0];
     } else {
       this._driverElement = (await this._driver.locator(getElementArgs).all())[0];
     }
@@ -496,8 +527,6 @@ class PromodElement {
   async getTagName() {
     promodLogger.engineLog(`[PW] Promod element interface calls method "getTagName" from wrapped API`);
     await this.getElement();
-    const _driver = await this._browserInterface.getWorkingContext();
-
     return await this._driverElement.evaluate((item) => item.nodeName.toLowerCase());
   }
 
@@ -774,7 +803,14 @@ class PromodElement {
   async isDisplayed() {
     return this.getElement()
       .then(() => this._driverElement.isVisible())
-      .catch(() => false);
+      .catch((error) => {
+        promodLogger.engineLog(
+          `Promod element interface gets error after method "isDisplayed" from wrapped API, error: `,
+          error,
+        );
+
+        return false;
+      });
   }
 
   /**

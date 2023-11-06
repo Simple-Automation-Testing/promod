@@ -155,7 +155,7 @@ describe('Base', () => {
     expect(await browser.getCurrentUrl()).toEqual(formsFile);
   });
 
-  it('by js nested xpath', async () => {
+  it('nested xpath', async () => {
     await browser.get(formsFile);
     await waitForCondition(() => $('form').$$('xpath=//button').count());
     const buttons = $('form').$$('xpath=//button');
@@ -178,7 +178,8 @@ describe('Base', () => {
   it('by js function with parent', async () => {
     await browser.get(formsFile);
     try {
-      const body = $(() => document.querySelector('body'));
+      const body = $(() => document.querySelector('body')).$('form.login_form');
+
       await waitForCondition(() => body.isDisplayed());
       const email = $((parent) => {
         return parent.querySelector('input[placeholder="Ім\'я користувача"]');
@@ -186,6 +187,7 @@ describe('Base', () => {
 
       expect(await waitForCondition(() => email.isDisplayed())).toEqual(true);
       expect(await email.isPresent()).toEqual(true);
+      expect(await email.getAttribute('placeholder')).toEqual("Ім'я користувача");
     } catch (error) {
       console.log(error);
       await browser.sleep(2500000);
@@ -195,9 +197,7 @@ describe('Base', () => {
   it('by js function from parent with parent', async () => {
     await browser.get(formsFile);
     try {
-      const body = $(() => {
-        return document.querySelector('body');
-      });
+      const body = $(() => document.querySelector('body'));
 
       expect(await waitForCondition(() => body.isDisplayed())).toEqual(true, 'Bodu should be visible');
 
@@ -358,32 +358,6 @@ describe('Base', () => {
           return document.querySelector(selector);
         }, 'button').isPresent(),
       ),
-    ).toEqual(true);
-  });
-
-  // DOES NOT WORK with PW
-  it.skip('by js as string function with argument', async () => {
-    expect(
-      await $(
-        `js=return ((selector) => {
-			return document.querySelector(selector);
-		})(arguments[0])`,
-        'button',
-      ).isPresent(),
-    ).toEqual(true);
-  });
-
-  // DOES NOT WORK with PW
-  it.skip('by js as string function with argument with parent', async () => {
-    const body = $('body');
-    expect(
-      await $(
-        `js=return ((selector, root) => {
-			return root.querySelector(selector);
-		})(arguments[0], arguments[1])`,
-        'button',
-        body.getEngineElement(),
-      ).isPresent(),
     ).toEqual(true);
   });
 
