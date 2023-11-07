@@ -10,8 +10,10 @@ import {
   framesFile,
   selectorsFile,
   actionFile,
+  pressFile,
   scrollFile,
 } from './setup';
+import { KeysSWD } from '../lib/mappers';
 
 describe('Base', () => {
   const { $, $$, getDriver, browser } = engine;
@@ -22,6 +24,15 @@ describe('Base', () => {
 
   after(async () => {
     await browser.quitAll();
+  });
+
+  it('keys press', async () => {
+    await browser.get(pressFile);
+    await waitForCondition(() => $('body').isDisplayed());
+    const checker = $('div#hold');
+    const field = $('input');
+    await field.sendKeys(KeysSWD.Enter);
+    expect(await checker.getText()).toEqual('Enter');
   });
 
   it('switchToBrowserTab', async () => {

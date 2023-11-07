@@ -1,5 +1,4 @@
 /* eslint-disable max-len */
-import { Key } from 'selenium-webdriver';
 import {
   getType,
   isUndefined,
@@ -14,7 +13,7 @@ import {
   getRandomString,
 } from 'sat-utils';
 import { browser } from './pw_client';
-import { getPositionXY } from '../mappers';
+import { getPositionXY, KeysSWD } from '../mappers';
 import { promodLogger } from '../internals';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
@@ -404,7 +403,9 @@ class PromodElement {
         }
       }
 
-      this._driverElement = (await this._driver.locator(`[data-promod_element_item="${locatoDataAttribute}"]`).all())[0];
+      this._driverElement = (
+        await this._driver.locator(`[data-promod_element_item="${locatoDataAttribute}"]`).all()
+      )[0];
     } else {
       this._driverElement = (await this._driver.locator(getElementArgs).all())[0];
     }
@@ -569,18 +570,16 @@ class PromodElement {
     }
 
     const stringValue = value.toString();
-    const seleniumEnter = Key.ENTER;
+    const seleniumKeysAlignment = Object.values(KeysSWD);
 
-    if (stringValue.includes(seleniumEnter)) {
-      const splitedValues = stringValue.split(seleniumEnter);
-
-      for (const [index, valueItem] of splitedValues.entries()) {
-        await this._driverElement.pressSequentially(valueItem, { delay: 10 });
-
-        if (index !== splitedValues.length - 1) await this.pressEnter();
+    for (const char of stringValue.split('')) {
+      if (seleniumKeysAlignment.includes(char)) {
+        // TODO - this needs to be done in a better way
+        await this.click();
+        await browser.keyDownAndUp(Object.keys(KeysSWD).find((k) => KeysSWD[k] === char));
+      } else {
+        await this._driverElement.pressSequentially(char, { delay: 10 });
       }
-    } else {
-      await this._driverElement.pressSequentially(stringValue, { delay: 10 });
     }
   }
 

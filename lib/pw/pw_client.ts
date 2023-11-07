@@ -726,7 +726,7 @@ class Browser {
   async keyDownAndUp(key: string, element?: PromodElementType) {
     promodLogger.engineLog(`[PW] Promod client interface calls method "keyUp" from wrapped API, args: `, key, element);
     if (element) {
-      ((await element.getEngineElement()) as ElementHandle).hover();
+      ((await element.getEngineElement()) as Locator).focus();
 
       await (await this.getCurrentPage()).keyboard.down(key);
       await (await this.getCurrentPage()).keyboard.up(key);
