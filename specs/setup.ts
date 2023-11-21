@@ -18,4 +18,5 @@ export {
   iframesFile,
   scrollFile,
   pressFile,
+  invisibleFile,
 } from './misc/setup';

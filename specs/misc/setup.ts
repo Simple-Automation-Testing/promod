@@ -10,6 +10,7 @@ const selectorsFile = `file://${path.resolve(__dirname, './selectors.html')}`;
 const iframesFile = `file://${path.resolve(__dirname, './iframes.html')}`;
 const scrollFile = `file://${path.resolve(__dirname, './scroll.html')}`;
 const pressFile = `file://${path.resolve(__dirname, './press.html')}`;
+const invisibleFile = `file://${path.resolve(__dirname, './invisible.html')}`;
 
 export {
   scrollFile,
@@ -22,4 +23,5 @@ export {
   logsFile,
   selectorsFile,
   pressFile,
+  invisibleFile,
 };

@@ -679,7 +679,7 @@ class Browser {
    * @param {string} key key that needs to press down
    * @return {Promise<void>}
    */
-  async keyDownAndHold(key: string, element?: PromodElementType) {
+  async keyDownAndHold(key: string | string[], element?: PromodElementType) {
     promodLogger.engineLog(
       `[PW] Promod client interface calls method "keyDownAndHold" from wrapped API, args: `,
       key,
@@ -687,10 +687,13 @@ class Browser {
     );
     if (element) {
       ((await element.getEngineElement()) as ElementHandle).hover();
-      await (await this.getCurrentPage()).keyboard.down(key);
-    } else {
-      await (await this.getCurrentPage()).keyboard.down(key);
     }
+    for (const k of toArray(key)) {
+      await (await this.getCurrentPage()).keyboard.down(k);
+      await (await this.getCurrentPage()).keyboard.down(k);
+    }
+
+    return true;
   }
 
   /**
@@ -700,17 +703,20 @@ class Browser {
    *
    * await browser.keyUp(browser.keyboard.PageDown)
    *
-   * @param {string} key key that needs to press down
+   * @param {string|string[]} key key that needs to press down
    * @return {Promise<void>}
    */
-  async keyUp(key: string, element?: PromodElementType) {
+  async keyUp(key: string | string[], element?: PromodElementType) {
     promodLogger.engineLog(`[PW] Promod client interface calls method "keyUp" from wrapped API, args: `, key, element);
+
     if (element) {
       ((await element.getEngineElement()) as ElementHandle).hover();
-      return await (await this.getCurrentPage()).keyboard.up(key);
-    } else {
-      return await (await this.getCurrentPage()).keyboard.up(key);
     }
+    for (const k of toArray(key)) {
+      await (await this.getCurrentPage()).keyboard.up(k);
+    }
+
+    return true;
   }
 
   /**
@@ -720,20 +726,20 @@ class Browser {
    *
    * await browser.keyDownAndUp(browser.keyboard.PageDown)
    *
-   * @param {string} key key that needs to press down
+   * @param {string|string[]} key key that needs to press down
    * @return {Promise<void>}
    */
-  async keyDownAndUp(key: string, element?: PromodElementType) {
+  async keyDownAndUp(key: string | string[], element?: PromodElementType) {
     promodLogger.engineLog(`[PW] Promod client interface calls method "keyUp" from wrapped API, args: `, key, element);
     if (element) {
       ((await element.getEngineElement()) as Locator).focus();
-
-      await (await this.getCurrentPage()).keyboard.down(key);
-      await (await this.getCurrentPage()).keyboard.up(key);
-    } else {
-      await (await this.getCurrentPage()).keyboard.down(key);
-      await (await this.getCurrentPage()).keyboard.up(key);
     }
+    for (const k of toArray(key)) {
+      await (await this.getCurrentPage()).keyboard.down(k);
+      await (await this.getCurrentPage()).keyboard.up(k);
+    }
+
+    return true;
   }
 
   /**

@@ -163,7 +163,7 @@ class Browser {
    * @param {string} key key that needs to press down
    * @return {Promise<void>}
    */
-  async keyDownAndHold(key: string, element?: PromodElementType) {
+  async keyDownAndHold(key: string | string[], element?: PromodElementType) {
     promodLogger.engineLog(
       `[SWD] Promod client interface calls method "keyDownAndHold" from wrapped API, args: `,
       key,
@@ -173,10 +173,10 @@ class Browser {
       await this.seleniumDriver
         .actions()
         .move({ origin: (await element.getEngineElement()) as WebElement })
-        .keyDown(key)
         .perform();
-    } else {
-      await this.seleniumDriver.actions().keyDown(key).perform();
+    }
+    for (const k of toArray(key)) {
+      await this.seleniumDriver.actions().keyDown(k).perform();
     }
   }
 
@@ -187,19 +187,19 @@ class Browser {
    *
    * await browser.keyUp(browser.keyboard.PageDown)
    *
-   * @param {string} key key that needs to press down
+   * @param {string|string[]} key key that needs to press down
    * @return {Promise<void>}
    */
-  async keyUp(key: string, element?: PromodElementType) {
+  async keyUp(key: string | string[], element?: PromodElementType) {
     promodLogger.engineLog(`[SWD] Promod client interface calls method "keyUp" from wrapped API, args: `, key, element);
     if (element) {
       await this.seleniumDriver
         .actions()
         .move({ origin: (await element.getEngineElement()) as any })
-        .keyUp(key)
         .perform();
-    } else {
-      await this.seleniumDriver.actions().keyUp(key).perform();
+    }
+    for (const k of toArray(key)) {
+      await this.seleniumDriver.actions().keyUp(k).perform();
     }
   }
 
@@ -210,20 +210,19 @@ class Browser {
    *
    * await browser.keyDownAndUp(browser.keyboard.PageDown)
    *
-   * @param {string} key key that needs to press down
+   * @param {string|string[]} key key that needs to press down
    * @return {Promise<void>}
    */
-  async keyDownAndUp(key: string, element?: PromodElementType) {
+  async keyDownAndUp(key: string | string[], element?: PromodElementType) {
     promodLogger.engineLog(`[SWD] Promod client interface calls method "keyUp" from wrapped API, args: `, key, element);
     if (element) {
       await this.seleniumDriver
         .actions()
         .move({ origin: (await element.getEngineElement()) as any })
-        .keyDown(key)
-        .keyUp(key)
         .perform();
-    } else {
-      await this.seleniumDriver.actions().keyDown(key).keyUp(key).perform();
+    }
+    for (const k of toArray(key)) {
+      await this.seleniumDriver.actions().keyDown(k).keyUp(k).perform();
     }
   }
 

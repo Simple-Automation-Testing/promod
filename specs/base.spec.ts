@@ -12,6 +12,7 @@ import {
   actionFile,
   pressFile,
   scrollFile,
+  invisibleFile,
 } from './setup';
 import { KeysSWD } from '../lib/mappers';
 
@@ -24,6 +25,18 @@ describe('Base', () => {
 
   after(async () => {
     await browser.quitAll();
+  });
+
+  it.skip('invisible element actions', async () => {
+    await browser.get(invisibleFile);
+    await waitForCondition(() => $('button').isPresent());
+    await $('button').click({
+      withScroll: true,
+      allowForceIfIntercepted: true,
+      clickCount: 1,
+      timeout: 15_000,
+      noWaitAfter: true,
+    });
   });
 
   it('keys press', async () => {
