@@ -458,6 +458,67 @@ class PromodElement {
   /**
    * @example
    * const button = $('button');
+   * await button.doubleClick();
+   *
+   * @param {object} [opts] clickOpts
+   * @param {boolean} [opts.withScroll] withScroll
+   * @param {'left' | 'right' | 'middle'} [opts.button] button
+   * @param {number} [opts.clickCount] clickCount
+   * @param {number} [opts.delay] delay
+   * @param {boolean} [opts.force] force
+   * @param {Array<'Alt' | 'Control' | 'Meta' | 'Shift'>} [opts.modifiers] modifiers
+   * @param {boolean} [opts.noWaitAfter] noWaitAfter
+   * @param {{ x: number; y: number }} [opts.position] position
+   * @param {number} [opts.timeout] timeout
+   * @param {boolean} [opts.trial] trial
+   * @returns {Promise<void>}
+   */
+  async doubleClick(
+    opts: {
+      withScroll?: boolean;
+      button?: 'left' | 'right' | 'middle';
+      delay?: number;
+      force?: boolean;
+      modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
+      noWaitAfter?: boolean;
+      position?: { x: number; y: number };
+      allowForceIfIntercepted?: boolean;
+      timeout?: number;
+      trial?: boolean;
+    } = { timeout: 500 },
+  ) {
+    promodLogger.engineLog(`[PW] Promod element interface calls method "click" from wrapped API, args: `, opts);
+    if (!isObject(opts) && !isUndefined(opts)) {
+      throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
+    }
+    const { withScroll, allowForceIfIntercepted, ...pwOpts } = opts;
+    await this.getElement();
+
+    if (withScroll) {
+      await this.scrollIntoView('center');
+    }
+
+    if (pwOpts.force) {
+      return await this._driverElement.dblclick({ ...pwOpts, force: true });
+    }
+
+    let scrollableClickResult = await this._driverElement.dblclick(pwOpts).catch((err) => err);
+
+    if (scrollableClickResult) {
+      const { isReadyToForce } = await this.isInteractionIntercepted(scrollableClickResult);
+      if (isReadyToForce && allowForceIfIntercepted) {
+        return await this._driverElement.dblclick({ ...pwOpts, force: true });
+      }
+    }
+
+    if (scrollableClickResult) {
+      throw scrollableClickResult;
+    }
+  }
+
+  /**
+   * @example
+   * const button = $('button');
    * await button.click();
    *
    * @param {object} [opts] clickOpts

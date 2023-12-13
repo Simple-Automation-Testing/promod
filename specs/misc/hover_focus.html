@@ -9,12 +9,14 @@
     <button id="hover">blur</button>
     <button id="focus">focus</button>
     <button id="click">click</button>
+    <button id="dclick" ondblclick="setYelow(event)">dclick</button>
   </body>
 
   <script>
     const blurItem = document.getElementById('hover');
     const focusItem = document.getElementById('focus');
     const clickItem = document.getElementById('click');
+    const dclickItem = document.getElementById('dclick');
 
     focusItem.addEventListener('focus', (event) => {
       event.target.style.background = 'pink';
@@ -27,5 +29,9 @@
     clickItem.addEventListener('click', (event) => {
       event.target.style.background = 'black';
     });
+
+    function setYelow(event) {
+      event.target.style.background = 'yellow';
+    }
   </script>
 </html>

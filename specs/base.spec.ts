@@ -27,6 +27,15 @@ describe('Base', () => {
     await browser.quitAll();
   });
 
+  it('element actions', async () => {
+    await browser.get(hoverFocusFile);
+    await waitForCondition(() => $('#dclick').isPresent());
+    await $('#dclick').doubleClick();
+    // @ts-ignore
+    const data = await browser.executeScript(() => document.querySelector('#dclick').style.background);
+    expect(data).toEqual('yellow');
+  });
+
   it.skip('invisible element actions', async () => {
     await browser.get(invisibleFile);
     await waitForCondition(() => $('button').isPresent());

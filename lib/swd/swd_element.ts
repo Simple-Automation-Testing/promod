@@ -386,6 +386,37 @@ class PromodSeleniumElement {
     return childElements as any;
   }
 
+  async doubleClick(
+    opts: {
+      withScroll?: boolean;
+      button?: 'left' | 'right' | 'middle';
+      delay?: number;
+      force?: boolean;
+      modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
+      noWaitAfter?: boolean;
+      position?: { x: number; y: number };
+      allowForceIfIntercepted?: boolean;
+      timeout?: number;
+      trial?: boolean;
+    } = { timeout: 500 },
+  ) {
+    if (!isObject(opts) && !isUndefined(opts)) {
+      throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
+    }
+    const { withScroll, allowForceIfIntercepted, ...pwOpts } = opts;
+
+    if (withScroll) {
+      await this.scrollIntoView('center');
+    }
+
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "doubleClick" from wrapped API`);
+    await browser
+      .currentClient()
+      .actions()
+      .doubleClick(await this.getEngineElement())
+      .perform();
+  }
+
   /**
    * @example
    * const button = $('button');

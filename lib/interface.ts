@@ -128,6 +128,41 @@ export interface PromodElementType {
   /**
    * @example
    * const button = $('button');
+   * await button.doubleClick(); // regular click
+   * await button.doubleClick({ withScroll: true }); // first element will be scrolled to view port and then regular click
+   * await button.doubleClick({ allowForceIfIntercepted: true }); // if regular click is intercepted by another element, click will be re-executed by element x,y center coordinates
+   *
+   *
+   * @param {object} [opts]
+   * @param {boolean} [opts.withScroll]
+   * @param {boolean} [opts.allowForceIfIntercepted]
+   * @param {boolean} [opts.force]
+   * @param {string} [opts.button]
+   * @param {number} [opts.delay]
+   * @param {string[]} [opts.modifiers]
+   * @param {boolean} [opts.noWaitAfter]
+   * @param {{ x: number; y: number }} [opts.position]
+   * @param {number} [opts.timeout]
+   * @param {boolean} [opts.trial]
+   *
+   * @returns {Promise<void>}
+   */
+  doubleClick(opts?: {
+    withScroll?: boolean;
+    allowForceIfIntercepted?: boolean;
+    button?: 'left' | 'right' | 'middle';
+    delay?: number;
+    force?: boolean;
+    modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
+    noWaitAfter?: boolean;
+    position?: { x: number; y: number };
+    timeout?: number;
+    trial?: boolean;
+  }): Promise<void>;
+
+  /**
+   * @example
+   * const button = $('button');
    * await button.click(); // regular click
    * await button.click({ withScroll: true }); // first element will be scrolled to view port and then regular click
    * await button.click({ allowForceIfIntercepted: true }); // if regular click is intercepted by another element, click will be re-executed by element x,y center coordinates
