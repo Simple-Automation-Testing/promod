@@ -200,11 +200,29 @@ export interface PromodElementType {
   /**
    * @example
    * const link = $('a')
-   * await link.hover('center'); // will hove element
+   * await link.hover(); // will hover element
    *
+   * @param {object} [opts] clickOpts
+   * @param {boolean} [opts.force] force
+   * @param {Array<'Alt' | 'Control' | 'Meta' | 'Shift'>} [opts.modifiers] modifiers
+   * @param {boolean} [opts.noWaitAfter] noWaitAfter
+   * @param {{ x: number; y: number }} [opts.position] position
+   * @param {number} [opts.timeout] timeout
+   * @param {boolean} [opts.trial] trial
+   * @returns {Promise<void>}
    * @returns {Promise<void>}
    */
-  hover(): Promise<void>;
+  hover(opts?: {
+    force?: boolean;
+    modifiers?: ('Alt' | 'Control' | 'Meta' | 'Shift')[];
+    noWaitAfter?: boolean;
+    position?: {
+      x: number;
+      y: number;
+    };
+    timeout?: number;
+    trial?: boolean;
+  }): Promise<void>;
 
   /**
    * @example

@@ -646,15 +646,31 @@ class PromodElement {
 
   /**
    * @example
-   * const button = $('button')
-   * await button.hover()
+   * const button = $('button');
+   * await button.hover();
    *
+   * @param {object} [opts] clickOpts
+   * @param {boolean} [opts.force] force
+   * @param {Array<'Alt' | 'Control' | 'Meta' | 'Shift'>} [opts.modifiers] modifiers
+   * @param {boolean} [opts.noWaitAfter] noWaitAfter
+   * @param {{ x: number; y: number }} [opts.position] position
+   * @param {number} [opts.timeout] timeout
+   * @param {boolean} [opts.trial] trial
    * @returns {Promise<void>}
    */
-  async hover() {
+  async hover(
+    opts: {
+      force?: boolean;
+      modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
+      noWaitAfter?: boolean;
+      position?: { x: number; y: number };
+      timeout?: number;
+      trial?: boolean;
+    } = { force: true, timeout: 500 },
+  ) {
     promodLogger.engineLog(`[PW] Promod element interface calls method "hover" from wrapped API`);
     await this.getElement();
-    await this._driverElement.hover();
+    await this._driverElement.hover(opts);
   }
 
   /**
