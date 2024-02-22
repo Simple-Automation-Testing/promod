@@ -560,7 +560,10 @@ class PromodSeleniumElement {
       position,
     );
     await this.getElement();
-    const { x, y, width, height } = await this._driverElement.getRect();
+    const { x, y, width, height } = await browser.executeScript(
+      (el) => el.getBoundingClientRect(),
+      this.getEngineElement(),
+    );
 
     return getPositionXY(position, { x, y, width, height });
   }
