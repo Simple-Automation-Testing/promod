@@ -627,7 +627,16 @@ class Browser {
    */
   async takeScreenshot(): Promise<Buffer> {
     promodLogger.engineLog(`[PW] Promod client interface calls method "takeScreenshot" from wrapped API`);
-    return (await this._contextWrapper.getCurrentPage()).screenshot();
+
+    await (await this._contextWrapper.getCurrentPage())
+      .waitForLoadState('domcontentloaded', { timeout: 30_000 })
+      .catch(console.error);
+
+    return (await this._contextWrapper.getCurrentPage()).screenshot().catch((e) => {
+      console.error(e);
+
+      return Buffer.from('');
+    });
   }
 
   /**

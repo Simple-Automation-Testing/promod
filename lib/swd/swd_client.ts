@@ -105,7 +105,7 @@ class Browser {
    * const { seleniumWD } = require('promod');
    * const { browser, $ } = seleniumWD;
    *
-   * await browser.scrollByMouseWheel($('.scroll.me'), 10, 10, 1, 1, 250)
+   * await browser.scrollElementByMouseWheel($('.scroll.me'), 10, 10, 1, 1, 250)
    *
    * @param {string} key key that needs to press down
    * @return {Promise<void>}
