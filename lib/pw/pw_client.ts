@@ -631,6 +631,9 @@ class Browser {
     await (await this._contextWrapper.getCurrentPage())
       .waitForLoadState('domcontentloaded', { timeout: 30_000 })
       .catch(console.error);
+    await (await this._contextWrapper.getCurrentPage())
+      .waitForLoadState('load', { timeout: 30_000 })
+      .catch(console.error);
 
     return (await this._contextWrapper.getCurrentPage()).screenshot().catch((e) => {
       console.error(e);
@@ -798,6 +801,13 @@ class Browser {
     const getUrl = resolveUrl(url, this.appBaseUrl);
 
     (await this._contextWrapper.getCurrentPage()).goto(getUrl) as any;
+
+    await (await this._contextWrapper.getCurrentPage())
+      .waitForLoadState('domcontentloaded', { timeout: 10_000 })
+      .catch(console.error);
+    await (await this._contextWrapper.getCurrentPage())
+      .waitForLoadState('load', { timeout: 10_000 })
+      .catch(console.error);
   }
 
   /**

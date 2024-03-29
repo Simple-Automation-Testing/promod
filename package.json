@@ -1,6 +1,6 @@
 {
   "name": "promod",
-  "version": "1.13.5",
+  "version": "1.13.6",
   "description": "Library for automation testing",
   "main": "./built/index.js",
   "bin": "./bin/promod_cli",
