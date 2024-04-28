@@ -958,7 +958,10 @@ class Browser {
       recomposedArgs = recomposedArgs?.elementHandle ? await recomposedArgs.elementHandle() : recomposedArgs;
     }
 
-    const result = await (await this.getWorkingContext()).evaluate(script, recomposedArgs);
+    const result = await waitForCondition(
+      async () => await (await this.getWorkingContext()).evaluate(script, recomposedArgs),
+      { stopIfNoError: true },
+    );
 
     for (const item of toArray(recomposedArgs)) {
       (item as any)?.dispose && (await (item as any)?.dispose());

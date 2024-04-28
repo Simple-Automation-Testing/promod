@@ -639,7 +639,7 @@ class PromodElement {
         await this.click();
         await browser.keyDownAndUp(Object.keys(KeysSWD).find((k) => KeysSWD[k] === char));
       } else {
-        await this._driverElement.pressSequentially(char, { delay: 10 });
+        await this._driverElement.pressSequentially(char, { delay: 7 });
       }
     }
   }
