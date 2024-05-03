@@ -29,7 +29,7 @@ Element has "lazy" interface (as it was in protractor)
 	// css
 	const elementByCss = $('.class #id div a[href*="link"]') // css selector
 	const elementByXpath = $('xpath=.//div[@data-test="id"]/span') // xpath selector
-	const elementByJS = $('js=() => document.querySelector("div .span")') // js selector
+	const elementByJS = $(() => document.querySelector("div > span")) // js selector
 	const elementWithByInterface = $(By.className('class')) // By object interface
 ```
 

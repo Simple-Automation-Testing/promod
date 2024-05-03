@@ -210,4 +210,6 @@ const getPositionXY = (
 
 export type Keys = typeof KeysPW;
 
+export type TCustomSelector = { query: string; text?: string; rg: string; strict?: boolean };
+
 export { KeysPW, KeysSWD, getPositionXY, resolveUrl };

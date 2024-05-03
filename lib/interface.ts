@@ -1,3 +1,5 @@
+export type TCustomSelector = { query: string; text?: string; rg: string; strict?: boolean };
+
 export interface PromodElementsType {
   selector: string;
 
@@ -319,8 +321,8 @@ export interface PromodElementType {
    */
   pressEnter(): Promise<void>;
 
-  $(selector: string | ((...args: any[]) => any) | Promise<any>, ...rest: any[]): PromodElementType;
-  $$(selector: string | ((...args: any[]) => any) | Promise<any>, ...rest: any[]): PromodElementsType;
+  $(selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>, ...rest: any[]): PromodElementType;
+  $$(selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>, ...rest: any[]): PromodElementsType;
 
   isEnabled(): Promise<boolean>;
 

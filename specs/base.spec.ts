@@ -27,6 +27,37 @@ describe('Base', () => {
     await browser.quitAll();
   });
 
+  it('element custom', async () => {
+    await browser.get(hoverFocusFile);
+    await waitForCondition(() => $('body').isDisplayed());
+    await $({ query: 'button', rg: 'us' }).focus();
+    // @ts-ignore
+    const data = await browser.executeScript(() => document.querySelector('#focus').style.background);
+    expect(data).toEqual('pink');
+  });
+
+  it('element custom nested', async () => {
+    await browser.get(hoverFocusFile);
+    await waitForCondition(() => $('body').isDisplayed());
+    await $('.actions').$({ query: 'button', rg: 'us' }).focus();
+    // @ts-ignore
+    const data = await browser.executeScript(() => document.querySelector('#focus').style.background);
+    expect(data).toEqual('pink');
+  });
+
+  it.only('elements custom nested', async () => {
+    await browser.get(hoverFocusFile);
+    await waitForCondition(() => $('body').isDisplayed());
+    expect(await $('.actions2').$$({ query: 'button', rg: 'us' }).count()).toEqual(1);
+  });
+
+  it('elements custom', async () => {
+    await browser.get(hoverFocusFile);
+    await waitForCondition(() => $('body').isDisplayed());
+    const els = $$({ query: 'button', rg: 'us' });
+    expect(await els.count()).toEqual(1);
+  });
+
   it('element actions', async () => {
     await browser.get(hoverFocusFile);
     await waitForCondition(() => $('#dclick').isPresent());

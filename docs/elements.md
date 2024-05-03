@@ -19,7 +19,7 @@ const { By, $$ } = seleniumWD;
 // css
 const elementsByCss = $$('.class #id div a[href*="link"]'); // css selector
 const elementsByXpath = $$('xpath=.//div[@data-test="id"]/span'); // xpath selector
-const elementsByJS = $$('js=() => document.querySelectorAll("div .span")'); // js selector
+const elementsByJS = $$(() => document.querySelectorAll("div>span")); // js selector
 const elementWithByInterface = $$(By.className('class')); // By object interface
 ```
 

@@ -17,6 +17,7 @@ import { getPositionXY } from '../mappers';
 import { promodLogger } from '../internals';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
+import type { TCustomSelector } from '../mappers';
 
 const SELENIUM_API_METHODS = [
   'getTagName',
@@ -69,7 +70,7 @@ class PromodSeleniumElements {
         parent = await parent.getEngineElement();
       }
 
-      this._driverElements = await parent.findElements(buildBy(selector, this.getExecuteScriptArgs));
+      this._driverElements = await parent.findElements(buildBy(selector, this.getExecuteScriptArgs, parent));
     } else {
       this._driverElements = await _driver.findElements(buildBy(selector, this.getExecuteScriptArgs));
     }
@@ -315,12 +316,27 @@ class PromodSeleniumElement {
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
 
+    let parent;
+
+    if (this.getParent && !ignoreParent) {
+      parent = (await this.getParent()) as any;
+      if (!parent) {
+        throw new Error(
+          this.useParent
+            ? `Any element with selector ${this.selector} was not found`
+            : `Parent element with selector ${this.parentSelector} was not found`,
+        );
+      }
+      if (parent.getEngineElement) {
+        parent = await parent.getEngineElement();
+      }
+    }
     /**
      * !@info
      * selector should be a string type to proceed inside if block
      */
     if (this.getParent && !ignoreParent && isString(selector)) {
-      let parent = (await this.getParent()) as any;
+      parent = (await this.getParent()) as any;
       if (!parent) {
         throw new Error(
           this.useParent
@@ -335,7 +351,7 @@ class PromodSeleniumElement {
       if (this.useParent) {
         this._driverElement = parent;
       } else {
-        this._driverElement = await parent.findElement(buildBy(selector, this.getExecuteScriptArgs));
+        this._driverElement = await parent.findElement(buildBy(selector, this.getExecuteScriptArgs, parent));
       }
     } else {
       this._driverElement = await _driver.findElement(buildBy(selector, this.getExecuteScriptArgs));
@@ -779,24 +795,15 @@ class PromodSeleniumElement {
 }
 
 function getInitElementRest(
-  selector: string | By | ((...args: any[]) => any) | Promise<any>,
+  selector: string | By | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
   root?: PromodElementType,
   ...rest: any[]
 ) {
   let getParent = null;
   let getExecuteScriptArgs = null;
 
-  /**
-   * @info
-   * in case if selector is string with "js=" marker or selector is a function
-   */
-
-  if (
-    (isString(selector) && (selector as string).indexOf('js=') === 0) ||
-    isFunction(selector) ||
-    isPromise(selector)
-  ) {
-    getExecuteScriptArgs = function getExecuteScriptArgs() {
+  if (isFunction(selector) || isPromise(selector)) {
+    getExecuteScriptArgs = function getExecuteScriptArgs(): any[] {
       const localRest = rest.map((item) => (item && item.getEngineElement ? item.getEngineElement() : item));
       const rootPromiseIfRequired = root && root.getEngineElement ? root.getEngineElement() : root;
 
@@ -816,7 +823,7 @@ function getInitElementRest(
 }
 
 const $ = (
-  selector: string | By | ((...args: any[]) => any) | Promise<any>,
+  selector: string | TCustomSelector | By | ((...args: any[]) => any) | Promise<any>,
   root?: PromodElementType | any,
   ...rest: any[]
 ): PromodElementType => {
@@ -827,7 +834,7 @@ const $ = (
 };
 
 function $$(
-  selector: string | By | ((...args: any[]) => any) | Promise<any>,
+  selector: string | TCustomSelector | By | ((...args: any[]) => any) | Promise<any>,
   root?: PromodElementType | any,
   ...rest: any[]
 ): PromodElementsType {
@@ -851,7 +858,7 @@ function preBindBrowserInstance(browserThaNeedsToBeBinded) {
   };
 
   function $(
-    selector: string | By | ((...args: any[]) => any) | Promise<any>,
+    selector: string | TCustomSelector | By | ((...args: any[]) => any) | Promise<any>,
     root?: PromodElementType | any,
     ...rest: any[]
   ): PromodElementType {

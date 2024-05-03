@@ -17,9 +17,10 @@ import { getPositionXY, KeysSWD } from '../mappers';
 import { promodLogger } from '../internals';
 
 import type { PromodElementType, PromodElementsType } from '../interface';
+import type { TCustomSelector } from '../mappers';
 import type { Page, Locator, ElementHandle } from 'playwright-core';
 
-const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
+const buildBy = (selector: any, getExecuteScriptArgs: () => any[], parent?, toMany?): any => {
   getExecuteScriptArgs = isFunction(getExecuteScriptArgs) ? getExecuteScriptArgs : () => [];
 
   if (isString(selector) && (selector as string).includes('xpath=')) {
@@ -33,12 +34,45 @@ const buildBy = (selector: any, getExecuteScriptArgs?: () => any[]): any => {
     if (sel.startsWith('xpath=.') && sel.includes('|.')) {
       return sel.replace('xpath=.', '').replace(/\|\./gi, '|');
     }
-  } else if (isString(selector) && (selector as string).includes('js=')) {
-    return [(selector as string).replace('js=', ''), ...getExecuteScriptArgs()];
   } else if (isPromise(selector)) {
     return selector;
   } else if (isFunction(selector) || isAsyncFunction(selector)) {
     return [selector, ...getExecuteScriptArgs()];
+  } else if (isObject(selector)) {
+    const item = selector as TCustomSelector;
+
+    return [
+      ([parent, entry]) => {
+        console.log(parent, entry, '<>>>>>');
+        const { query, text, rg, strict, toMany } = entry;
+        const elements = parent ? parent.querySelectorAll(query) : document.querySelectorAll(query);
+
+        console.log(elements, '!>===============');
+        if (!elements.length) return null;
+
+        const filteredElements = [];
+
+        for (const element of elements) {
+          const innerText = element?.innerText.trim();
+
+          if (
+            (!text && !rg && !toMany) ||
+            (typeof text === 'string' && !toMany && (!strict ? innerText?.includes(text) : innerText === text)) ||
+            (rg && !toMany && innerText?.match(new RegExp(rg, 'gmi'))) ||
+            (typeof text === 'string' && toMany && (!strict ? innerText?.includes(text) : innerText === text)) ||
+            (rg && toMany && innerText?.match(new RegExp(rg, 'gmi')))
+          ) {
+            if (!toMany) return element;
+            filteredElements.push(element);
+          }
+        }
+        console.log('!!!!!!!!!!!!!!!!!!!!!');
+        console.log(toMany ? filteredElements : elements[0]);
+        console.log('!!!!!!!!!!!!!!!!!!!!! {EQ');
+        return toMany ? filteredElements : elements[0];
+      },
+      [parent, { ...item, toMany }],
+    ];
   }
 
   return selector;
@@ -77,8 +111,9 @@ class PromodElements {
     const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
     const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
 
+    let parent;
     if (this.getParent && !ignoreParent && isString(selector)) {
-      let parent: any = await this.getParent();
+      parent = await this.getParent();
 
       if (parent.getEngineElement) {
         parent = (shouldUserDocumentRoot ? _driver : await parent.getEngineElement()) as any as Locator;
@@ -88,9 +123,10 @@ class PromodElements {
       const items = await (shouldUserDocumentRoot ? _driver : parent).locator(getElementArgs);
       this._driverElements = await (items as Locator).all();
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
+      const [queryFn, quertFnArgs] = buildBy(selector, this.getExecuteScriptArgs, parent, true);
       const elementHandles = [];
       const resolved = [];
-      const callArgs = toArray(getElementArgs[1]);
+      const callArgs = toArray(quertFnArgs);
 
       for (const item of callArgs) {
         // TODO refactor resolver
@@ -100,7 +136,7 @@ class PromodElements {
       }
       // @ts-ignore
       const handlesByFunctionSearch = await _driver.evaluateHandle(
-        getElementArgs[0],
+        queryFn,
         resolved.length === 1 ? resolved[0] : resolved,
       );
       // @ts-ignore
@@ -345,11 +381,28 @@ class PromodElement {
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
 
-    const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
     const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
 
+    const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
+
+    let parent;
+
+    if (this.getParent && !ignoreParent) {
+      parent = (await this.getParent()) as any;
+      if (!parent) {
+        throw new Error(
+          this.useParent
+            ? `Any element with selector ${this.selector} was not found`
+            : `Parent element with selector ${this.parentSelector} was not found`,
+        );
+      }
+      if (parent.getEngineElement) {
+        parent = shouldUserDocumentRoot ? this._driver : await parent.getEngineElement();
+      }
+    }
+
     if (this.getParent && !ignoreParent && isString(selector)) {
-      let parent = (await this.getParent()) as any;
+      parent = (await this.getParent()) as any;
       if (!parent) {
         throw new Error(
           this.useParent
@@ -367,16 +420,19 @@ class PromodElement {
         this._driverElement = (await (shouldUserDocumentRoot ? this._driver : parent).locator(getElementArgs).all())[0];
       }
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
+      console.log(parent, 'PARENT');
+      const [queryFn, quertFnArgs] = buildBy(selector, this.getExecuteScriptArgs, this._driverElement, false);
       const resolved = [];
-      const callArgs = toArray(getElementArgs[1]);
+      const callArgs = toArray(quertFnArgs);
 
       for (const item of callArgs) {
         // TODO refactor resolver
         const resolvedItem = await item;
         resolved.push(resolvedItem?.elementHandle ? await resolvedItem.elementHandle() : resolvedItem);
       }
+
       const result: ElementHandle = (
-        await this._driver.evaluateHandle(getElementArgs[0], resolved.length === 1 ? resolved[0] : resolved)
+        await this._driver.evaluateHandle(queryFn, resolved.length === 1 ? resolved[0] : resolved)
       ).asElement();
 
       let tempLocatorDataAttribute = `${getRandomString(25, { letters: true })}`;
@@ -398,7 +454,7 @@ class PromodElement {
       await result.dispose();
 
       for (const resolvedItem of resolved) {
-        if (resolvedItem.dispose) {
+        if (resolvedItem?.dispose) {
           await resolvedItem.dispose();
         }
       }
@@ -919,23 +975,14 @@ class PromodElement {
 }
 
 function getInitElementRest(
-  selector: string | ((...args: any[]) => any) | Promise<any>,
+  selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
   root?: PromodElementType,
   ...rest: any[]
 ) {
   let getParent = null;
   let getExecuteScriptArgs = null;
 
-  /**
-   * @info
-   * in case if selector is string with "js=" marker or selector is a function
-   */
-
-  if (
-    (isString(selector) && (selector as string).indexOf('js=') === 0) ||
-    isFunction(selector) ||
-    isPromise(selector)
-  ) {
+  if (isFunction(selector) || isPromise(selector)) {
     getExecuteScriptArgs = function getExecuteScriptArgs() {
       const localRest = rest.map((item) => (item && item.getEngineElement ? item.getEngineElement() : item));
       const rootPromiseIfRequired = root && root.getEngineElement ? root.getEngineElement() : root;
@@ -954,7 +1001,7 @@ function getInitElementRest(
 }
 
 const $ = (
-  selector: string | ((...args: any[]) => any) | Promise<any>,
+  selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
   root?: PromodElementType | any,
   ...rest: any[]
 ): PromodElementType => {
@@ -964,7 +1011,7 @@ const $ = (
 };
 
 const $$ = (
-  selector: string | ((...args: any[]) => any) | Promise<any>,
+  selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
   root?: PromodElementType | any,
   ...rest: any[]
 ): PromodElementsType => {
@@ -975,7 +1022,7 @@ const $$ = (
 
 function preBindBrowserInstance(browserThaNeedsToBeBinded) {
   const $ = (
-    selector: string | ((...args: any[]) => any) | Promise<any>,
+    selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
     root?: PromodElementType | any,
     ...rest: any[]
   ): PromodElementType => {
@@ -985,7 +1032,7 @@ function preBindBrowserInstance(browserThaNeedsToBeBinded) {
   };
 
   const $$ = (
-    selector: string | ((...args: any[]) => any) | Promise<any>,
+    selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
     root?: PromodElementType | any,
     ...rest: any[]
   ): PromodElementsType => {
