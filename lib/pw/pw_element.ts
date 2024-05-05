@@ -51,7 +51,7 @@ const buildBy = (selector: any, getExecuteScriptArgs: () => any[], parent?, toMa
         const filteredElements = [];
 
         for (const element of elements) {
-          const innerText = element.innerText.trim();
+          const innerText = element?.innerText?.trim() || element?.textContent?.trim() || element?.outerHTML?.trim();
           const textMatches = typeof text === 'string' && (!strict ? innerText.includes(text) : innerText === text);
           const rgMatches = rg && innerText.match(new RegExp(rg, 'gmi'));
 

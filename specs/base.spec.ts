@@ -68,7 +68,7 @@ describe('Base', () => {
     expect(data).toEqual('pink');
   });
 
-  it.only('[N] element custom nested with index', async () => {
+  it('[N] element custom nested with index', async () => {
     await browser.get(hoverFocusFile);
     let err;
 
