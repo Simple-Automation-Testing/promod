@@ -33,20 +33,24 @@ const buildBy = (
 
         for (const element of elements) {
           const innerText = element.innerText.trim();
+          const textMatches = typeof text === 'string' && (!strict ? innerText.includes(text) : innerText === text);
+          const rgMatches = rg && innerText.match(new RegExp(rg, 'gmi'));
 
-          if (
-            (!text && !rg && !toMany) ||
-            (typeof text === 'string' && !toMany && (!strict ? innerText.includes(text) : innerText === text)) ||
-            (rg && !toMany && innerText.match(new RegExp(rg, 'gmi'))) ||
-            (typeof text === 'string' && toMany && (!strict ? innerText.includes(text) : innerText === text)) ||
-            (rg && toMany && innerText.match(new RegExp(rg, 'gmi')))
-          ) {
-            if (!toMany) return element;
+          if (rgMatches && !toMany) {
+            return element;
+          } else if (textMatches && !toMany) {
+            return element;
+          } else if (rgMatches && toMany) {
             filteredElements.push(element);
+          } else if (textMatches && toMany) {
+            filteredElements.push(element);
+          }
+          if (!text && !rg) {
+            return element;
           }
         }
 
-        return toMany ? filteredElements : elements[0];
+        return toMany ? filteredElements : null;
       },
       [parent, { ...item, toMany }],
     ) as any;

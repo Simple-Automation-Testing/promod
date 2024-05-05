@@ -62,6 +62,17 @@ class PromodSeleniumElements {
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
 
+    let parent;
+    if (this.getParent && !ignoreParent) {
+      parent = (await this.getParent()) as any;
+      if (!parent) {
+        throw new Error(`Parent element with selector ${this.parentSelector} was not found`);
+      }
+      if (parent.getEngineElement) {
+        parent = await parent.getEngineElement();
+      }
+    }
+
     if (this.getParent && !ignoreParent && isString(selector)) {
       let parent = await this.getParent();
 

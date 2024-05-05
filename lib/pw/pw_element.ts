@@ -43,33 +43,33 @@ const buildBy = (selector: any, getExecuteScriptArgs: () => any[], parent?, toMa
 
     return [
       ([parent, entry]) => {
-        console.log(parent, entry, '<>>>>>');
         const { query, text, rg, strict, toMany } = entry;
         const elements = parent ? parent.querySelectorAll(query) : document.querySelectorAll(query);
 
-        console.log(elements, '!>===============');
         if (!elements.length) return null;
 
         const filteredElements = [];
 
         for (const element of elements) {
-          const innerText = element?.innerText.trim();
+          const innerText = element.innerText.trim();
+          const textMatches = typeof text === 'string' && (!strict ? innerText.includes(text) : innerText === text);
+          const rgMatches = rg && innerText.match(new RegExp(rg, 'gmi'));
 
-          if (
-            (!text && !rg && !toMany) ||
-            (typeof text === 'string' && !toMany && (!strict ? innerText?.includes(text) : innerText === text)) ||
-            (rg && !toMany && innerText?.match(new RegExp(rg, 'gmi'))) ||
-            (typeof text === 'string' && toMany && (!strict ? innerText?.includes(text) : innerText === text)) ||
-            (rg && toMany && innerText?.match(new RegExp(rg, 'gmi')))
-          ) {
-            if (!toMany) return element;
+          if (rgMatches && !toMany) {
+            return element;
+          } else if (textMatches && !toMany) {
+            return element;
+          } else if (rgMatches && toMany) {
+            filteredElements.push(element);
+          } else if (textMatches && toMany) {
             filteredElements.push(element);
           }
+          if (!text && !rg) {
+            return element;
+          }
         }
-        console.log('!!!!!!!!!!!!!!!!!!!!!');
-        console.log(toMany ? filteredElements : elements[0]);
-        console.log('!!!!!!!!!!!!!!!!!!!!! {EQ');
-        return toMany ? filteredElements : elements[0];
+
+        return toMany ? filteredElements : null;
       },
       [parent, { ...item, toMany }],
     ];
@@ -78,10 +78,10 @@ const buildBy = (selector: any, getExecuteScriptArgs: () => any[], parent?, toMa
   return selector;
 };
 
-class PromodElements {
+class PromodPlaywrightElements {
   private _driver: Page;
   private _driverElements: Locator[];
-  private getParent: () => Promise<PromodElement>;
+  private getParent: () => Promise<PromodPlaywrightElement>;
   private getExecuteScriptArgs: () => any;
   private selector: string;
   public parentSelector: string;
@@ -112,6 +112,17 @@ class PromodElements {
     const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
 
     let parent;
+
+    if (this.getParent && !ignoreParent) {
+      parent = (await this.getParent()) as any;
+      if (!parent) {
+        throw new Error(`Any element with selector ${this.selector} was not found`);
+      }
+      if (parent.getEngineElement) {
+        parent = shouldUserDocumentRoot ? this._driver : await parent.getEngineElement();
+      }
+    }
+
     if (this.getParent && !ignoreParent && isString(selector)) {
       parent = await this.getParent();
 
@@ -172,7 +183,7 @@ class PromodElements {
    * @returns {PromodElementType}
    */
   get(index): PromodElementType {
-    const childElement = new PromodElement(
+    const childElement = new PromodPlaywrightElement(
       this.selector,
       this._browserInterface,
       this.getElement.bind(this, index),
@@ -352,7 +363,7 @@ class PromodElements {
   }
 }
 
-class PromodElement {
+class PromodPlaywrightElement {
   private _driver: Page;
   private _driverElement: Locator;
   private getParent: () => Promise<PromodElementType>;
@@ -420,7 +431,6 @@ class PromodElement {
         this._driverElement = (await (shouldUserDocumentRoot ? this._driver : parent).locator(getElementArgs).all())[0];
       }
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
-      console.log(parent, 'PARENT');
       const [queryFn, quertFnArgs] = buildBy(selector, this.getExecuteScriptArgs, this._driverElement, false);
       const resolved = [];
       const callArgs = toArray(quertFnArgs);
@@ -480,7 +490,7 @@ class PromodElement {
   $(selector, ...rest: any[]): PromodElementType {
     promodLogger.engineLog('[PW] Create new promod child element, selector: ', selector);
     const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
-    const childElement = new PromodElement(
+    const childElement = new PromodPlaywrightElement(
       selector,
       this._browserInterface,
       this.getElement.bind(this),
@@ -501,7 +511,7 @@ class PromodElement {
   $$(selector, ...rest: any[]): PromodElementsType {
     promodLogger.engineLog('[PW] Create new promod child elements, selector: ', selector);
     const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
-    const childElements = new PromodElements(
+    const childElements = new PromodPlaywrightElements(
       selector,
       this._browserInterface,
       this.getElement.bind(this),
@@ -991,7 +1001,7 @@ function getInitElementRest(
       }
       return localRest;
     };
-  } else if (root && root instanceof PromodElement) {
+  } else if (root && root instanceof PromodPlaywrightElement) {
     getParent = function getParent() {
       return root;
     };
@@ -1007,7 +1017,7 @@ const $ = (
 ): PromodElementType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
 
-  return new PromodElement(selector, browser, ...restArgs) as any;
+  return new PromodPlaywrightElement(selector, browser, ...restArgs) as any;
 };
 
 const $$ = (
@@ -1017,7 +1027,7 @@ const $$ = (
 ): PromodElementsType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
 
-  return new PromodElements(selector, browser, ...restArgs) as any;
+  return new PromodPlaywrightElements(selector, browser, ...restArgs) as any;
 };
 
 function preBindBrowserInstance(browserThaNeedsToBeBinded) {
@@ -1028,7 +1038,7 @@ function preBindBrowserInstance(browserThaNeedsToBeBinded) {
   ): PromodElementType => {
     const restArgs = getInitElementRest(selector, root, ...rest);
 
-    return new PromodElement(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
+    return new PromodPlaywrightElement(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
   };
 
   const $$ = (
@@ -1038,7 +1048,7 @@ function preBindBrowserInstance(browserThaNeedsToBeBinded) {
   ): PromodElementsType => {
     const restArgs = getInitElementRest(selector, root, ...rest);
 
-    return new PromodElements(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
+    return new PromodPlaywrightElements(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
   };
 
   return {
@@ -1048,4 +1058,4 @@ function preBindBrowserInstance(browserThaNeedsToBeBinded) {
   };
 }
 
-export { $, $$, PromodElement, PromodElements, preBindBrowserInstance };
+export { $, $$, PromodPlaywrightElement, PromodPlaywrightElements, preBindBrowserInstance };

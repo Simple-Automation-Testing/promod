@@ -27,7 +27,7 @@ describe('Base', () => {
     await browser.quitAll();
   });
 
-  it('element custom', async () => {
+  it('[P] element custom', async () => {
     await browser.get(hoverFocusFile);
     await waitForCondition(() => $('body').isDisplayed());
     await $({ query: 'button', rg: 'us' }).focus();
@@ -36,7 +36,21 @@ describe('Base', () => {
     expect(data).toEqual('pink');
   });
 
-  it('element custom nested', async () => {
+  it('[N] element custom', async () => {
+    await browser.get(hoverFocusFile);
+    let err;
+    try {
+      await waitForCondition(() => $('body').isDisplayed());
+
+      await $({ query: 'button', rg: 'us113213' }).click();
+    } catch (error) {
+      err = error;
+    }
+
+    expect(err).toNotEqual(undefined);
+  });
+
+  it('[P] element custom nested', async () => {
     await browser.get(hoverFocusFile);
     await waitForCondition(() => $('body').isDisplayed());
     await $('.actions').$({ query: 'button', rg: 'us' }).focus();
@@ -45,20 +59,56 @@ describe('Base', () => {
     expect(data).toEqual('pink');
   });
 
-  it.only('elements custom nested', async () => {
+  it('[P] element custom nested with index', async () => {
     await browser.get(hoverFocusFile);
     await waitForCondition(() => $('body').isDisplayed());
-    expect(await $('.actions2').$$({ query: 'button', rg: 'us' }).count()).toEqual(1);
+    await $('.actions').$$({ query: 'button', rg: 'us' }).get(0).focus();
+    // @ts-ignore
+    const data = await browser.executeScript(() => document.querySelector('#focus').style.background);
+    expect(data).toEqual('pink');
   });
 
-  it('elements custom', async () => {
+  it.only('[N] element custom nested with index', async () => {
+    await browser.get(hoverFocusFile);
+    let err;
+
+    try {
+      await waitForCondition(() => $('body').isDisplayed());
+      await $('.actions').$$({ query: 'button', rg: 'udlaskld;s' }).get(0).focus();
+    } catch (error) {
+      err = error;
+    }
+
+    expect(err).toNotEqual(undefined);
+  });
+
+  it('[N] element custom nested', async () => {
+    await browser.get(hoverFocusFile);
+    let err;
+    try {
+      await waitForCondition(() => $('body').isDisplayed());
+      await $('.actions').$({ query: 'button', rg: 'us113213' }).focus();
+    } catch (error) {
+      err = error;
+    }
+
+    expect(err).toNotEqual(undefined);
+  });
+
+  it('[P] elements custom nested', async () => {
+    await browser.get(hoverFocusFile);
+    await waitForCondition(() => $('body').isDisplayed());
+    expect(await $('.actions').$$({ query: 'button', rg: 'us' }).count()).toEqual(1);
+  });
+
+  it('[P] elements custom', async () => {
     await browser.get(hoverFocusFile);
     await waitForCondition(() => $('body').isDisplayed());
     const els = $$({ query: 'button', rg: 'us' });
     expect(await els.count()).toEqual(1);
   });
 
-  it('element actions', async () => {
+  it('[P] element actions', async () => {
     await browser.get(hoverFocusFile);
     await waitForCondition(() => $('#dclick').isPresent());
     await $('#dclick').doubleClick();
@@ -79,7 +129,7 @@ describe('Base', () => {
     });
   });
 
-  it('keys press', async () => {
+  it('[P] keys press', async () => {
     await browser.get(pressFile);
     await waitForCondition(() => $('body').isDisplayed());
     const checker = $('div#hold');
@@ -88,7 +138,7 @@ describe('Base', () => {
     expect(await checker.getText()).toEqual('Enter');
   });
 
-  it('switchToBrowserTab', async () => {
+  it('[P] switchToBrowserTab', async () => {
     await browser.get(scrollFile);
     await waitForCondition(() => $('body').isDisplayed());
     await browser.openNewTab(actionFile);
@@ -99,7 +149,7 @@ describe('Base', () => {
     expect(await browser.getCurrentUrl()).toEqual(scrollFile);
   });
 
-  it('browser scroll element by mouse whell', async () => {
+  it('[P] browser scroll element by mouse whell', async () => {
     await browser.get(scrollFile);
     await waitForCondition(() => $$('[class="scroll_item"]').get(4).isDisplayed());
     const elementToScroll = $$('[class="scroll_item"]').get(4);
@@ -112,7 +162,7 @@ describe('Base', () => {
     expect(beforeScroll).toNotDeepEqual(afterScroll);
   });
 
-  it('browser windows indexes', async () => {
+  it('[P] browser windows indexes', async () => {
     await browser.get(iframesFile);
     await waitForCondition(() => $('body').isDisplayed());
     await browser.runNewBrowser();
@@ -141,7 +191,7 @@ describe('Base', () => {
     await browser.switchToBrowser({ index: 0 });
   });
 
-  it('browser windows title and urls', async () => {
+  it('[P] browser windows title and urls', async () => {
     await browser.get(iframesFile);
     await browser.runNewBrowser();
     await browser.get(actionFile);
@@ -167,7 +217,7 @@ describe('Base', () => {
     expect(await browser.getCurrentUrl()).stringIncludesSubstring(iframesFile);
   });
 
-  it('selectors', async () => {
+  it('[P] selectors', async () => {
     await browser.get(selectorsFile);
     expect(await waitForCondition(() => $('body').$('[id="target"]').isDisplayed())).toEqual(true);
     expect(await $('select').$('[id="target"]').isDisplayed()).toEqual(false);
@@ -176,14 +226,14 @@ describe('Base', () => {
     expect(await $('body').$('xpath=.//*[@id="target"]').isDisplayed()).toEqual(true);
   });
 
-  it('getTagName', async () => {
+  it('[P] getTagName', async () => {
     await browser.get(selectorsFile);
     const select = $('select');
     await waitForCondition(() => select.isDisplayed());
     expect(await select.getTagName()).toEqual('select');
   });
 
-  it('select', async () => {
+  it('[P] select', async () => {
     await browser.get(selectorsFile);
     const select = $('select');
     await waitForCondition(() => select.isDisplayed());
@@ -191,7 +241,7 @@ describe('Base', () => {
     expect(await $('#target').getText()).toEqual('2');
   });
 
-  it('maximize', async () => {
+  it('[P] maximize', async () => {
     await browser.get(logsFile);
     await waitForCondition(() => $('body').isDisplayed());
     const sizeBeforeMaximize = await browser.getWindomSize();
@@ -201,14 +251,14 @@ describe('Base', () => {
     console.log(sizeBeforeMaximize, sizeAfterMaximize);
   });
 
-  it('logs', async () => {
+  it('[P] logs', async () => {
     await browser.get(logsFile);
     await browser.sleep(500);
     const logs = JSON.stringify(await browser.getBrowserLogs());
     expect(logs).stringIncludesSubstring('~~~~~~~~~~~~~~~~~~~~~~~~111111111');
   });
 
-  it('openNewTab/switchToTab', async () => {
+  it('[P] openNewTab/switchToTab', async () => {
     await browser.get(formsFile);
     await waitForCondition(() => $('body').isDisplayed());
     await browser.openNewTab(hoverFocusFile);
@@ -219,14 +269,14 @@ describe('Base', () => {
     expect(await browser.getCurrentUrl()).toEqual(formsFile);
   });
 
-  it('nested xpath', async () => {
+  it('[P] nested xpath', async () => {
     await browser.get(formsFile);
     await waitForCondition(() => $('form').$$('xpath=//button').count());
     const buttons = $('form').$$('xpath=//button');
     expect(await buttons.get(1).getText()).toEqual('Зареєструватися');
   });
 
-  it('by js function', async () => {
+  it('[P] by js function', async () => {
     await browser.get(formsFile);
     const email = $(() => document.querySelector('input[placeholder="Ім\'я користувача"]'));
 
@@ -239,7 +289,7 @@ describe('Base', () => {
     expect(await email1.isPresent()).toEqual(false);
   });
 
-  it('by js function with parent', async () => {
+  it('[P] by js function with parent', async () => {
     await browser.get(formsFile);
     try {
       const body = $(() => document.querySelector('body')).$('form.login_form');
@@ -258,7 +308,7 @@ describe('Base', () => {
     }
   });
 
-  it('by js function from parent with parent', async () => {
+  it('[P] by js function from parent with parent', async () => {
     await browser.get(formsFile);
     try {
       const body = $(() => document.querySelector('body'));
@@ -283,7 +333,7 @@ describe('Base', () => {
     }
   });
 
-  it('isDisplayed', async () => {
+  it('[P] isDisplayed', async () => {
     await browser.get(formsFile);
     const email = $('input[placeholder="Ім\'я lol"]');
 
@@ -291,7 +341,7 @@ describe('Base', () => {
     expect(await email.isPresent()).toEqual(false);
   });
 
-  it('several browsers', async () => {
+  it('[P] several browsers', async () => {
     await browser.get(formsFile);
     const email = $('input[placeholder="Ім\'я користувача"]');
     const pass = $('input[placeholder="Пароль"]');
@@ -316,7 +366,7 @@ describe('Base', () => {
     expect(await pass.isDisplayed()).toEqual(true);
   });
 
-  it('several browsers by browser name', async () => {
+  it('[P] several browsers by browser name', async () => {
     await browser.get(formsFile);
 
     await browser.runNewBrowser({ currentBrowserName: 'initial one', newBrowserName: 'google' });
@@ -328,7 +378,7 @@ describe('Base', () => {
     expect(await browser.getTitle()).stringIncludesSubstring('FORMS');
   });
 
-  it('element click/sendKeys', async () => {
+  it('[P] element click/sendKeys', async () => {
     await browser.get(formsFile);
     await waitForCondition(() => $('body').isDisplayed());
     const email = $('input[placeholder="Ім\'я користувача"]');
@@ -339,7 +389,7 @@ describe('Base', () => {
     await signIn.click();
   });
 
-  it('execute script fn', async () => {
+  it('[P] execute script fn', async () => {
     await browser.get(formsFile);
     await waitForCondition(() => $('body').isDisplayed());
     await $('input[placeholder="Пароль"]').sendKeys('test');
@@ -347,7 +397,7 @@ describe('Base', () => {
     expect(item).toEqual('test');
   });
 
-  it('execute script els', async () => {
+  it('[P] execute script els', async () => {
     await browser.get(formsFile);
     const btns = $$('button');
     await waitForCondition(() => $('body').isDisplayed());
@@ -356,7 +406,7 @@ describe('Base', () => {
     expect(item).toDeepEqual(['Увійти', 'Зареєструватися', 'Увійти']);
   });
 
-  it('$$ each', async () => {
+  it('[P] $$ each', async () => {
     const btns = $$('button');
     await waitForCondition(() => $('body').isDisplayed());
     await btns.each(async (item) => {
@@ -364,7 +414,7 @@ describe('Base', () => {
     });
   });
 
-  it('$$ every', async () => {
+  it('[P] $$ every', async () => {
     await browser.get(formsFile);
     const btns = $$('button');
 
@@ -376,7 +426,7 @@ describe('Base', () => {
     expect(result).toDeepEqual(true);
   });
 
-  it('$$ some', async () => {
+  it('[P] $$ some', async () => {
     await browser.get(formsFile);
     const btns = $$('button');
 
@@ -388,7 +438,7 @@ describe('Base', () => {
     expect(result).toDeepEqual(true);
   });
 
-  it('$$ map', async () => {
+  it('[P] $$ map', async () => {
     await browser.get(formsFile);
     const btns = $$('button');
 
@@ -400,21 +450,21 @@ describe('Base', () => {
     expect(result).toDeepEqual(['Увійти', 'Зареєструватися', 'Увійти']);
   });
 
-  it('count', async () => {
+  it('[P] count', async () => {
     await browser.get(formsFile);
     await waitForCondition(() => $('body').isDisplayed());
     const notExistingElements = $('.not_existing_item0').$('.not_existing_item1').$$('button');
     expect(await notExistingElements.count()).toEqual(0);
   });
 
-  it('isPresent', async () => {
+  it('[P] isPresent', async () => {
     await browser.get(formsFile);
     await waitForCondition(() => $('body').isDisplayed());
     expect(await $('button.super.not.exist').$$('a').get(1).isPresent()).toEqual(false);
     expect(await $$('button').get(0).isPresent()).toEqual(true);
   });
 
-  it('by js function with argument', async () => {
+  it('[P] by js function with argument', async () => {
     await browser.get(formsFile);
     expect(
       await waitForCondition(() =>
@@ -441,7 +491,7 @@ describe('Base', () => {
     expect(beforeScroll).toNotDeepEqual(afterScroll);
   });
 
-  it('click', async () => {
+  it('[P] click', async () => {
     const clickElement = $('#click');
     const positions = [
       'center',
@@ -464,7 +514,7 @@ describe('Base', () => {
     }
   });
 
-  it('focus', async () => {
+  it('[P] focus', async () => {
     await browser.get(hoverFocusFile);
     await waitForCondition(() => $('body').isDisplayed());
     const focus = $('#focus');
@@ -474,7 +524,7 @@ describe('Base', () => {
     expect(data).toEqual('pink');
   });
 
-  it('hover', async () => {
+  it('[P] hover', async () => {
     const hover = $('#hover');
     await browser.get(hoverFocusFile);
     await waitForCondition(() => $('body').isDisplayed());
@@ -484,12 +534,12 @@ describe('Base', () => {
     expect(data).toEqual('red');
   });
 
-  it('screenshot', async () => {
+  it('[P] screenshot', async () => {
     await browser.get(hoverFocusFile);
     await browser.takeScreenshot();
   });
 
-  it('iframes nested', async () => {
+  it('[P] iframes nested', async () => {
     await browser.get(iframesFile);
 
     await waitForCondition(() => $('[name="first"]').isDisplayed());
@@ -510,7 +560,7 @@ describe('Base', () => {
     expect(await listSecond.count()).toEqual(0);
   });
 
-  it('iframes', async () => {
+  it('[P] iframes', async () => {
     const resulter = $('body').$('#resulter');
     await browser.get(framesFile);
     await waitForCondition(() => $('body').isDisplayed());
