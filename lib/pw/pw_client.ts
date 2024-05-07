@@ -617,6 +617,8 @@ class Browser {
   }
 
   /**
+   * @param [opts={ timeout: 2500 }] timeout
+   *
    * @example
    * const { playwrightWD } = require('promod');
    * const { browser } = playwrightWD;
@@ -625,19 +627,9 @@ class Browser {
    *
    * @returns {Promise<Buffer>}
    */
-  async takeScreenshot(): Promise<Buffer> {
+  async takeScreenshot(opts = { timeout: 2500 }): Promise<Buffer> {
     promodLogger.engineLog(`[PW] Promod client interface calls method "takeScreenshot" from wrapped API`);
-
-    await (await this._contextWrapper.getCurrentPage())
-      .waitForLoadState('domcontentloaded', { timeout: 30_000 })
-      .catch(console.error);
-    await (await this._contextWrapper.getCurrentPage())
-      .waitForLoadState('load', { timeout: 30_000 })
-      .catch(console.error);
-
-    return (await this._contextWrapper.getCurrentPage()).screenshot().catch((e) => {
-      console.error(e);
-
+    return (await this._contextWrapper.getCurrentPage()).screenshot(opts).catch((e) => {
       return Buffer.from('');
     });
   }

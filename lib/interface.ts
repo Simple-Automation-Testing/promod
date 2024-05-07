@@ -336,7 +336,7 @@ export interface PromodElementType {
 
   isDisplayed(): Promise<boolean>;
 
-  takeScreenshot(opt_scroll?: boolean): Promise<string>;
+  takeScreenshot(opts: import('playwright').PageScreenshotOptions): Promise<string>;
 
   getEngineElement(): Promise<unknown>;
 
