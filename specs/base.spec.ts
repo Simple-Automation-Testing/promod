@@ -59,6 +59,14 @@ describe('Base', () => {
     expect(data).toEqual('pink');
   });
 
+  it('[P] element custom nested simple query', async () => {
+    await browser.get(hoverFocusFile);
+    await waitForCondition(() => $('body').isDisplayed());
+    const txt = await $('.actions').$({ query: 'div' }).getText();
+    // @ts-ignore
+    expect(txt).toEqual('nested div');
+  });
+
   it('[P] element custom nested with index', async () => {
     await browser.get(hoverFocusFile);
     await waitForCondition(() => $('body').isDisplayed());
@@ -88,6 +96,22 @@ describe('Base', () => {
     try {
       await waitForCondition(() => $('body').isDisplayed());
       await $('.actions').$({ query: 'button', rg: 'us113213' }).focus();
+    } catch (error) {
+      err = error;
+    }
+
+    expect(err).toNotEqual(undefined);
+  });
+
+  it('[N] element custom nested bad parent', async () => {
+    await browser.get(hoverFocusFile);
+    let err;
+    try {
+      await waitForCondition(() => $('body').isDisplayed());
+      await $('.action123s').$({ query: 'button', rg: 'us' }).focus();
+      // @ts-ignore
+      const data = await browser.executeScript(() => document.querySelector('#focus').style.background);
+      expect(data).toEqual('pink');
     } catch (error) {
       err = error;
     }

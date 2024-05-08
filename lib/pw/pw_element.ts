@@ -103,7 +103,7 @@ class PromodPlaywrightElements {
    */
   private async getElement(index?) {
     promodLogger.engineLog(`[PW] Promod elements interface calls method "getElement" from wrapped API, args: `, index);
-    const _driver = await browser['getWorkingContext']();
+    this._driver = await browser['getWorkingContext']();
 
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
@@ -124,14 +124,8 @@ class PromodPlaywrightElements {
     }
 
     if (this.getParent && !ignoreParent && isString(selector)) {
-      parent = await this.getParent();
-
-      if (parent.getEngineElement) {
-        parent = (shouldUserDocumentRoot ? _driver : await parent.getEngineElement()) as any as Locator;
-      }
-
       // TODO improve this solution
-      const items = await (shouldUserDocumentRoot ? _driver : parent).locator(getElementArgs);
+      const items = await (shouldUserDocumentRoot ? this._driver : parent).locator(getElementArgs);
       this._driverElements = await (items as Locator).all();
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
       const [queryFn, quertFnArgs] = buildBy(selector, this.getExecuteScriptArgs, parent, true);
@@ -146,14 +140,14 @@ class PromodPlaywrightElements {
         resolved.push(resolvedItem?.elementHandle ? await resolvedItem.elementHandle() : resolvedItem);
       }
       // @ts-ignore
-      const handlesByFunctionSearch = await _driver.evaluateHandle(
+      const handlesByFunctionSearch = await this._driver.evaluateHandle(
         queryFn,
         resolved.length === 1 ? resolved[0] : resolved,
       );
       // @ts-ignore
-      const availableHandlesLength = await _driver.evaluate((nodes) => nodes.length, handlesByFunctionSearch);
+      const availableHandlesLength = await this._driver.evaluate((nodes) => nodes.length, handlesByFunctionSearch);
       for (const index of lengthToIndexesArray(availableHandlesLength)) {
-        const handle = await _driver.evaluateHandle(
+        const handle = await this._driver.evaluateHandle(
           // @ts-ignore
           ([nodes, itemIndex]) => nodes[itemIndex],
           [handlesByFunctionSearch, index],
@@ -163,7 +157,7 @@ class PromodPlaywrightElements {
 
       this._driverElements = elementHandles.filter(Boolean);
     } else {
-      this._driverElements = await _driver.locator(buildBy(this.selector, this.getExecuteScriptArgs)).all();
+      this._driverElements = await this._driver.locator(buildBy(this.selector, this.getExecuteScriptArgs)).all();
     }
 
     if (index < 0) {
@@ -387,14 +381,13 @@ class PromodPlaywrightElement {
    */
   private async getElement() {
     promodLogger.engineLog(`[PW] Promod element interface calls method "getElement" from wrapped API`);
+
     this._driver = await browser['getWorkingContext']();
 
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
 
     const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
-
-    const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
 
     let parent;
 
@@ -412,26 +405,17 @@ class PromodPlaywrightElement {
       }
     }
 
-    if (this.getParent && !ignoreParent && isString(selector)) {
-      parent = (await this.getParent()) as any;
-      if (!parent) {
-        throw new Error(
-          this.useParent
-            ? `Any element with selector ${this.selector} was not found`
-            : `Parent element with selector ${this.parentSelector} was not found`,
-        );
-      }
-      if (parent.getEngineElement) {
-        parent = shouldUserDocumentRoot ? this._driver : await parent.getEngineElement();
-      }
+    if (this.useParent) {
+      this._driverElement = parent;
+      return this._driverElement;
+    }
 
-      if (this.useParent) {
-        this._driverElement = parent;
-      } else {
-        this._driverElement = (await (shouldUserDocumentRoot ? this._driver : parent).locator(getElementArgs).all())[0];
-      }
+    const getElementArgs = buildBy(selector, this.getExecuteScriptArgs, parent, false);
+
+    if (this.getParent && !ignoreParent && isString(selector)) {
+      this._driverElement = (await (shouldUserDocumentRoot ? this._driver : parent).locator(getElementArgs).all())[0];
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
-      const [queryFn, quertFnArgs] = buildBy(selector, this.getExecuteScriptArgs, this._driverElement, false);
+      const [queryFn, quertFnArgs] = getElementArgs;
       const resolved = [];
       const callArgs = toArray(quertFnArgs);
 

@@ -1,4 +1,4 @@
-export type TCustomSelector = { query: string; text?: string; rg: string; strict?: boolean };
+export type TCustomSelector = { query: string; text?: string; rg?: string; strict?: boolean };
 
 export interface PromodElementsType {
   selector: string;
