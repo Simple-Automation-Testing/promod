@@ -43,7 +43,7 @@ const buildBy = (selector: any, getExecuteScriptArgs: () => any[], parent?, toMa
 
     return [
       ([parent, entry]) => {
-        const { query, text, rg, strict, toMany } = entry;
+        const { query, text, rg, strict, toMany, rgFlags = 'gmi' } = entry;
         const elements = parent ? parent.querySelectorAll(query) : document.querySelectorAll(query);
 
         if (!elements.length) return null;
@@ -53,7 +53,7 @@ const buildBy = (selector: any, getExecuteScriptArgs: () => any[], parent?, toMa
         for (const element of elements) {
           const innerText = element?.innerText?.trim() || element?.textContent?.trim() || element?.outerHTML?.trim();
           const textMatches = typeof text === 'string' && (!strict ? innerText.includes(text) : innerText === text);
-          const rgMatches = rg && innerText.match(new RegExp(rg, 'gmi'));
+          const rgMatches = rg && innerText.match(new RegExp(rg, rgFlags));
 
           if (rgMatches && !toMany) {
             return element;
@@ -108,24 +108,24 @@ class PromodPlaywrightElements {
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
 
-    const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
-    const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
+    const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//') || ignoreParent;
 
     let parent;
 
-    if (this.getParent && !ignoreParent) {
+    if (this.getParent && !shouldUserDocumentRoot) {
       parent = (await this.getParent()) as any;
       if (!parent) {
         throw new Error(`Any element with selector ${this.selector} was not found`);
       }
       if (parent.getEngineElement) {
-        parent = shouldUserDocumentRoot ? this._driver : await parent.getEngineElement();
+        parent = await parent.getEngineElement();
       }
     }
 
-    if (this.getParent && !ignoreParent && isString(selector)) {
-      // TODO improve this solution
-      const items = await (shouldUserDocumentRoot ? this._driver : parent).locator(getElementArgs);
+    const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
+
+    if (isString(selector)) {
+      const items = await (parent || this._driver).locator(getElementArgs);
       this._driverElements = await (items as Locator).all();
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
       const [queryFn, quertFnArgs] = buildBy(selector, this.getExecuteScriptArgs, parent, true);
@@ -387,12 +387,13 @@ class PromodPlaywrightElement {
     const ignoreParent = isString(this.selector) && this.selector.startsWith('ignore-parent=');
     const selector = ignoreParent ? this.selector.replace('ignore-parent=', '') : this.selector;
 
-    const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//');
+    const shouldUserDocumentRoot = selector.toString().startsWith('xpath=//') || ignoreParent;
 
     let parent;
 
-    if (this.getParent && !ignoreParent) {
+    if ((this.getParent && !shouldUserDocumentRoot) || (this.getParent && this.useParent)) {
       parent = (await this.getParent()) as any;
+
       if (!parent) {
         throw new Error(
           this.useParent
@@ -401,19 +402,20 @@ class PromodPlaywrightElement {
         );
       }
       if (parent.getEngineElement) {
-        parent = shouldUserDocumentRoot ? this._driver : await parent.getEngineElement();
+        parent = await parent.getEngineElement();
       }
     }
 
     if (this.useParent) {
       this._driverElement = parent;
+
       return this._driverElement;
     }
 
     const getElementArgs = buildBy(selector, this.getExecuteScriptArgs, parent, false);
 
     if (this.getParent && !ignoreParent && isString(selector)) {
-      this._driverElement = (await (shouldUserDocumentRoot ? this._driver : parent).locator(getElementArgs).all())[0];
+      this._driverElement = (await (parent || this._driver).locator(getElementArgs).all())[0];
     } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
       const [queryFn, quertFnArgs] = getElementArgs;
       const resolved = [];

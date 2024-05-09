@@ -24,7 +24,7 @@ const buildBy = (
 
     return By.js(
       ([parent, entry]) => {
-        const { query, text, rg, strict, toMany } = entry;
+        const { query, text, rg, strict, toMany, rgFlags = 'gmi' } = entry;
         const elements = parent ? parent.querySelectorAll(query) : document.querySelectorAll(query);
 
         if (!elements.length) return null;
@@ -34,7 +34,7 @@ const buildBy = (
         for (const element of elements) {
           const innerText = element?.innerText?.trim() || element?.textContent?.trim() || element?.outerHTML?.trim();
           const textMatches = typeof text === 'string' && (!strict ? innerText.includes(text) : innerText === text);
-          const rgMatches = rg && innerText.match(new RegExp(rg, 'gmi'));
+          const rgMatches = rg && innerText.match(new RegExp(rg, rgFlags));
 
           if (rgMatches && !toMany) {
             return element;

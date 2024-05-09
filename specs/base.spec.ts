@@ -63,7 +63,6 @@ describe('Base', () => {
     await browser.get(hoverFocusFile);
     await waitForCondition(() => $('body').isDisplayed());
     const txt = await $('.actions').$({ query: 'div' }).getText();
-    // @ts-ignore
     expect(txt).toEqual('nested div');
   });
 
@@ -175,7 +174,7 @@ describe('Base', () => {
 
   it('[P] browser scroll element by mouse whell', async () => {
     await browser.get(scrollFile);
-    await waitForCondition(() => $$('[class="scroll_item"]').get(4).isDisplayed());
+    await waitForCondition(() => $$('[class="scroll_item"]').get(4).isDisplayed(), { message: (t, e) => `${e}` });
     const elementToScroll = $$('[class="scroll_item"]').get(4);
     const beforeScroll = await elementToScroll.getRect();
     await sleep(500);
@@ -248,6 +247,14 @@ describe('Base', () => {
     expect(await $('select').$('xpath=//*[@id="target"]').isDisplayed()).toEqual(true);
     expect(await $('select').$('xpath=.//*[@id="target"]').isDisplayed()).toEqual(false);
     expect(await $('body').$('xpath=.//*[@id="target"]').isDisplayed()).toEqual(true);
+  });
+
+  it('[P] selectors ignore-parent', async () => {
+    await browser.get(selectorsFile);
+    expect(await waitForCondition(() => $('body').$('[id="target"]').isDisplayed())).toEqual(true);
+    expect(await $('select').$('[id="target"]').isDisplayed()).toEqual(false);
+    expect(await $('select').$('ignore-parent=[id="target"]').isDisplayed()).toEqual(true);
+    expect(await $('select').$('[id="target"]').isDisplayed()).toEqual(false);
   });
 
   it('[P] getTagName', async () => {
