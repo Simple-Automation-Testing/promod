@@ -91,6 +91,7 @@ class Browser {
     try {
       const page = await this.seleniumDriver.createCDPConnection('page');
       await this.seleniumDriver.register(authData.username, authData.password, page);
+      await page._wsConnection.close();
     } catch (error) {
       if (dontThrowOnError) {
         console.error(error);
