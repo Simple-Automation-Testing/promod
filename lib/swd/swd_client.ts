@@ -63,6 +63,7 @@ class Browser {
   private appBaseUrl: string;
   private initialTab: any;
   private drivers: WebDriver[];
+  private cdpPages: any[];
   private _createNewDriver: (capabilities?: any) => Promise<{ driver: WebDriver }>;
   private _browserConfig;
 
@@ -73,6 +74,7 @@ class Browser {
   constructor() {
     this.wait = waitForCondition;
     this.seleniumDriver;
+    this.cdpPages = [];
   }
 
   currentClient() {
@@ -91,7 +93,8 @@ class Browser {
     try {
       const page = await this.seleniumDriver.createCDPConnection('page');
       await this.seleniumDriver.register(authData.username, authData.password, page);
-      await page._wsConnection.close();
+
+      this.cdpPages.push(page);
     } catch (error) {
       if (dontThrowOnError) {
         console.error(error);
@@ -848,6 +851,11 @@ class Browser {
     }
     await this.seleniumDriver.quit();
 
+    if (this.cdpPages.length) {
+      await Promise.all(this.cdpPages.map((page) => page?._wsConnection?.close())).catch(console.error);
+      this.cdpPages = [];
+    }
+
     this.seleniumDriver = null;
   }
 
@@ -870,8 +878,12 @@ class Browser {
     }
     this.seleniumDriver = null;
 
+    if (this.cdpPages.length) {
+      await Promise.all(this.cdpPages.map((page) => page?._wsConnection?.close())).catch(console.error);
+      this.cdpPages = [];
+    }
     for (const driver of drivers) {
-      await driver.quit().catch((_) => ({}));
+      await driver.quit().catch(console.error);
     }
   }
 
