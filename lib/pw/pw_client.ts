@@ -952,7 +952,7 @@ class Browser {
 
     const result = await waitForCondition(
       async () => await (await this.getWorkingContext()).evaluate(script, recomposedArgs),
-      { stopIfNoError: true },
+      { stopIfNoError: true, timeout: 2000, interval: 500 },
     );
 
     for (const item of toArray(recomposedArgs)) {
