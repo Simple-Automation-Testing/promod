@@ -19,5 +19,5 @@ export {
   scrollFile,
   pressFile,
   invisibleFile,
+  visibleFile,
 } from './misc/setup';
-

@@ -13,6 +13,7 @@ import {
   pressFile,
   scrollFile,
   invisibleFile,
+  visibleFile,
 } from './setup';
 import { KeysSWD } from '../lib/mappers';
 
@@ -25,6 +26,26 @@ describe('Base', () => {
 
   after(async () => {
     await browser.quitAll();
+  });
+
+  it('[P] get only visible elements', async () => {
+    await browser.get(visibleFile);
+    await waitForCondition(() => $('body').isDisplayed());
+
+    const fromRoot = await $$('li')
+      .getAllVisible()
+      .map(async (li) => li.getText());
+
+    expect(fromRoot).toDeepEqual(['1', '3']);
+
+    const fromParent = await $('body')
+      .$$('ul')
+      .getFirstVisible()
+      .$$('li')
+      .getAllVisible()
+      .map(async (li) => li.getText());
+
+    expect(fromParent).toDeepEqual(fromRoot);
   });
 
   it('[P] element custom', async () => {

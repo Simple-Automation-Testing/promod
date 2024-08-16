@@ -1,6 +1,6 @@
 {
   "name": "promod",
-  "version": "1.18.1",
+  "version": "1.19.0",
   "description": "Library for automation testing",
   "main": "./built/index.js",
   "bin": "./bin/promod_cli",
@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/Simple-Automation-Testing/promod#readme",
   "devDependencies": {
+    "@types/mocha": "^10.0.7",
     "@typescript-eslint/eslint-plugin": "^3.8.0",
     "@typescript-eslint/parser": "^3.8.0",
     "assertior": "0.0.26",
@@ -41,10 +42,10 @@
   },
   "dependencies": {
     "get-port": "5.1.1",
-    "playwright": "^1.45.3",
+    "playwright": "^1.46.0",
     "sat-utils": "1.12.2",
     "selenium-standalone": "^10.0.0",
-    "selenium-webdriver": "^4.22.0",
+    "selenium-webdriver": "^4.23.0",
     "yargs": "^17.6.0"
   },
   "keywords": [

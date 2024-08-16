@@ -58,6 +58,11 @@ export interface PromodElementsType {
    */
   some(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<boolean>;
 
+  getAllVisible(): PromodElementsType;
+  getFirstVisible(): PromodElementType;
+
+  filter(cb: (item: PromodElementType, index?: number) => Promise<boolean>): PromodElementsType;
+
   map<T>(cb: (item: PromodElementType, index?: number) => Promise<T>): Promise<T[]>;
 
   /**

@@ -11,6 +11,7 @@ const iframesFile = `file://${path.resolve(__dirname, './iframes.html')}`;
 const scrollFile = `file://${path.resolve(__dirname, './scroll.html')}`;
 const pressFile = `file://${path.resolve(__dirname, './press.html')}`;
 const invisibleFile = `file://${path.resolve(__dirname, './invisible.html')}`;
+const visibleFile = `file://${path.resolve(__dirname, './visible.html')}`;
 
 export {
   scrollFile,
@@ -24,4 +25,5 @@ export {
   selectorsFile,
   pressFile,
   invisibleFile,
+  visibleFile,
 };

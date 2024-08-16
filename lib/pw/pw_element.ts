@@ -83,15 +83,18 @@ class PromodPlaywrightElements {
   private _driverElements: Locator[];
   private getParent: () => Promise<PromodPlaywrightElement>;
   private getExecuteScriptArgs: () => any;
+  private useParent: boolean;
   private selector: string;
+
   public parentSelector: string;
   public _browserInterface: any;
 
-  constructor(selector, client, getParent?, getExecuteScriptArgs?) {
+  constructor(selector, client, getParent?, getExecuteScriptArgs?, useParent?) {
     this._browserInterface = client;
     this.selector = selector;
     this.getParent = getParent;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
+    this.useParent = useParent;
   }
 
   /**
@@ -112,7 +115,7 @@ class PromodPlaywrightElements {
 
     let parent;
 
-    if (this.getParent && !shouldUserDocumentRoot) {
+    if (this.getParent && !shouldUserDocumentRoot && !this.useParent) {
       parent = (await this.getParent()) as any;
       if (!parent) {
         throw new Error(`Any element with selector ${this.selector} was not found`);
@@ -120,6 +123,22 @@ class PromodPlaywrightElements {
       if (parent.getEngineElement) {
         parent = await parent.getEngineElement();
       }
+    }
+
+    if (this.getParent && this.useParent) {
+      parent = (await this.getParent()) as any;
+
+      if (!parent) {
+        throw new Error(`Parent element with selector ${this.parentSelector} was not found`);
+      }
+
+      this._driverElements = parent;
+
+      if (parent.getEngineElements) {
+        this._driverElements = await parent.getEngineElements();
+      }
+
+      return this._driverElements[index];
     }
 
     const getElementArgs = buildBy(selector, this.getExecuteScriptArgs);
@@ -202,6 +221,52 @@ class PromodPlaywrightElements {
   last(): PromodElementType {
     promodLogger.engineLog(`[PW] Promod elements interface calls method "last" from wrapped API`);
     return this.get(-1) as any;
+  }
+
+  /**
+   * @example
+   *
+   * const buttons = $$('button');
+   * await buttons.getFirstVisible().click();
+   *
+   * @param {number} index
+   * @returns {PromodElementType}
+   */
+  getFirstVisible(): PromodElementType {
+    return new PromodPlaywrightElement(
+      this.selector,
+      this._browserInterface,
+      this.find.bind(this, (el) => el.isDisplayed()),
+      null,
+      true,
+    ) as any;
+  }
+
+  getAllVisible(): PromodElementsType {
+    const _getElements = async function _getElements() {
+      await this.getElement(0);
+      const els = [];
+
+      for (let i = 0; i < this._driverElements.length; i++) {
+        const el = this._driverElements[i];
+
+        if (await el.isVisible()) {
+          els.push(el);
+        }
+      }
+
+      return els;
+    }.bind(this);
+
+    const promodElements = new PromodPlaywrightElements(
+      this.selector,
+      this._browserInterface,
+      _getElements,
+      null,
+      true,
+    );
+
+    return promodElements as any as PromodElementsType;
   }
 
   /**

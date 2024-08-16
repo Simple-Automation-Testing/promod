@@ -176,7 +176,7 @@ class Browser {
     if (element) {
       await this.seleniumDriver
         .actions()
-        .move({ origin: (await element.getEngineElement()) as WebElement })
+        .move({ origin: (await element.getEngineElement()) as typeof WebElement })
         .perform();
     }
     for (const k of toArray(key)) {
@@ -874,7 +874,7 @@ class Browser {
     this.drivers = [];
 
     if (this.seleniumDriver) {
-      await this.seleniumDriver.quit();
+      await this.seleniumDriver.quit().catch((e) => promodLogger.engineLog(e));
     }
     this.seleniumDriver = null;
 

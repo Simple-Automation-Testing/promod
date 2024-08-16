@@ -35,17 +35,19 @@ const SELENIUM_API_METHODS = [
 
 class PromodSeleniumElements {
   private selector: string;
-  private _driverElements: WebElement[];
-  private getParent: () => Promise<PromodSeleniumElement & WebElement>;
+  private _driverElements: (typeof WebElement)[];
+  private getParent: () => Promise<PromodSeleniumElement & typeof WebElement>;
   private getExecuteScriptArgs: () => any;
+  private useParent: boolean;
   public _browserInterface: any;
   public parentSelector: string;
 
-  constructor(selector, client = browser, getParent?, getExecuteScriptArgs?) {
-    this._browserInterface = client;
+  constructor(selector, client = browser, getParent?, getExecuteScriptArgs?, useParent?) {
     this.selector = selector;
+    this._browserInterface = client;
     this.getParent = getParent;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
+    this.useParent = useParent;
   }
 
   /**
@@ -53,7 +55,7 @@ class PromodSeleniumElements {
    *
    * @info if index is less than zero we will get element from the end
    * @param {number} index
-   * @returns {Promise<WebElement>}
+   * @returns {Promise<typeof WebElement>}
    */
   private async getElement(index?) {
     promodLogger.engineLog(`[SWD] Promod elements interface calls method "getElement" from wrapped API, args: `, index);
@@ -66,7 +68,7 @@ class PromodSeleniumElements {
 
     let parent;
 
-    if (this.getParent && !shouldUserDocumentRoot) {
+    if (this.getParent && !shouldUserDocumentRoot && !this.useParent) {
       parent = (await this.getParent()) as any;
 
       if (!parent) {
@@ -75,6 +77,21 @@ class PromodSeleniumElements {
       if (parent.getEngineElement) {
         parent = await parent.getEngineElement();
       }
+    }
+
+    if (this.getParent && this.useParent) {
+      parent = (await this.getParent()) as any;
+
+      if (!parent) {
+        throw new Error(`Parent element with selector ${this.parentSelector} was not found`);
+      }
+
+      this._driverElements = parent;
+      if (parent.getEngineElements) {
+        this._driverElements = await parent.getEngineElements();
+      }
+
+      return this._driverElements[index];
     }
 
     if (this.getParent && !shouldUserDocumentRoot && isString(selector)) {
@@ -101,6 +118,7 @@ class PromodSeleniumElements {
    */
   get(index): PromodElementType {
     promodLogger.engineLog(`[SWD] Promod elements interface calls method "get" from wrapped API, args: `, index);
+
     const childElement = new PromodSeleniumElement(
       this.selector,
       this._browserInterface,
@@ -108,10 +126,51 @@ class PromodSeleniumElements {
       null,
       true,
     );
+
     if (this.parentSelector) {
       childElement.parentSelector = this.parentSelector || this.selector;
     }
     return childElement as any;
+  }
+
+  getAllVisible(): PromodElementsType {
+    const _getElements = async function _getElements() {
+      await this.getElement(0);
+      const els = [];
+
+      for (let i = 0; i < this._driverElements.length; i++) {
+        const el = this._driverElements[i];
+
+        if (await el.isDisplayed()) {
+          els.push(el);
+        }
+      }
+
+      return els;
+    }.bind(this);
+
+    const promodElements = new PromodSeleniumElements(this.selector, this._browserInterface, _getElements, null, true);
+
+    return promodElements as any as PromodElementsType;
+  }
+
+  /**
+   * @example
+   *
+   * const buttons = $$('button');
+   * await buttons.getFirstVisible().click();
+   *
+   * @param {number} index
+   * @returns {PromodElementType}
+   */
+  getFirstVisible(): PromodElementType {
+    return new PromodSeleniumElement(
+      this.selector,
+      this._browserInterface,
+      this.find.bind(this, (el) => el.isDisplayed()),
+      null,
+      true,
+    ) as any;
   }
 
   /**
@@ -244,6 +303,47 @@ class PromodSeleniumElements {
    * const button = await buttons.find(async (button) => await button.getText() === 'Click me');
    *
    * @param {(item, index) => Promise<any>} cb
+   * @returns {Promise<PromodElementsType>}
+   */
+  filter(cb: (item: PromodElementType, index?: number) => Promise<boolean>): PromodElementsType {
+    promodLogger.engineLog(`[SWD] Promod elements interface calls method "find" from wrapped API, args: `, cb);
+
+    const that = this;
+
+    async function _getElements() {
+      await that.getElement(0);
+      const els = [];
+
+      for (let i = 0; i < that._driverElements.length; i++) {
+        const el = that._driverElements[i];
+
+        const promodEl = new PromodSeleniumElement(
+          that.selector,
+          that._browserInterface,
+          () => el,
+          that.getExecuteScriptArgs,
+          true,
+        );
+
+        if (await cb(promodEl as any as PromodElementType)) {
+          els.push(el);
+        }
+      }
+
+      return els;
+    }
+
+    const promodElements = new PromodSeleniumElements(this.selector, this._browserInterface, _getElements, null, true);
+
+    return promodElements as any as PromodElementsType;
+  }
+
+  /**
+   * @example
+   * const buttons = $$('button');
+   * const button = await buttons.find(async (button) => await button.getText() === 'Click me');
+   *
+   * @param {(item, index) => Promise<any>} cb
    * @returns {Promise<PromodElementType>}
    */
   async find(cb: (item: PromodElementType, index?: number) => Promise<boolean>): Promise<PromodElementType> {
@@ -284,10 +384,12 @@ class PromodSeleniumElements {
 
 class PromodSeleniumElement {
   private selector: string;
-  private _driverElement: WebElement;
+  private _driverElement: typeof WebElement;
+
   private getParent: () => Promise<PromodElementType>;
   private getExecuteScriptArgs: () => any;
   private useParent: boolean;
+
   public _browserInterface: any;
   public parentSelector: string;
 
@@ -315,7 +417,7 @@ class PromodSeleniumElement {
 
   /**
    * @private
-   * @returns {Promise<WebElement>}
+   * @returns {Promise<typeof WebElement>}
    */
   private async getElement() {
     promodLogger.engineLog(`[SWD] Promod element interface calls method "getElement" from wrapped API`);
@@ -338,6 +440,7 @@ class PromodSeleniumElement {
             : `Parent element with selector ${this.parentSelector} was not found`,
         );
       }
+
       if (parent.getEngineElement) {
         parent = await parent.getEngineElement();
       }
