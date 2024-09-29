@@ -7,8 +7,8 @@ import {
   safeJSONstringify,
   isAsyncFunction,
   isNotEmptyObject,
-  compareToPattern,
 } from 'sat-utils';
+import { compare } from 'sat-compare';
 import { WebDriver, Key, WebElement } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { buildBy } from './swd_alignment';
@@ -500,7 +500,7 @@ class Browser {
               title: await this.getTitle(),
             };
 
-            const { result } = compareToPattern(currentBrowserState, titleUrl, { stringIncludes: !strictEquality });
+            const { result } = compare(currentBrowserState, titleUrl, { stringIncludes: !strictEquality });
 
             if (result) return true;
           }

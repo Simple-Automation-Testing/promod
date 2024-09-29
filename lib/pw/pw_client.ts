@@ -7,12 +7,12 @@ import {
   lengthToIndexesArray,
   asyncForEach,
   asyncSome,
-  compareToPattern,
   safeJSONstringify,
   isString,
   isArray,
   asyncFilter,
 } from 'sat-utils';
+import { compare } from 'sat-compare';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { Locator } from 'playwright-core';
 import { KeysPW, resolveUrl } from '../mappers';
@@ -147,7 +147,7 @@ class PageWrapper {
               title: await this._currentPage.title(),
             };
 
-            const { result } = compareToPattern(currentBrowserState, titleUrl, { stringIncludes: !strictEquality });
+            const { result } = compare(currentBrowserState, titleUrl, { stringIncludes: !strictEquality });
 
             if (result) return true;
           }
