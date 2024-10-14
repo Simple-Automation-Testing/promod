@@ -303,6 +303,11 @@ class Browser {
     return this._engineDriver;
   }
 
+  async injectPagePreloadScript(script: string) {
+    const page = await this.getCurrentPage();
+    await page.addInitScript(script);
+  }
+
   injectEngine({ context, page }: { context?: BrowserContext; page?: Page }) {
     if (context) {
       const browser = context.browser();

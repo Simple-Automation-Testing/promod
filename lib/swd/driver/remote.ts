@@ -6,7 +6,9 @@ import { runLocalEnv } from './local';
 const _getDriver = async (config) => {
   const combinedConfig = config || { capabilities: Capabilities.chrome() };
   if (!combinedConfig.capabilities) {
-    combinedConfig.capabilities = Capabilities.chrome();
+    const defaultChromeCapabilities: Map<string, string | boolean> = Capabilities.chrome();
+
+    combinedConfig.capabilities = defaultChromeCapabilities;
   }
 
   if (config.seleniumSessionId) {

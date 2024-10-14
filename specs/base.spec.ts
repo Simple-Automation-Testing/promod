@@ -50,8 +50,10 @@ describe('Base', () => {
 
   it('[P] element custom', async () => {
     await browser.get(hoverFocusFile);
-    await waitForCondition(() => $('body').isDisplayed());
-    await $({ query: 'button', rg: 'us' }).focus();
+    const el = $({ query: 'button', rg: 'us' });
+    await waitForCondition(() => el.isDisplayed());
+    await el.focus();
+
     // @ts-ignore
     const data = await browser.executeScript(() => document.querySelector('#focus').style.background);
     expect(data).toEqual('pink');
@@ -612,7 +614,7 @@ describe('Base', () => {
     expect(await listSecond.count()).toEqual(0);
   });
 
-  it('[P] iframes', async () => {
+  it.only('[P] iframes', async () => {
     const resulter = $('body').$('#resulter');
     await browser.get(framesFile);
     await waitForCondition(() => $('body').isDisplayed());
@@ -625,5 +627,12 @@ describe('Base', () => {
     await waitForCondition(() => $('body').isDisplayed());
     expect(await $('#hover').isDisplayed()).toEqual(false);
     expect(await $('#main').isDisplayed()).toEqual(true);
+  });
+
+  it('[P] injectPagePreloadScript', async () => {
+    await browser.injectPagePreloadScript(`window._test = '<div>test</div>'`);
+    await browser.get('https://google.com');
+    const data = await browser.executeScript(() => window['_test']);
+    expect(data).toEqual('<div>test</div>');
   });
 });

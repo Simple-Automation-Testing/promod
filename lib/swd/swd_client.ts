@@ -7,6 +7,7 @@ import {
   safeJSONstringify,
   isAsyncFunction,
   isNotEmptyObject,
+  getUniqItems,
 } from 'sat-utils';
 import { compare } from 'sat-compare';
 import { WebDriver, Key, WebElement } from 'selenium-webdriver';
@@ -87,6 +88,32 @@ class Browser {
 
   injectEngine({ driver }: { driver?: WebDriver }) {
     this.seleniumDriver = driver;
+  }
+
+  async injectPagePreloadScript(script: string, dontThrowOnError: boolean = true) {
+    try {
+      let page = await this.seleniumDriver.createCDPConnection('page');
+
+      const currentPage = this.cdpPages.find((p) => p._wsConnection._url === page._wsConnection._url);
+
+      if (currentPage) {
+        await page._wsConnection?.close();
+        page = currentPage;
+      }
+
+      await page.send('Page.enable');
+      await page.send('Page.addScriptToEvaluateOnNewDocument', { source: script });
+
+      if (!currentPage) {
+        this.cdpPages.push(page);
+      }
+    } catch (error) {
+      if (dontThrowOnError) {
+        console.error(error);
+      } else {
+        throw error;
+      }
+    }
   }
 
   async setBasicAuth(authData: { username: string; password: string }, dontThrowOnError: boolean = true) {

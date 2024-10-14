@@ -926,16 +926,16 @@ function getInitElementRest(
   return [getParent, getExecuteScriptArgs];
 }
 
-const $ = (
+function $(
   selector: string | TCustomSelector | By | ((...args: any[]) => any) | Promise<any>,
   root?: PromodElementType | any,
   ...rest: any[]
-): PromodElementType => {
+): PromodElementType {
   const restArgs = getInitElementRest(selector, root, ...rest);
   promodLogger.engineLog('Create new Promod element interface, args: ', ...restArgs);
 
   return new PromodSeleniumElement(selector, browser, ...restArgs) as any;
-};
+}
 
 function $$(
   selector: string | TCustomSelector | By | ((...args: any[]) => any) | Promise<any>,
