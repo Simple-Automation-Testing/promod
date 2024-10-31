@@ -628,6 +628,33 @@ class PromodSeleniumElement {
       .move({ origin: await this.getEngineElement() })
       .perform();
   }
+  /**
+   * @example
+   * const button = $('button')
+   * await button.hoverByElementCoordinate()
+   *
+   * @returns {Promise<void>}
+   */
+  async hoverByElementCoordinate(
+    position:
+      | 'center'
+      | 'center-top'
+      | 'center-bottom'
+      | 'center-right'
+      | 'center-left'
+      | 'right-top'
+      | 'right-bottom'
+      | 'left-top'
+      | 'left-bottom' = 'center',
+  ) {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "hoverByElementCoordinate" from wrapped API`);
+    const { x, y } = await this.getElementCoordinates(position);
+    await browser
+      .currentClient()
+      .actions()
+      .move({ x: Math.round(x), y: Math.round(y) })
+      .perform();
+  }
 
   /**
    * @example

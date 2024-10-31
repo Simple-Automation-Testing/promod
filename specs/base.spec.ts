@@ -588,6 +588,16 @@ describe('Base', () => {
     expect(data).toEqual('red');
   });
 
+  it('[P] hoverByElementCoordinate', async () => {
+    const hover = $('#hover');
+    await browser.get(hoverFocusFile);
+    await waitForCondition(() => $('body').isDisplayed());
+    await hover.hoverByElementCoordinate();
+    // @ts-ignore
+    const data = await browser.executeScript(() => document.querySelector('#hover').style.background);
+    expect(data).toEqual('red');
+  });
+
   it('[P] screenshot', async () => {
     await browser.get(hoverFocusFile);
     await browser.takeScreenshot();
@@ -614,7 +624,7 @@ describe('Base', () => {
     expect(await listSecond.count()).toEqual(0);
   });
 
-  it.only('[P] iframes', async () => {
+  it('[P] iframes', async () => {
     const resulter = $('body').$('#resulter');
     await browser.get(framesFile);
     await waitForCondition(() => $('body').isDisplayed());

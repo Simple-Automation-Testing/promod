@@ -798,6 +798,35 @@ class PromodPlaywrightElement {
    * @param {string} position
    * @returns {Promise<void>}
    */
+  async hoverByElementCoordinate(
+    position:
+      | 'center'
+      | 'center-top'
+      | 'center-bottom'
+      | 'center-right'
+      | 'center-left'
+      | 'right-top'
+      | 'right-bottom'
+      | 'left-top'
+      | 'left-bottom' = 'center',
+  ) {
+    promodLogger.engineLog(
+      `Promod element interface calls method "hoverByElementCoordinate" from wrapped API, args: `,
+      position,
+    );
+    const { x, y } = await this.getElementCoordinates(position);
+
+    await (await browser['getCurrentPage']()).mouse.move(x, y);
+  }
+
+  /**
+   * @example
+   * const button = $('button')
+   * await button.clickByElementCoordinate('center-top')
+   *
+   * @param {string} position
+   * @returns {Promise<void>}
+   */
   async clickByElementCoordinate(
     position:
       | 'center'

@@ -92,6 +92,28 @@ export interface PromodElementType {
   /**
    * @example
    * const link = $('a')
+   * await link.hoverByElementCoordinate('center'); // will click center
+   * await link.hoverByElementCoordinate('right-top'); // will click right top corner
+   *
+   * @param {string} position click position
+   * @returns {Promise<void>}
+   */
+  hoverByElementCoordinate(
+    position?:
+      | 'center'
+      | 'center-top'
+      | 'center-bottom'
+      | 'center-right'
+      | 'center-left'
+      | 'right-top'
+      | 'right-bottom'
+      | 'left-top'
+      | 'left-bottom',
+  ): Promise<void>;
+
+  /**
+   * @example
+   * const link = $('a')
    * await link.clickByElementCoordinate('center'); // will click center
    * await link.clickByElementCoordinate('right-top'); // will click right top corner
    *
