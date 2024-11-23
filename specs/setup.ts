@@ -1,4 +1,5 @@
-import { Key } from 'selenium-webdriver';
+import { chromium } from 'playwright';
+import { Browser, Builder } from 'selenium-webdriver';
 import { expect } from 'assertior';
 import { seleniumWD, playwrightWD } from '../lib';
 
@@ -6,18 +7,21 @@ const { ENGINE } = process.env;
 
 const engine = ENGINE === 'pw' ? playwrightWD : seleniumWD;
 
-export { engine, Key, expect };
-export {
-  actionFile,
-  collectionFile,
-  hoverFocusFile,
-  framesFile,
-  formsFile,
-  logsFile,
-  selectorsFile,
-  iframesFile,
-  scrollFile,
-  pressFile,
-  invisibleFile,
-  visibleFile,
-} from './misc/setup';
+async function getEngine() {
+  if (ENGINE === 'pw') {
+    const lauchedChrome = await chromium.launch({ headless: false });
+    engine.browser.setClient({ driver: lauchedChrome });
+  } else {
+    require('chromedriver');
+    const lauchedChrome = await new Builder().forBrowser(Browser.CHROME).build();
+    engine.browser.setClient({
+      driver: lauchedChrome,
+      lauchNewInstance: async () => await new Builder().forBrowser(Browser.CHROME).build(),
+    });
+  }
+
+  return engine;
+}
+
+export * from './misc/setup';
+export { getEngine, expect, engine };

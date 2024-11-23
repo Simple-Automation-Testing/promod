@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "target": "ESNext",
+    "sourceMap": true,
+    "outDir": "built/esm",
+    "declaration": true,
+    "experimentalDecorators": true,
+    "allowJs": true
+  },
+  "include": [
+    "lib"
+  ],
+  "exclude": [
+    "node_modules",
+    "built",
+    "specs",
+    "example",
+    "playground.*"
+  ]
+}

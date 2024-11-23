@@ -1,7 +1,6 @@
 import {
   toArray,
   isNotEmptyObject,
-  waitForCondition,
   isNumber,
   isAsyncFunction,
   lengthToIndexesArray,
@@ -13,12 +12,12 @@ import {
   asyncFilter,
 } from 'sat-utils';
 import { compare } from 'sat-compare';
+import { waitFor } from 'sat-wait';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
-import { Locator } from 'playwright-core';
 import { KeysPW, resolveUrl } from '../mappers';
 import { promodLogger } from '../internals';
 
-import type { BrowserServer, Browser as PWBrowser, BrowserContext, Page, ElementHandle } from 'playwright-core';
+import type { Locator, Browser as PWBrowser, BrowserContext, Page, ElementHandle } from 'playwright-core';
 import type {
   TSwitchToIframe,
   ExecuteScriptFn,
@@ -39,7 +38,7 @@ function validateBrowserCallMethod(browserClass): Browser {
       async function decoratedWithChecker(...args) {
         if (!this._engineDriver) {
           throw new Error(`
-${key}(): Seems like driver was not initialized, please check how or where did you call getDriver function
+${key}(): Seems like driver was not initialized,
 or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/init.md#getDriver
 					`);
         }
@@ -110,7 +109,7 @@ class PageWrapper {
     if (isNumber(expectedQuantity)) {
       let errorMessage;
 
-      await waitForCondition(
+      await waitFor(
         async () => {
           const tabs = this._context.pages();
 
@@ -135,7 +134,7 @@ class PageWrapper {
 
     if (isNotEmptyObject(titleUrl)) {
       let errorMessage;
-      await waitForCondition(
+      await waitFor(
         async () => {
           const tabs = this._context.pages();
 
@@ -274,14 +273,12 @@ class ContextWrapper {
 }
 
 class Browser {
-  wait = waitForCondition;
+  wait = waitFor;
   _engineDriver: PWBrowser;
   _contextWrapper: ContextWrapper;
   _contextFrame: Page | (() => Promise<Page>);
   _contextFrameHolder: Locator;
 
-  /** @private */
-  private _server: BrowserServer;
   /** @private */
   private appBaseUrl: string;
   /** @private */
@@ -292,7 +289,7 @@ class Browser {
   private _createNewDriver: () => Promise<PWBrowser>;
 
   constructor() {
-    this.wait = waitForCondition;
+    this.wait = waitFor;
   }
 
   static getBrowser() {
@@ -402,14 +399,10 @@ class Browser {
     throw new Error(`switchToBrowser(): required browser was not found`);
   }
 
-  setClient({ driver, server, config }) {
-    this._engineDriver = driver;
-    this._contextWrapper = new ContextWrapper(driver, config);
-    this._server = server;
-  }
-
-  set setCreateNewDriver(driverCreator) {
-    this._createNewDriver = driverCreator;
+  setClient({ driver, lauchNewInstance }: { driver; lauchNewInstance? } = { driver: null }) {
+    this._engineDriver = driver || this._engineDriver;
+    this._contextWrapper = new ContextWrapper(this._engineDriver);
+    this._createNewDriver = lauchNewInstance;
   }
 
   get keyboard() {
@@ -833,7 +826,7 @@ class Browser {
     }
 
     this._contextFrame = async () => {
-      return await waitForCondition(
+      return await waitFor(
         async () => {
           const page = await this.getCurrentPage();
           const pageFrames = await page.frames();
@@ -955,10 +948,11 @@ class Browser {
       recomposedArgs = recomposedArgs?.elementHandle ? await recomposedArgs.elementHandle() : recomposedArgs;
     }
 
-    const result = await waitForCondition(
-      async () => await (await this.getWorkingContext()).evaluate(script, recomposedArgs),
-      { stopIfNoError: true, timeout: 2000, interval: 500 },
-    );
+    const result = await waitFor(async () => await (await this.getWorkingContext()).evaluate(script, recomposedArgs), {
+      stopIfNoError: true,
+      timeout: 2000,
+      interval: 500,
+    });
 
     for (const item of toArray(recomposedArgs)) {
       (item as any)?.dispose && (await (item as any)?.dispose());
@@ -1035,9 +1029,6 @@ class Browser {
   async quitAll() {
     await this._contextWrapper.closeAllContexts();
     await this._engineDriver.close();
-    if (this._server) {
-      await this._server.close();
-    }
   }
 
   /**

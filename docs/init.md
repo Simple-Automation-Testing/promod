@@ -1,28 +1,29 @@
-# Session initialization
-Promod is a library, it does not have own test runner, initialization of the driver session should be done by ```getDriver``` function
+# Set driver to engine wrapper
 
-- [getDriver](#getdriver)
+[Promod](https://github.com/Simple-Automation-Testing/promod) is a library, it does not have own test runner, and own browser manipulation interface. <br> Currently promod has API alignment for [playwright](https://www.npmjs.com/package/playwright) <br> and [selenium-webdriver](https://www.npmjs.com/package/selenium-webdriver) so to run browser manipulation interface next functions could be created
 
-
-## getDriver
 ```js
-	const {seleniumWD} = require('promod');
-	const conf = {
-		capabilities: {
-			browserName: 'firefox',
-		},
-		baseUrl: 'https://www.npmjs.com',
-	};
-	const {getDriver, browser, $, $$} = seleniumWD;
-	// lazy
-	const searchInput = $('input[name="q"]');
-	const searchButton = $$('[title="Submit"]').get(0);
+const { chromium } = require('playwright');
+const { Browser, Builder } = require('selenium-webdriver');
+const { ENGINE } = process.env;
 
-	test()
-	async function test() {
-		await getDriver(conf, browser);
-		await browser.get('/'); // open npm promode package
-		await searchInput.sendKeys('promod');
-		await searchButton.click();
-	}
+async function getEngine() {
+  if (ENGINE === 'pw') {
+    const lauchedChrome = await chromium.launch({ headless: false });
+    playwrightWD.browser.setClient({ driver: lauchedChrome });
+
+		return playwrightWD;
+  } else {
+    require('chromedriver');
+    const lauchedChrome = await new Builder().forBrowser(Browser.CHROME).build();
+    seleniumWD.browser.setClient({
+      driver: lauchedChrome,
+      lauchNewInstance: async () => await new Builder().forBrowser(Browser.CHROME).build(),
+    });
+
+		return seleniumWD
+  }
+}
+
+module.exports = { getEngine };
 ```

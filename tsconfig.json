@@ -1,15 +1,13 @@
 {
 	"compilerOptions": {
 		"module": "commonjs",
-		"target": "ES2020",
+		"target": "es2020",
 		"sourceMap": true,
-		"outDir": "built",
+		"outDir": "built/cjs",
 		"declaration": true,
-		"experimentalDecorators": true
+		"experimentalDecorators": true,
+		"allowJs": true
 	},
-	"include": [
-		"lib"
-	],
 	"exclude": [
 		"node_modules",
 		"built",

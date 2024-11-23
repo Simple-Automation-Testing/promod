@@ -1,15 +1,6 @@
-import {
-  toArray,
-  isArray,
-  isString,
-  waitForCondition,
-  isNumber,
-  safeJSONstringify,
-  isAsyncFunction,
-  isNotEmptyObject,
-  getUniqItems,
-} from 'sat-utils';
+import { toArray, isArray, isString, isNumber, safeJSONstringify, isAsyncFunction, isNotEmptyObject } from 'sat-utils';
 import { compare } from 'sat-compare';
+import { waitFor } from 'sat-wait';
 import { WebDriver, Key, WebElement } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { buildBy } from './swd_alignment';
@@ -41,7 +32,7 @@ function validateBrowserCallMethod(browserClass): Browser {
       async function decoratedWithChecker(...args) {
         if (!this.seleniumDriver) {
           throw new Error(`
-${key}(): Seems like driver was not initialized, please check how or where did you call getDriver function
+${key}(): Seems like driver was not initialized
 or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/init.md#getdriver
 					`);
         }
@@ -59,7 +50,7 @@ or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/in
 }
 
 class Browser {
-  wait = waitForCondition;
+  wait = waitFor;
   seleniumDriver: WebDriver;
   private appBaseUrl: string;
   private initialTab: any;
@@ -73,7 +64,7 @@ class Browser {
   }
 
   constructor() {
-    this.wait = waitForCondition;
+    this.wait = waitFor;
     this.seleniumDriver;
     this.cdpPages = [];
   }
@@ -272,6 +263,7 @@ class Browser {
       newBrowserName,
       capabilities,
     );
+
     if (!this._createNewDriver) {
       throw new Error('createNewDriver(): seems like create driver method was not inited');
     }
@@ -288,7 +280,8 @@ class Browser {
       this.drivers.push(this.seleniumDriver);
     }
 
-    const { driver } = await this._createNewDriver(capabilities);
+    const driver = await this._createNewDriver(capabilities);
+
     if (newBrowserName) {
       driver['__promodBrowserName'] = newBrowserName;
     }
@@ -319,7 +312,7 @@ class Browser {
     if (jumpToDefaultFirst) {
       await this.switchToDefauldIframe();
     }
-    await waitForCondition(
+    await waitFor(
       async () => {
         const elements = await this.seleniumDriver.findElements(buildBy(selector));
 
@@ -415,12 +408,9 @@ class Browser {
     throw new Error(`switchToBrowser(): required browser was not found`);
   }
 
-  set setCreateNewDriver(driverCreator) {
-    this._createNewDriver = driverCreator;
-  }
-
-  setClient(client) {
-    this.seleniumDriver = client;
+  setClient({ driver, lauchNewInstance }: { driver; lauchNewInstance? } = { driver: null }) {
+    this.seleniumDriver = driver || this.seleniumDriver;
+    this._createNewDriver = lauchNewInstance;
   }
 
   get Key() {
@@ -489,7 +479,7 @@ class Browser {
     if (isNumber(expectedQuantity)) {
       let errorMessage;
 
-      await waitForCondition(
+      await waitFor(
         async () => {
           const tabs = await this.getTabs();
 
@@ -515,7 +505,7 @@ class Browser {
     if (isNotEmptyObject(titleUrl)) {
       let errorMessage;
 
-      await waitForCondition(
+      await waitFor(
         async () => {
           const tabs = await this.getTabs();
 
