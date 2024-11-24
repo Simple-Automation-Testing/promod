@@ -181,28 +181,36 @@ const resolveUrl = (urlOrPath: string, appBaseUrl) => {
 
   return resolved;
 };
-
+/*
+|---------------------- X
+| 0
+|
+|
+|
+|
+Y
+*/
 const getPositionXY = (
   position: string,
   { x, y, width, height }: { x: number; y: number; width: number; height: number },
 ) => {
   switch (position) {
     case 'center':
-      return { x: x + width / 2, y: y + height / 2 };
+      return { x: Math.round(x + width / 2), y: Math.round(y + height / 2) };
     case 'center-bottom':
-      return { x: x + width / 2, y: y + height - 2 };
+      return { x: Math.round(x + width / 2), y: Math.round(y + height - 1) };
     case 'center-top':
-      return { x: x + width / 2, y: y + 2 };
+      return { x: Math.round(x + width / 2), y: Math.round(y + 2) };
     case 'center-right':
-      return { x: x + width - 2, y: y + height / 2 };
+      return { x: x + width - 2, y: Math.round(y + height / 2) };
     case 'center-left':
-      return { x: x + 2, y: y + height / 2 };
+      return { x: x + 2, y: Math.round(y + height / 2) };
     case 'right-top':
       return { x: x + width - 2, y: y + 2 };
     case 'right-bottom':
       return { x: x + width - 2, y: y + height - 2 };
     case 'left-top':
-      return { x: x + 2, y: y + 2 };
+      return { x: x + 1, y: y + 1 };
     case 'left-bottom':
       return { x: x + 2, y: y + height - 2 };
   }
