@@ -1027,8 +1027,8 @@ class Browser {
    * @return {Promise<void>}
    */
   async quitAll() {
-    await this._contextWrapper.closeAllContexts();
-    await this._engineDriver.close();
+    await this._contextWrapper.closeAllContexts().catch((_) => _);
+    await this._engineDriver.close().catch((_) => _);
   }
 
   /**
