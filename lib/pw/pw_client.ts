@@ -399,9 +399,9 @@ class Browser {
     throw new Error(`switchToBrowser(): required browser was not found`);
   }
 
-  setClient({ driver, lauchNewInstance }: { driver; lauchNewInstance? } = { driver: null }) {
+  setClient({ driver, lauchNewInstance, baseConfig }: { driver; lauchNewInstance?; baseConfig? } = { driver: null }) {
     this._engineDriver = driver || this._engineDriver;
-    this._contextWrapper = new ContextWrapper(this._engineDriver);
+    this._contextWrapper = new ContextWrapper(this._engineDriver, baseConfig);
     this._createNewDriver = lauchNewInstance;
   }
 
