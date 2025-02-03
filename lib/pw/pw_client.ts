@@ -812,7 +812,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async switchToIframe(
-    selector: string,
+    selector: string | PromodElementType,
     jumpToDefaultFirst = false,
     { timeout = 30_000, message = '' }: TSwitchToIframe = {},
   ): Promise<void> {
@@ -824,51 +824,57 @@ class Browser {
     if (jumpToDefaultFirst) {
       await this.switchToDefauldIframe();
     }
+    if (typeof selector === 'string') {
+      this._contextFrame = async () => {
+        return await waitFor(
+          async () => {
+            const page = await this.getCurrentPage();
+            const pageFrames = await page.frames();
+            const frames = await asyncFilter(
+              pageFrames,
+              async (frame) =>
+                (
+                  await frame
+                    .frameLocator(selector)
+                    .first()
+                    .locator('*')
+                    .all()
+                    .catch(() => [])
+                ).length > 0,
+            );
 
-    this._contextFrame = async () => {
-      return await waitFor(
-        async () => {
-          const page = await this.getCurrentPage();
-          const pageFrames = await page.frames();
-          const frames = await asyncFilter(
-            pageFrames,
-            async (frame) =>
-              (
-                await frame
-                  .frameLocator(selector)
-                  .first()
-                  .locator('*')
-                  .all()
-                  .catch(() => [])
-              ).length > 0,
-          );
+            for (const [_index, frame] of frames.entries()) {
+              const allElements = await frame
+                .frameLocator(selector)
+                .first()
+                .locator('*')
+                .all()
+                .catch(() => []);
 
-          for (const [_index, frame] of frames.entries()) {
-            const allElements = await frame
-              .frameLocator(selector)
-              .first()
-              .locator('*')
-              .all()
-              .catch(() => []);
+              const res = await asyncSome(allElements, async (item) => await item.isVisible());
 
-            const res = await asyncSome(allElements, async (item) => await item.isVisible());
-
-            if (res) {
-              return (await (
-                await frame.frameLocator(selector).first().locator('*').first().elementHandle({ timeout: 25 })
-              ).ownerFrame()) as any as Page;
+              if (res) {
+                return (await (
+                  await frame.frameLocator(selector).first().locator('*').first().elementHandle({ timeout: 25 })
+                ).ownerFrame()) as any as Page;
+              }
             }
-          }
-        },
-        {
-          timeout,
-          message: (t, e = 'without error') =>
-            `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e} ${
-              message ? '\n' + message : ''
-            } `,
-        },
-      );
-    };
+          },
+          {
+            timeout,
+            message: (t, e = 'without error') =>
+              `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e} ${
+                message ? '\n' + message : ''
+              } `,
+          },
+        );
+      };
+    }
+    if ((selector as PromodElementType).getEngineElement) {
+      this._contextFrame = () =>
+        // @ts-expect-error
+        (selector as PromodElementType).getEngineElement().then((el) => el.locator('*').first().ownerFrame());
+    }
   }
 
   /**

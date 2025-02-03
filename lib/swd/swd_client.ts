@@ -300,7 +300,7 @@ class Browser {
    * @return {Promise<void>}
    */
   async switchToIframe(
-    selector: string | any,
+    selector: string | PromodElementType,
     jumpToDefaultFirst = false,
     { timeout = 30_000, message = '' }: TSwitchToIframe = {},
   ) {
@@ -309,25 +309,32 @@ class Browser {
       selector,
       jumpToDefaultFirst,
     );
+
     if (jumpToDefaultFirst) {
       await this.switchToDefauldIframe();
     }
-    await waitFor(
-      async () => {
-        const elements = await this.seleniumDriver.findElements(buildBy(selector));
 
-        return elements.length > 0;
-      },
-      {
-        timeout,
-        message: (t, e = 'without error') =>
-          `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e} ${
-            message ? '\n' + message : ''
-          } `,
-      },
-    );
+    if (typeof selector === 'string') {
+      await waitFor(
+        async () => {
+          const elements = await this.seleniumDriver.findElements(buildBy(selector));
 
-    await this.seleniumDriver.switchTo().frame(this.seleniumDriver.findElement(buildBy(selector)));
+          return elements.length > 0;
+        },
+        {
+          timeout,
+          message: (t, e = 'without error') =>
+            `switchToIframe('${selector}'): required iframe was not found, timeout ${t}, error: ${e} ${
+              message ? '\n' + message : ''
+            } `,
+        },
+      );
+      await this.seleniumDriver.switchTo().frame(this.seleniumDriver.findElement(buildBy(selector)));
+    }
+
+    if ((selector as PromodElementType).getEngineElement) {
+      await this.seleniumDriver.switchTo().frame(await (selector as PromodElementType).getEngineElement());
+    }
   }
 
   /**
@@ -696,7 +703,7 @@ class Browser {
    *
    * @returns {Promise<Buffer>}
    */
-  async takeScreenshot(): Promise<Buffer> {
+  async takeScreenshot() {
     promodLogger.engineLog(`[SWD] Promod client interface calls method "takeScreenshot" from wrapped API`);
     const res = await this.seleniumDriver.takeScreenshot();
 

@@ -980,14 +980,6 @@ class PromodPlaywrightElement {
   }
 
   /**
-   * @returns {Promise<Buffer>}
-   */
-  async takeScreenshot() {
-    await this.getElement();
-    return await this._driverElement.screenshot();
-  }
-
-  /**
    *
    * @param {'end' | 'start' | 'center' | 'nearest'} [position] scroll position
    * @returns {Promise<void>}

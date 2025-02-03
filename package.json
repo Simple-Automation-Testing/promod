@@ -1,6 +1,6 @@
 {
   "name": "promod",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Library for automation testing",
   "bin": "./bin/promod_cli",
   "main": "./built/cjs/index.js",
@@ -35,11 +35,11 @@
   },
   "homepage": "https://github.com/Simple-Automation-Testing/promod#readme",
   "dependencies": {
-    "playwright-core": "^1.49.1",
+    "playwright-core": "^1.50.1",
     "sat-compare": "^0.1.0",
     "sat-utils": "^3.0.2",
     "sat-wait": "^0.1.0",
-    "selenium-webdriver": "^4.27.0"
+    "selenium-webdriver": "^4.28.1"
   },
   "keywords": [
     "promod",
