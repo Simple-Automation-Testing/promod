@@ -17,7 +17,7 @@ import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { KeysPW, resolveUrl } from '../mappers';
 import { promodLogger } from '../internals';
 
-import type { Locator, Browser as PWBrowser, BrowserContext, Page, ElementHandle } from 'playwright-core';
+import type { Locator, Browser as PWBrowser, BrowserContext, Page, ElementHandle, Request } from 'playwright-core';
 import type {
   TSwitchToIframe,
   ExecuteScriptFn,
@@ -272,6 +272,10 @@ class ContextWrapper {
   }
 }
 
+type TMockReq = {
+  url: string;
+  handler: (request?: Request) => { status?: number; body?: any; headers?: { [k: string]: string } };
+};
 class Browser {
   wait = waitFor;
   _engineDriver: PWBrowser;
@@ -287,6 +291,9 @@ class Browser {
   private _engineDrivers: PWBrowser[];
   /** @private */
   private _createNewDriver: () => Promise<PWBrowser>;
+
+  /** @private */
+  private _requestsMocks: TMockReq[];
 
   constructor() {
     this.wait = waitFor;
@@ -305,6 +312,13 @@ class Browser {
     await page.addInitScript(script);
   }
 
+  mockRequests(mock: TMockReq) {
+    if (!this._requestsMocks) {
+      this._requestsMocks = [];
+    }
+    this._requestsMocks.push(mock);
+  }
+
   injectEngine({ context, page }: { context?: BrowserContext; page?: Page }) {
     if (context) {
       const browser = context.browser();
@@ -315,6 +329,12 @@ class Browser {
       const browser = context.browser();
       this._contextWrapper = new ContextWrapper(browser);
     }
+  }
+
+  setClient({ driver, lauchNewInstance, baseConfig }: { driver; lauchNewInstance?; baseConfig? } = { driver: null }) {
+    this._engineDriver = driver || this._engineDriver;
+    this._contextWrapper = new ContextWrapper(this._engineDriver, baseConfig);
+    this._createNewDriver = lauchNewInstance;
   }
 
   /** @private */
@@ -328,7 +348,17 @@ class Browser {
 
   /** @private */
   private async getCurrentPage() {
-    return await this._contextWrapper.getCurrentPage();
+    const page = await this._contextWrapper.getCurrentPage();
+
+    if (this._requestsMocks) {
+      for (const mock of this._requestsMocks) {
+        page.route(mock.url, (route) => {
+          route.fulfill(mock.handler(route.request()));
+        });
+      }
+    }
+
+    return page;
   }
 
   async setBasicAuth(authData: { username: string; password: string }, dontThrowOnError: boolean = true) {
@@ -397,12 +427,6 @@ class Browser {
     }
 
     throw new Error(`switchToBrowser(): required browser was not found`);
-  }
-
-  setClient({ driver, lauchNewInstance, baseConfig }: { driver; lauchNewInstance?; baseConfig? } = { driver: null }) {
-    this._engineDriver = driver || this._engineDriver;
-    this._contextWrapper = new ContextWrapper(this._engineDriver, baseConfig);
-    this._createNewDriver = lauchNewInstance;
   }
 
   get keyboard() {

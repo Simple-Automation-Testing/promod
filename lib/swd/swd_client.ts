@@ -49,15 +49,29 @@ or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/in
   return new browserClass();
 }
 
+type TMockReq = {
+  url: string;
+  handler: (request?: Request) => { status?: number; body?: any; headers?: { [k: string]: string } };
+};
+
 class Browser {
   wait = waitFor;
+
   seleniumDriver: WebDriver;
+  /** @private */
   private appBaseUrl: string;
+  /** @private */
   private initialTab: any;
+  /** @private */
   private drivers: WebDriver[];
+  /** @private */
   private cdpPages: any[];
+  /** @private */
   private _createNewDriver: (capabilities?: any) => Promise<{ driver: WebDriver }>;
+  /** @private */
   private _browserConfig;
+  /** @private */
+  private _requestsMocks: TMockReq[];
 
   static getBrowser() {
     return validateBrowserCallMethod(Browser);
@@ -79,6 +93,13 @@ class Browser {
 
   injectEngine({ driver }: { driver?: WebDriver }) {
     this.seleniumDriver = driver;
+  }
+
+  mockRequests(mock: TMockReq) {
+    if (!this._requestsMocks) {
+      this._requestsMocks = [];
+    }
+    this._requestsMocks.push(mock);
   }
 
   async injectPagePreloadScript(script: string, dontThrowOnError: boolean = true) {
@@ -703,7 +724,7 @@ class Browser {
    *
    * @returns {Promise<Buffer>}
    */
-  async takeScreenshot() {
+  async takeScreenshot(): Promise<Buffer> {
     promodLogger.engineLog(`[SWD] Promod client interface calls method "takeScreenshot" from wrapped API`);
     const res = await this.seleniumDriver.takeScreenshot();
 
