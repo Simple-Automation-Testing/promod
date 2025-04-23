@@ -384,7 +384,7 @@ class PromodSeleniumElements {
 
 class PromodSeleniumElement {
   private selector: string;
-  private _driverElement: typeof WebElement;
+  private _driverElement: WebElement;
 
   private getParent: () => Promise<PromodElementType>;
   private getExecuteScriptArgs: () => any;

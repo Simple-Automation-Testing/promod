@@ -363,9 +363,9 @@ export interface PromodElementType {
 
   isDisplayed(): Promise<boolean>;
 
-  takeScreenshot(opts: import('playwright').PageScreenshotOptions): Promise<string>;
+  takeScreenshot(opts: import('playwright-core').PageScreenshotOptions): Promise<string>;
 
-  getEngineElement(): Promise<unknown>;
+  getEngineElement<T = unknown>(): Promise<T>;
 
   scrollIntoView(position?: boolean | string): Promise<void>;
 }

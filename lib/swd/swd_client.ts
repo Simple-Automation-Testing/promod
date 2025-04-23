@@ -1,11 +1,12 @@
 import { toArray, isArray, isString, isNumber, safeJSONstringify, isAsyncFunction, isNotEmptyObject } from 'sat-utils';
 import { compare } from 'sat-compare';
 import { waitFor } from 'sat-wait';
-import { WebDriver, Key, WebElement } from 'selenium-webdriver';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { buildBy } from './swd_alignment';
 import { KeysSWD, resolveUrl } from '../mappers';
 import { promodLogger } from '../internals';
+
+import type { WebDriver, WebElement } from 'selenium-webdriver';
 
 import type {
   TSwitchToIframe,
@@ -67,7 +68,7 @@ class Browser {
   /** @private */
   private cdpPages: any[];
   /** @private */
-  private _createNewDriver: (capabilities?: any) => Promise<{ driver: WebDriver }>;
+  private _createNewDriver: (capabilities?: any) => Promise<WebDriver>;
   /** @private */
   private _browserConfig;
   /** @private */
@@ -215,7 +216,7 @@ class Browser {
     if (element) {
       await this.seleniumDriver
         .actions()
-        .move({ origin: (await element.getEngineElement()) as typeof WebElement })
+        .move({ origin: await element.getEngineElement<WebElement>() })
         .perform();
     }
     for (const k of toArray(key)) {
@@ -442,7 +443,7 @@ class Browser {
   }
 
   get Key() {
-    return Key;
+    return KeysSWD;
   }
 
   get baseUrl() {
@@ -924,11 +925,13 @@ class Browser {
     this.seleniumDriver = null;
 
     if (this.cdpPages.length) {
-      await Promise.all(this.cdpPages.map((page) => page?._wsConnection?.close())).catch(console.error);
+      await Promise.all(this.cdpPages.map((page) => page?._wsConnection?.close())).catch((e) =>
+        promodLogger.engineLog(e),
+      );
       this.cdpPages = [];
     }
     for (const driver of drivers) {
-      await driver.quit().catch(console.error);
+      await driver.quit().catch((e) => promodLogger.engineLog(e));
     }
   }
 
