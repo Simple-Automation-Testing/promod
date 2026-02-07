@@ -16,6 +16,7 @@ import { buildBy } from './swd_alignment';
 import { getPositionXY } from '../mappers';
 import { promodLogger } from '../internals';
 
+import type { Browser } from './swd_client';
 import type { PromodElementType, PromodElementsType } from '../interface';
 import type { TCustomSelector } from '../mappers';
 
@@ -35,17 +36,23 @@ const SELENIUM_API_METHODS = [
 
 class PromodSeleniumElements {
   private selector: string;
-  private _driverElements: (typeof WebElement)[];
-  private getParent: () => Promise<PromodSeleniumElement & typeof WebElement>;
-  private getExecuteScriptArgs: () => any;
+  private _driverElements: WebElement[];
+  private getParent: () => Promise<unknown>;
+  private getExecuteScriptArgs: () => unknown[];
   private useParent: boolean;
-  public _browserInterface: any;
+  public _browserInterface: Browser;
   public parentSelector: string;
 
-  constructor(selector, client = browser, getParent?, getExecuteScriptArgs?, useParent?) {
-    this.selector = selector;
+  constructor(
+    selector: string | By | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
+    client: Browser = browser,
+    getParent?: ((...args: any[]) => any) | null,
+    getExecuteScriptArgs?: () => unknown[],
+    useParent?: boolean,
+  ) {
+    this.selector = selector as string;
     this._browserInterface = client;
-    this.getParent = getParent;
+    this.getParent = getParent as () => Promise<unknown>;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
     this.useParent = useParent;
   }
@@ -55,9 +62,9 @@ class PromodSeleniumElements {
    *
    * @info if index is less than zero we will get element from the end
    * @param {number} index
-   * @returns {Promise<typeof WebElement>}
+   * @returns {Promise<WebElement>}
    */
-  private async getElement(index?) {
+  private async getElement(index?: number) {
     promodLogger.engineLog(`[SWD] Promod elements interface calls method "getElement" from wrapped API, args: `, index);
     const _driver = this._browserInterface.currentClient();
 
@@ -116,13 +123,13 @@ class PromodSeleniumElements {
    * @param {number} index
    * @returns {PromodElementType}
    */
-  get(index): PromodElementType {
+  get(index: number): PromodElementType {
     promodLogger.engineLog(`[SWD] Promod elements interface calls method "get" from wrapped API, args: `, index);
 
     const childElement = new PromodSeleniumElement(
       this.selector,
       this._browserInterface,
-      this.getElement.bind(this, index),
+      this.getElement.bind(this, index) as (...args: unknown[]) => Promise<unknown>,
       null,
       true,
     );
@@ -134,12 +141,13 @@ class PromodSeleniumElements {
   }
 
   getAllVisible(): PromodElementsType {
-    const _getElements = async function _getElements() {
-      await this.getElement(0);
-      const els = [];
+    const self = this;
+    const _getElements = async function _getElements(): Promise<WebElement[]> {
+      await self.getElement(0);
+      const els: WebElement[] = [];
 
-      for (let i = 0; i < this._driverElements.length; i++) {
-        const el = this._driverElements[i];
+      for (let i = 0; i < self._driverElements.length; i++) {
+        const el = self._driverElements[i];
 
         if (await el.isDisplayed()) {
           els.push(el);
@@ -147,9 +155,9 @@ class PromodSeleniumElements {
       }
 
       return els;
-    }.bind(this);
+    };
 
-    const promodElements = new PromodSeleniumElements(this.selector, this._browserInterface, _getElements, null, true);
+    const promodElements = new PromodSeleniumElements(this.selector, this._browserInterface, _getElements as (...args: unknown[]) => Promise<unknown>, null, true);
 
     return promodElements as any as PromodElementsType;
   }
@@ -167,7 +175,7 @@ class PromodSeleniumElements {
     return new PromodSeleniumElement(
       this.selector,
       this._browserInterface,
-      this.find.bind(this, (el) => el.isDisplayed()),
+      this.find.bind(this, (el: PromodElementType) => el.isDisplayed()) as (...args: unknown[]) => Promise<unknown>,
       null,
       true,
     ) as any;
@@ -320,7 +328,7 @@ class PromodSeleniumElements {
         const promodEl = new PromodSeleniumElement(
           that.selector,
           that._browserInterface,
-          () => el,
+          (() => Promise.resolve(el)) as (...args: unknown[]) => Promise<unknown>,
           that.getExecuteScriptArgs,
           true,
         );
@@ -333,7 +341,7 @@ class PromodSeleniumElements {
       return els;
     }
 
-    const promodElements = new PromodSeleniumElements(this.selector, this._browserInterface, _getElements, null, true);
+    const promodElements = new PromodSeleniumElements(this.selector, this._browserInterface, _getElements as (...args: unknown[]) => Promise<unknown>, null, true);
 
     return promodElements as any as PromodElementsType;
   }
@@ -387,28 +395,34 @@ class PromodSeleniumElement {
   private _driverElement: WebElement;
 
   private getParent: () => Promise<PromodElementType>;
-  private getExecuteScriptArgs: () => any;
+  private getExecuteScriptArgs: () => unknown[];
   private useParent: boolean;
 
-  public _browserInterface: any;
+  public _browserInterface: Browser;
   public parentSelector: string;
 
-  constructor(selector, client = browser, getParent?, getExecuteScriptArgs?, useParent?) {
+  constructor(
+    selector: string | By | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
+    client: Browser = browser,
+    getParent?: ((...args: any[]) => any) | null,
+    getExecuteScriptArgs?: () => unknown[],
+    useParent?: boolean,
+  ) {
     this._browserInterface = client;
-    this.selector = selector;
-    this.getParent = getParent;
+    this.selector = selector as string;
+    this.getParent = getParent as () => Promise<PromodElementType>;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
     this.useParent = useParent;
 
     const self = this;
 
     SELENIUM_API_METHODS.forEach(function (methodName) {
-      self[methodName] = (...args: any[]) => {
+      (self as any)[methodName] = (...args: any[]) => {
         promodLogger.engineLog(
           `Promod element interface calls method "${methodName}" from selenium native API, args: `,
           ...args,
         );
-        const action = () => self._driverElement[methodName].call(self._driverElement, ...args);
+        const action = () => (self._driverElement as any)[methodName].call(self._driverElement, ...args);
 
         return self.callElementAction(action);
       };
@@ -472,7 +486,7 @@ class PromodSeleniumElement {
    * @param {any[]} rest
    * @returns {PromodElementType}
    */
-  $(selector, ...rest): PromodElementType {
+  $(selector: string | TCustomSelector | By | ((...args: any[]) => any) | Promise<any>, ...rest: any[]): PromodElementType {
     promodLogger.engineLog('[SWD] Create new promod child element, selector: ', selector);
     const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
     const childElement = new PromodSeleniumElement(
@@ -493,7 +507,7 @@ class PromodSeleniumElement {
    * @param {any[]} rest
    * @returns {PromodElementsType}
    */
-  $$(selector, ...rest): PromodElementsType {
+  $$(selector: string | TCustomSelector | By | ((...args: any[]) => any) | Promise<any>, ...rest: any[]): PromodElementsType {
     promodLogger.engineLog('[SWD] Create new promod child elements, selector: ', selector);
     const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
     const childElements = new PromodSeleniumElements(
@@ -604,7 +618,7 @@ class PromodSeleniumElement {
     }
   }
 
-  async sendKeys(value, asFill) {
+  async sendKeys(value: string | number, asFill?: boolean) {
     promodLogger.engineLog(`[SWD] Promod element interface calls method "sendKeys" from wrapped API, args: `, value);
     if (!isString(value) && !isNumber(value)) {
       throw new TypeError(`sendKeys(); accepts only string or number value type ${getType(value)}`);
@@ -708,8 +722,8 @@ class PromodSeleniumElement {
     );
     await this.getElement();
     const { x, y, width, height } = await browser.executeScript(
-      (el) => el.getBoundingClientRect(),
-      this.getEngineElement(),
+      ([el]) => el.getBoundingClientRect(),
+      [this.getEngineElement()],
     );
 
     return getPositionXY(position, { x, y, width, height });
@@ -839,10 +853,11 @@ class PromodSeleniumElement {
         }
       });
     }
+    const objValue = optValue as { value?: string; label?: string; index?: number };
     if (isObject(optValue) && safeHasOwnPropery(optValue, 'value')) {
       return this.$$('option').each(async (opt) => {
         const text = await opt.getAttribute('value');
-        if (text.trim() === (optValue['value'] as string).trim()) {
+        if (text.trim() === (objValue.value as string).trim()) {
           await opt.click();
         }
       });
@@ -850,7 +865,7 @@ class PromodSeleniumElement {
     if (isObject(optValue) && safeHasOwnPropery(optValue, 'label')) {
       return this.$$('option').each(async (opt) => {
         const text = await opt.getAttribute('label');
-        if (text.trim() === (optValue['label'] as string).trim()) {
+        if (text.trim() === (objValue.label as string).trim()) {
           await opt.click();
         }
       });
@@ -858,7 +873,7 @@ class PromodSeleniumElement {
     if (isObject(optValue) && safeHasOwnPropery(optValue, 'index')) {
       return this.$$('option').each(async (opt) => {
         const text = await opt.getAttribute('index');
-        if (text.trim() === (optValue['index'] as string).toString().trim()) {
+        if (text.trim() === (objValue.index as number).toString().trim()) {
           await opt.click();
         }
       });
@@ -885,7 +900,7 @@ class PromodSeleniumElement {
       });
   }
 
-  private async callElementAction(action) {
+  private async callElementAction(action: () => Promise<unknown>) {
     await this.getElement();
 
     return action();
@@ -894,8 +909,7 @@ class PromodSeleniumElement {
   async getId() {
     promodLogger.engineLog(`[SWD] Promod element interface calls method "getId" from wrapped API`);
     await this.getElement();
-    // @ts-ignore
-    return this._driverElement.id_;
+    return this._driverElement.getId();
   }
 
   async getEngineElement() {
@@ -913,7 +927,7 @@ class PromodSeleniumElement {
     return { value: `${locatorValue}${this.selector}` };
   }
 
-  private async isInteractionIntercepted(err) {
+  private async isInteractionIntercepted(err: Error) {
     const strErr: string = err.toString();
 
     return {
@@ -975,7 +989,7 @@ function $$(
   return new PromodSeleniumElements(selector, browser, ...restArgs) as any;
 }
 
-function preBindBrowserInstance(browserThaNeedsToBeBinded) {
+function preBindBrowserInstance(browserThaNeedsToBeBinded: Browser) {
   const $$ = (
     selector: string | By | ((...args: any[]) => any) | Promise<any>,
     root?: PromodElementType | any,

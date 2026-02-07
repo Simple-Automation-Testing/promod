@@ -6,7 +6,10 @@
 		"outDir": "built/cjs",
 		"declaration": true,
 		"experimentalDecorators": true,
-		"allowJs": true
+		"allowJs": true,
+		"strict": true,
+		"strictPropertyInitialization": false,
+		"strictNullChecks": false
 	},
 	"exclude": [
 		"node_modules",

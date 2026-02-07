@@ -1,13 +1,14 @@
 import { isString, isObject, isFunction, isPromise } from 'sat-utils';
 import { By } from 'selenium-webdriver';
+import { customSelectorFilterFn } from '../shared/custom_selector_filter';
 
 import { TCustomSelector } from '../mappers';
 
 const buildBy = (
-  selector: string | By | TCustomSelector,
-  getExecuteScriptArgs: () => any[] = () => [],
-  parent?,
-  toMany?,
+  selector: string | By | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
+  getExecuteScriptArgs: () => unknown[] = () => [],
+  parent?: unknown,
+  toMany?: boolean,
 ): By => {
   if (selector instanceof By) {
     return selector;
@@ -23,35 +24,7 @@ const buildBy = (
     const item = selector as TCustomSelector;
 
     return By.js(
-      ([parent, entry]) => {
-        const { query, text, rg, strict, toMany, rgFlags = 'gmi' } = entry;
-        const elements = parent ? parent.querySelectorAll(query) : document.querySelectorAll(query);
-
-        if (!elements.length) return null;
-
-        const filteredElements = [];
-
-        for (const element of elements) {
-          const innerText = element?.innerText?.trim() || element?.textContent?.trim() || element?.outerHTML?.trim();
-          const textMatches = typeof text === 'string' && (!strict ? innerText.includes(text) : innerText === text);
-          const rgMatches = rg && innerText.match(new RegExp(rg, rgFlags));
-
-          if (rgMatches && !toMany) {
-            return element;
-          } else if (textMatches && !toMany) {
-            return element;
-          } else if (rgMatches && toMany) {
-            filteredElements.push(element);
-          } else if (textMatches && toMany) {
-            filteredElements.push(element);
-          }
-          if (!text && !rg) {
-            return element;
-          }
-        }
-
-        return toMany ? filteredElements : null;
-      },
+      customSelectorFilterFn,
       [parent, { ...item, toMany }],
     ) as any;
   }

@@ -1,10 +1,11 @@
-import { toArray, isArray, isString, isNumber, safeJSONstringify, isAsyncFunction, isNotEmptyObject } from 'sat-utils';
+import { toArray, isArray, isString, isNumber, safeJSONstringify, isNotEmptyObject } from 'sat-utils';
 import { compare } from 'sat-compare';
 import { waitFor } from 'sat-wait';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { buildBy } from './swd_alignment';
 import { KeysSWD, resolveUrl } from '../mappers';
 import { promodLogger } from '../internals';
+import { validateBrowserCallMethod } from '../shared/validate_browser';
 
 import type { WebDriver, WebElement } from 'selenium-webdriver';
 
@@ -17,43 +18,19 @@ import type {
   PromodElementType,
 } from '../interface';
 
-const availableToRunEvenIfCurrentDriverDoesNotExist = ['constructor', 'runNewBrowser', 'switchToBrowser', 'quitAll'];
-
-function validateBrowserCallMethod(browserClass): Browser {
-  const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter(
-    (item) => !availableToRunEvenIfCurrentDriverDoesNotExist.includes(item),
-  );
-
-  for (const key of protKeys) {
-    const descriptor = Object.getOwnPropertyDescriptor(browserClass.prototype, key);
-    if (isAsyncFunction(descriptor.value)) {
-      const originalMethod: (...args: any[]) => Promise<any> = descriptor.value;
-
-      // eslint-disable-next-line no-inner-declarations
-      async function decoratedWithChecker(...args) {
-        if (!this.seleniumDriver) {
-          throw new Error(`
-${key}(): Seems like driver was not initialized
-or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/init.md#getdriver
-					`);
-        }
-
-        return originalMethod.call(this, ...args);
-      }
-
-      Object.defineProperty(decoratedWithChecker, 'name', { value: key });
-
-      descriptor.value = decoratedWithChecker;
-      Object.defineProperty(browserClass.prototype, key, descriptor);
-    }
-  }
-  return new browserClass();
-}
-
 type TMockReq = {
   url: string;
-  handler: (request?: Request) => { status?: number; body?: any; headers?: { [k: string]: string } };
+  handler: (request?: Request) => { status?: number; body?: unknown; headers?: { [k: string]: string } };
 };
+
+interface CDPConnection {
+  send(method: string, params?: Record<string, unknown>): Promise<unknown>;
+  _wsConnection?: {
+    _url: string;
+    close(): Promise<void>;
+    on?(event: string, handler: (...args: any[]) => void): void;
+  };
+}
 
 class Browser {
   wait = waitFor;
@@ -62,25 +39,28 @@ class Browser {
   /** @private */
   private appBaseUrl: string;
   /** @private */
-  private initialTab: any;
+  private initialTab: string;
   /** @private */
   private drivers: WebDriver[];
   /** @private */
-  private cdpPages: any[];
+  private cdpPages: CDPConnection[];
   /** @private */
-  private _createNewDriver: (capabilities?: any) => Promise<WebDriver>;
-  /** @private */
-  private _browserConfig;
+  private _createNewDriver: (capabilities?: Record<string, unknown>) => Promise<WebDriver>;
   /** @private */
   private _requestsMocks: TMockReq[];
+  /** @private */
+  private _mockInterceptionEnabled: boolean;
 
   static getBrowser() {
-    return validateBrowserCallMethod(Browser);
+    return validateBrowserCallMethod(Browser, {
+      driverPropertyName: 'seleniumDriver',
+      excludedMethods: ['constructor', 'runNewBrowser', 'switchToBrowser', 'quitAll'],
+      errorUrlSuffix: '#getdriver',
+    });
   }
 
   constructor() {
     this.wait = waitFor;
-    this.seleniumDriver;
     this.cdpPages = [];
   }
 
@@ -101,6 +81,102 @@ class Browser {
       this._requestsMocks = [];
     }
     this._requestsMocks.push(mock);
+
+    if (this.seleniumDriver && !this._mockInterceptionEnabled) {
+      this._enableRequestInterception().catch((err) =>
+        promodLogger.engineLog('[SWD] Failed to enable request interception on mockRequests:', err),
+      );
+    }
+  }
+
+  clearMockRequests() {
+    this._requestsMocks = [];
+  }
+
+  private _urlMatchesPattern(url: string, pattern: string): boolean {
+    const regexStr = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*\*/g, '\u0000')
+      .replace(/\*/g, '[^/]*')
+      .replace(/\u0000/g, '.*');
+    return new RegExp(regexStr).test(url);
+  }
+
+  private async _enableRequestInterception() {
+    if (this._mockInterceptionEnabled) {
+      return;
+    }
+    if (!this._requestsMocks || this._requestsMocks.length === 0) {
+      return;
+    }
+
+    promodLogger.engineLog('[SWD] Promod client interface enabling request interception via CDP Fetch domain');
+
+    try {
+      let cdp = await this.seleniumDriver.createCDPConnection('page');
+
+      const existingPage = this.cdpPages.find((p) => p._wsConnection?._url === cdp._wsConnection?._url);
+      if (existingPage) {
+        await cdp._wsConnection?.close();
+        cdp = existingPage;
+      } else {
+        this.cdpPages.push(cdp);
+      }
+
+      await cdp.send('Fetch.enable', {
+        patterns: [{ urlPattern: '*', requestStage: 'Request' }],
+      });
+
+      cdp._wsConnection?.on?.('message', (rawData: string | Buffer) => {
+        let message;
+        try {
+          const data = typeof rawData === 'string' ? rawData : rawData.toString();
+          message = JSON.parse(data);
+        } catch {
+          return;
+        }
+        if (message.method !== 'Fetch.requestPaused') {
+          return;
+        }
+
+        const { requestId, request } = message.params;
+        const requestUrl = request.url;
+
+        const matchingMock = this._requestsMocks?.find((mock) => this._urlMatchesPattern(requestUrl, mock.url));
+
+        if (matchingMock) {
+          const mockRequest = { url: requestUrl, method: request.method, headers: request.headers };
+          const response = matchingMock.handler(mockRequest as any);
+          const responseHeaders = response.headers
+            ? Object.entries(response.headers).map(([name, value]) => ({ name, value }))
+            : [];
+
+          const bodyStr =
+            response.body != null
+              ? typeof response.body === 'string'
+                ? response.body
+                : JSON.stringify(response.body)
+              : '';
+
+          cdp
+            .send('Fetch.fulfillRequest', {
+              requestId,
+              responseCode: response.status || 200,
+              responseHeaders,
+              body: Buffer.from(bodyStr).toString('base64'),
+            })
+            .catch((err: unknown) => promodLogger.engineLog('[SWD] Fetch.fulfillRequest error:', err));
+        } else {
+          cdp
+            .send('Fetch.continueRequest', { requestId })
+            .catch((err: unknown) => promodLogger.engineLog('[SWD] Fetch.continueRequest error:', err));
+        }
+      });
+
+      this._mockInterceptionEnabled = true;
+    } catch (error) {
+      promodLogger.engineLog('[SWD] Failed to enable request interception via CDP:', error);
+    }
   }
 
   async injectPagePreloadScript(script: string, dontThrowOnError: boolean = true) {
@@ -154,7 +230,7 @@ class Browser {
    * @param {string} key key that needs to press down
    * @return {Promise<void>}
    */
-  async scrollElementByMouseWheel(element: PromodElementType, x, y, deltaX, deltaY, duration) {
+  async scrollElementByMouseWheel(element: PromodElementType, x: number, y: number, deltaX: number, deltaY: number, duration: number) {
     promodLogger.engineLog(
       `[SWD] Promod client interface calls method "scrollElementByMouseWheel" from wrapped API, args: `,
       element,
@@ -181,7 +257,7 @@ class Browser {
    * @param {string} key key that needs to press down
    * @return {Promise<void>}
    */
-  async scrollByMouseWheel(x, y, deltaX, deltaY, duration) {
+  async scrollByMouseWheel(x: number, y: number, deltaX: number, deltaY: number, duration: number) {
     promodLogger.engineLog(
       `[SWD] Promod client interface calls method "scrollByMouseWheel" from wrapped API, args: `,
       x,
@@ -295,7 +371,7 @@ class Browser {
     }
 
     if (this.seleniumDriver && currentBrowserName) {
-      this.seleniumDriver['__promodBrowserName'] = currentBrowserName;
+      (this.seleniumDriver as unknown as Record<string, unknown>)['__promodBrowserName'] = currentBrowserName;
     }
 
     if (this.seleniumDriver) {
@@ -305,7 +381,7 @@ class Browser {
     const driver = await this._createNewDriver(capabilities);
 
     if (newBrowserName) {
-      driver['__promodBrowserName'] = newBrowserName;
+      (driver as unknown as Record<string, unknown>)['__promodBrowserName'] = newBrowserName;
     }
     this.seleniumDriver = driver;
   }
@@ -397,7 +473,7 @@ class Browser {
     }
 
     if (isString(browserName)) {
-      const driver = this.drivers.find((item) => item['__promodBrowserName'] === browserName);
+      const driver = this.drivers.find((item) => (item as unknown as Record<string, unknown>)['__promodBrowserName'] === browserName);
       // TODO find better solution
       if (!driver) {
         throw new Error(`Browser with name ${browserName} not found`);
@@ -437,7 +513,7 @@ class Browser {
     throw new Error(`switchToBrowser(): required browser was not found`);
   }
 
-  setClient({ driver, lauchNewInstance, baseConfig }: { driver; lauchNewInstance?; baseConfig? } = { driver: null }) {
+  setClient({ driver, lauchNewInstance, baseConfig }: { driver: WebDriver; lauchNewInstance?: (capabilities?: Record<string, unknown>) => Promise<WebDriver>; baseConfig?: Record<string, unknown> } = { driver: null }) {
     this.seleniumDriver = driver || this.seleniumDriver;
     this._createNewDriver = lauchNewInstance;
   }
@@ -572,7 +648,7 @@ class Browser {
    */
   async openNewTab(url = 'data:,') {
     promodLogger.engineLog(`[SWD] Promod client interface calls method "openNewTab" from wrapped API, args: `, url);
-    await this.seleniumDriver.executeScript((openUrl) => {
+    await this.seleniumDriver.executeScript((openUrl: string) => {
       window.open(openUrl, '_blank');
     }, url);
   }
@@ -772,6 +848,7 @@ class Browser {
    */
   async get(url: string) {
     promodLogger.engineLog(`[SWD] Promod client interface calls method "get" from wrapped API`);
+    await this._enableRequestInterception();
     const getUrl = resolveUrl(url, this.appBaseUrl);
 
     return await this.seleniumDriver.get(getUrl);
@@ -823,10 +900,10 @@ class Browser {
    * const result = await browser.executeScript(() => document.body.offsetHeight);
    *
    * @param {!Function} script scripts that needs to be executed
-   * @param {any|any[]} [args] function args
+   * @param {any[]} [args] function args
    * @returns {Promise<unknown>}
    */
-  async executeScript(script: ExecuteScriptFn, args?: any | any[]): Promise<any> {
+  async executeScript(script: ExecuteScriptFn, args: any[] = []): Promise<any> {
     promodLogger.engineLog(
       `[SWD] Promod client interface calls method "executeScript" from wrapped API, args: `,
       script,
@@ -903,6 +980,7 @@ class Browser {
     }
 
     this.seleniumDriver = null;
+    this._mockInterceptionEnabled = false;
   }
 
   /**
@@ -923,6 +1001,7 @@ class Browser {
       await this.seleniumDriver.quit().catch((e) => promodLogger.engineLog(e));
     }
     this.seleniumDriver = null;
+    this._mockInterceptionEnabled = false;
 
     if (this.cdpPages.length) {
       await Promise.all(this.cdpPages.map((page) => page?._wsConnection?.close())).catch((e) =>
@@ -967,12 +1046,11 @@ class Browser {
   async getBrowserLogs(): Promise<TLogLevel[] | string> {
     promodLogger.engineLog(`[SWD] Promod client interface calls method "getBrowserLogs" from wrapped API`);
     try {
-      // @ts-ignore
-      const manage = await this.seleniumDriver.manage();
+      const manage = this.seleniumDriver.manage();
 
       return manage.logs().get('browser') as any;
     } catch (e) {
-      return 'Comman was failed ' + e.toString();
+      return 'Command failed: ' + (e as Error).toString();
     }
   }
 

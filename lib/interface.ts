@@ -394,9 +394,9 @@ export type TCookie = {
 
 export type TLogLevel = {
   level: string;
-  type: string;
-  timestamp: string;
-  message: any | any[];
+  type: string | { url: string; lineNumber: number; columnNumber: number };
+  timestamp: string | number;
+  message: unknown;
 };
 
 export type TSwitchToIframe = {
@@ -404,4 +404,4 @@ export type TSwitchToIframe = {
   message?: string;
 };
 
-export type ExecuteScriptFn = (data: any | any[]) => unknown;
+export type ExecuteScriptFn = (...data: any[]) => unknown;

@@ -349,9 +349,9 @@ describe('Base', () => {
       const body = $(() => document.querySelector('body')).$('form.login_form');
 
       await waitFor(() => body.isDisplayed());
-      const email = $((parent) => {
+      const email = $((parent: any) => {
         return parent.querySelector('input[placeholder="Ім\'я користувача"]');
-      }, body.getEngineElement());
+      }, body.getEngineElement() as any);
 
       expect(await waitFor(() => email.isDisplayed())).toEqual(true);
       expect(await email.isPresent()).toEqual(true);
@@ -522,9 +522,9 @@ describe('Base', () => {
     await browser.get(formsFile);
     expect(
       await waitFor(() =>
-        $((selector) => {
+        $((selector: any) => {
           return document.querySelector(selector);
-        }, 'button').isPresent(),
+        }, 'button' as any).isPresent(),
       ),
     ).toEqual(true);
   });
@@ -642,7 +642,7 @@ describe('Base', () => {
   it('[P] injectPagePreloadScript', async () => {
     await browser.injectPagePreloadScript(`window._test = '<div>test</div>'`);
     await browser.get('https://google.com');
-    const data = await browser.executeScript(() => window['_test']);
+    const data = await browser.executeScript(() => (window as any)['_test']);
     expect(data).toEqual('<div>test</div>');
   });
 });

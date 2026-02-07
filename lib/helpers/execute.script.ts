@@ -1,30 +1,33 @@
-import { toArray, isPromise, isArray } from 'sat-utils';
+import { isPromise, toArray } from 'sat-utils';
 
-async function toNativeEngineExecuteScriptArgs(args) {
-  const executeScriptArgs = [];
+interface EngineElementLike {
+  getEngineElement?: () => Promise<unknown>;
+  getEngineElements?: () => Promise<unknown[]>;
+}
+
+async function toNativeEngineExecuteScriptArgs(args: unknown[]): Promise<unknown[]> {
+  const executeScriptArgs: unknown[] = [];
   const argsArray = toArray(args);
 
-  if (!argsArray.length) return;
+  if (!argsArray.length) return executeScriptArgs;
 
   for (const item of argsArray) {
-    const resolvedItem = isPromise(item) ? await item : item;
+    const resolvedItem: unknown = isPromise(item) ? await item : item;
     if (Array.isArray(resolvedItem)) {
-      const arrayItems = [];
+      const arrayItems: unknown[] = [];
 
       for (const itemArr of resolvedItem) {
         arrayItems.push(itemArr);
       }
       executeScriptArgs.push(arrayItems);
-    } else if (resolvedItem && resolvedItem.getEngineElement) {
-      executeScriptArgs.push(await resolvedItem.getEngineElement());
-    } else if (resolvedItem && resolvedItem.getEngineElements) {
-      executeScriptArgs.push(...(await resolvedItem.getEngineElements()));
+    } else if (resolvedItem && (resolvedItem as EngineElementLike).getEngineElement) {
+      executeScriptArgs.push(await (resolvedItem as EngineElementLike).getEngineElement());
+    } else if (resolvedItem && (resolvedItem as EngineElementLike).getEngineElements) {
+      executeScriptArgs.push(...(await (resolvedItem as EngineElementLike).getEngineElements()));
     } else {
       executeScriptArgs.push(resolvedItem);
     }
   }
-
-  if (executeScriptArgs.length === 1 && !isArray(args)) return executeScriptArgs[0];
 
   return executeScriptArgs;
 }

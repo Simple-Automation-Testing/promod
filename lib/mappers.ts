@@ -157,7 +157,7 @@ const KeysPW = {
  * @param {string} urlOrPath
  * @returns {string}
  */
-const resolveUrl = (urlOrPath: string, appBaseUrl) => {
+const resolveUrl = (urlOrPath: string, appBaseUrl: string) => {
   let resolved;
 
   if (!urlOrPath.includes('http') && appBaseUrl) {

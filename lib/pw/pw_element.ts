@@ -15,12 +15,14 @@ import {
 import { browser } from './pw_client';
 import { getPositionXY, KeysSWD } from '../mappers';
 import { promodLogger } from '../internals';
+import { customSelectorFilterFn } from '../shared/custom_selector_filter';
 
+import type { Browser } from './pw_client';
 import type { PromodElementType, PromodElementsType } from '../interface';
 import type { TCustomSelector } from '../mappers';
 import type { Page, Locator, ElementHandle } from 'playwright-core';
 
-const buildBy = (selector: any, getExecuteScriptArgs: () => any[], parent?, toMany?): any => {
+const buildBy = (selector: unknown, getExecuteScriptArgs: () => unknown[], parent?: unknown, toMany?: boolean): unknown => {
   getExecuteScriptArgs = isFunction(getExecuteScriptArgs) ? getExecuteScriptArgs : () => [];
 
   if (isString(selector) && (selector as string).includes('xpath=')) {
@@ -42,35 +44,7 @@ const buildBy = (selector: any, getExecuteScriptArgs: () => any[], parent?, toMa
     const item = selector as TCustomSelector;
 
     return [
-      ([parent, entry]) => {
-        const { query, text, rg, strict, toMany, rgFlags = 'gmi' } = entry;
-        const elements = parent ? parent.querySelectorAll(query) : document.querySelectorAll(query);
-
-        if (!elements.length) return null;
-
-        const filteredElements = [];
-
-        for (const element of elements) {
-          const innerText = element?.innerText?.trim() || element?.textContent?.trim() || element?.outerHTML?.trim();
-          const textMatches = typeof text === 'string' && (!strict ? innerText.includes(text) : innerText === text);
-          const rgMatches = rg && innerText.match(new RegExp(rg, rgFlags));
-
-          if (rgMatches && !toMany) {
-            return element;
-          } else if (textMatches && !toMany) {
-            return element;
-          } else if (rgMatches && toMany) {
-            filteredElements.push(element);
-          } else if (textMatches && toMany) {
-            filteredElements.push(element);
-          }
-          if (!text && !rg) {
-            return element;
-          }
-        }
-
-        return toMany ? filteredElements : null;
-      },
+      customSelectorFilterFn,
       [parent, { ...item, toMany }],
     ];
   }
@@ -80,19 +54,25 @@ const buildBy = (selector: any, getExecuteScriptArgs: () => any[], parent?, toMa
 
 class PromodPlaywrightElements {
   private _driver: Page;
-  private _driverElements: Locator[];
+  private _driverElements: (Locator | ElementHandle)[];
   private getParent: () => Promise<PromodPlaywrightElement>;
   private getExecuteScriptArgs: () => any;
   private useParent: boolean;
   private selector: string;
 
   public parentSelector: string;
-  public _browserInterface: any;
+  public _browserInterface: Browser;
 
-  constructor(selector, client, getParent?, getExecuteScriptArgs?, useParent?) {
+  constructor(
+    selector: string | TCustomSelector | ((...args: unknown[]) => unknown) | Promise<unknown>,
+    client: Browser,
+    getParent?: (...args: unknown[]) => Promise<unknown>,
+    getExecuteScriptArgs?: () => unknown[],
+    useParent?: boolean,
+  ) {
     this._browserInterface = client;
-    this.selector = selector;
-    this.getParent = getParent;
+    this.selector = selector as string;
+    this.getParent = getParent as () => Promise<PromodPlaywrightElement>;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
     this.useParent = useParent;
   }
@@ -104,7 +84,7 @@ class PromodPlaywrightElements {
    * @param {number} index
    * @returns {Promise<ElementHandle>}
    */
-  private async getElement(index?) {
+  private async getElement(index?: number) {
     promodLogger.engineLog(`[PW] Promod elements interface calls method "getElement" from wrapped API, args: `, index);
     this._driver = await browser['getWorkingContext']();
 
@@ -146,8 +126,8 @@ class PromodPlaywrightElements {
     if (isString(selector)) {
       const items = await (parent || this._driver).locator(getElementArgs);
       this._driverElements = await (items as Locator).all();
-    } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
-      const [queryFn, quertFnArgs] = buildBy(selector, this.getExecuteScriptArgs, parent, true);
+    } else if (isFunction((getElementArgs as any[])[0]) || isAsyncFunction((getElementArgs as any[])[0])) {
+      const [queryFn, quertFnArgs] = buildBy(selector, this.getExecuteScriptArgs, parent, true) as any[];
       const elementHandles = [];
       const resolved = [];
       const callArgs = toArray(quertFnArgs);
@@ -156,27 +136,27 @@ class PromodPlaywrightElements {
         // TODO refactor resolver
         const resolvedItem = await item;
 
-        resolved.push(resolvedItem?.elementHandle ? await resolvedItem.elementHandle() : resolvedItem);
-      }
-      // @ts-ignore
-      const handlesByFunctionSearch = await this._driver.evaluateHandle(
-        queryFn,
-        resolved.length === 1 ? resolved[0] : resolved,
-      );
-      // @ts-ignore
-      const availableHandlesLength = await this._driver.evaluate((nodes) => nodes.length, handlesByFunctionSearch);
-      for (const index of lengthToIndexesArray(availableHandlesLength)) {
-        const handle = await this._driver.evaluateHandle(
-          // @ts-ignore
-          ([nodes, itemIndex]) => nodes[itemIndex],
-          [handlesByFunctionSearch, index],
-        );
-        elementHandles.push(await handle.asElement());
+        resolved.push(resolvedItem?.evaluate ? await resolvedItem.evaluateHandle((node: any) => node) : resolvedItem);
       }
 
-      this._driverElements = elementHandles.filter(Boolean);
+      const handlesByFunctionSearch = await this._driver.evaluateHandle(
+        queryFn as any,
+        resolved.length === 1 ? resolved[0] : resolved,
+      );
+
+      const availableHandlesLength = await this._driver.evaluate((nodes: any) => nodes.length, handlesByFunctionSearch);
+      for (const index of lengthToIndexesArray(availableHandlesLength)) {
+        const handle = await this._driver.evaluateHandle(
+          ([nodes, itemIndex]: any) => nodes[itemIndex],
+          [handlesByFunctionSearch, index],
+        );
+        const element = handle.asElement();
+        if (element) elementHandles.push(element);
+      }
+
+      this._driverElements = elementHandles;
     } else {
-      this._driverElements = await this._driver.locator(buildBy(this.selector, this.getExecuteScriptArgs)).all();
+      this._driverElements = await this._driver.locator(buildBy(this.selector, this.getExecuteScriptArgs) as string).all();
     }
 
     if (index < 0) {
@@ -195,11 +175,11 @@ class PromodPlaywrightElements {
    * @param {number} index
    * @returns {PromodElementType}
    */
-  get(index): PromodElementType {
+  get(index: number): PromodElementType {
     const childElement = new PromodPlaywrightElement(
       this.selector,
       this._browserInterface,
-      this.getElement.bind(this, index),
+      this.getElement.bind(this, index) as (...args: unknown[]) => Promise<unknown>,
       null,
       true,
     );
@@ -236,19 +216,20 @@ class PromodPlaywrightElements {
     return new PromodPlaywrightElement(
       this.selector,
       this._browserInterface,
-      this.find.bind(this, (el) => el.isDisplayed()),
+      this.find.bind(this, (el: PromodElementType) => el.isDisplayed()) as (...args: unknown[]) => Promise<unknown>,
       null,
       true,
     ) as any;
   }
 
   getAllVisible(): PromodElementsType {
-    const _getElements = async function _getElements() {
-      await this.getElement(0);
-      const els = [];
+    const self = this;
+    const _getElements = async function _getElements(): Promise<(Locator | ElementHandle)[]> {
+      await self.getElement(0);
+      const els: (Locator | ElementHandle)[] = [];
 
-      for (let i = 0; i < this._driverElements.length; i++) {
-        const el = this._driverElements[i];
+      for (let i = 0; i < self._driverElements.length; i++) {
+        const el = self._driverElements[i];
 
         if (await el.isVisible()) {
           els.push(el);
@@ -256,12 +237,12 @@ class PromodPlaywrightElements {
       }
 
       return els;
-    }.bind(this);
+    };
 
     const promodElements = new PromodPlaywrightElements(
       this.selector,
       this._browserInterface,
-      _getElements,
+      _getElements as (...args: unknown[]) => Promise<unknown>,
       null,
       true,
     );
@@ -430,12 +411,18 @@ class PromodPlaywrightElement {
   private useParent: boolean;
   public selector: string;
   public parentSelector: string;
-  public _browserInterface: any;
+  public _browserInterface: Browser;
 
-  constructor(selector, client, getParent?, getExecuteScriptArgs?, useParent?) {
+  constructor(
+    selector: string | TCustomSelector | ((...args: unknown[]) => unknown) | Promise<unknown>,
+    client: Browser,
+    getParent?: (...args: unknown[]) => Promise<unknown>,
+    getExecuteScriptArgs?: () => unknown[],
+    useParent?: boolean,
+  ) {
     this._browserInterface = client;
-    this.selector = selector;
-    this.getParent = getParent;
+    this.selector = selector as string;
+    this.getParent = getParent as () => Promise<PromodElementType>;
     this.getExecuteScriptArgs = getExecuteScriptArgs;
     this.useParent = useParent;
   }
@@ -481,35 +468,31 @@ class PromodPlaywrightElement {
 
     if (this.getParent && !ignoreParent && isString(selector)) {
       this._driverElement = (await (parent || this._driver).locator(getElementArgs).all())[0];
-    } else if (isFunction(getElementArgs[0]) || isAsyncFunction(getElementArgs[0])) {
-      const [queryFn, quertFnArgs] = getElementArgs;
+    } else if (isFunction((getElementArgs as any[])[0]) || isAsyncFunction((getElementArgs as any[])[0])) {
+      const [queryFn, quertFnArgs] = getElementArgs as any[];
       const resolved = [];
       const callArgs = toArray(quertFnArgs);
 
       for (const item of callArgs) {
         // TODO refactor resolver
         const resolvedItem = await item;
-        resolved.push(resolvedItem?.elementHandle ? await resolvedItem.elementHandle() : resolvedItem);
+        resolved.push(resolvedItem?.evaluate ? await resolvedItem.evaluateHandle((node: any) => node) : resolvedItem);
       }
 
       const result: ElementHandle = (
-        await this._driver.evaluateHandle(queryFn, resolved.length === 1 ? resolved[0] : resolved)
+        await this._driver.evaluateHandle(queryFn as any, resolved.length === 1 ? resolved[0] : resolved)
       ).asElement();
 
       let tempLocatorDataAttribute = `${getRandomString(25, { letters: true })}`;
 
-      const locatoDataAttribute = await result.evaluate((n, item) => {
-        // @ts-ignore
-        if (n.dataset.promod_element_item) {
-          // @ts-ignore
-          return n.dataset.promod_element_item;
+      const locatoDataAttribute = await result.evaluate((n: HTMLElement, item: string) => {
+        if ((n as any).dataset.promod_element_item) {
+          return (n as any).dataset.promod_element_item;
         } else {
-          // @ts-ignore
-          n.dataset.promod_element_item = `${item}`;
+          (n as any).dataset.promod_element_item = `${item}`;
         }
 
-        // @ts-ignore
-        return n.dataset.promod_element_item;
+        return (n as any).dataset.promod_element_item;
       }, tempLocatorDataAttribute);
 
       await result.dispose();
@@ -524,7 +507,7 @@ class PromodPlaywrightElement {
         await this._driver.locator(`[data-promod_element_item="${locatoDataAttribute}"]`).all()
       )[0];
     } else {
-      this._driverElement = (await this._driver.locator(getElementArgs).all())[0];
+      this._driverElement = (await this._driver.locator(getElementArgs as string).all())[0];
     }
 
     return this._driverElement;
@@ -538,14 +521,14 @@ class PromodPlaywrightElement {
    * @param {any[]} rest
    * @returns {PromodElementType}
    */
-  $(selector, ...rest: any[]): PromodElementType {
+  $(selector: string | TCustomSelector | ((...args: unknown[]) => unknown) | Promise<unknown>, ...rest: unknown[]): PromodElementType {
     promodLogger.engineLog('[PW] Create new promod child element, selector: ', selector);
     const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
     const childElement = new PromodPlaywrightElement(
       selector,
       this._browserInterface,
-      this.getElement.bind(this),
-      executeScriptArgsGetter,
+      this.getElement.bind(this) as (...args: unknown[]) => Promise<unknown>,
+      executeScriptArgsGetter as () => unknown[],
     );
     childElement.parentSelector = this.selector;
     return childElement as any;
@@ -559,14 +542,14 @@ class PromodPlaywrightElement {
    * @param {any[]} rest
    * @returns {PromodElementsType}
    */
-  $$(selector, ...rest: any[]): PromodElementsType {
+  $$(selector: string | TCustomSelector | ((...args: unknown[]) => unknown) | Promise<unknown>, ...rest: unknown[]): PromodElementsType {
     promodLogger.engineLog('[PW] Create new promod child elements, selector: ', selector);
     const [, executeScriptArgsGetter] = getInitElementRest(selector, null, ...rest);
     const childElements = new PromodPlaywrightElements(
       selector,
       this._browserInterface,
-      this.getElement.bind(this),
-      executeScriptArgsGetter,
+      this.getElement.bind(this) as (...args: unknown[]) => Promise<unknown>,
+      executeScriptArgsGetter as () => unknown[],
     );
     childElements.parentSelector = this.selector;
     return childElements as any;
@@ -709,7 +692,17 @@ class PromodPlaywrightElement {
     return await this._driverElement.evaluate((item) => item.nodeName.toLowerCase());
   }
 
-  async getCssValue() {}
+  async getCssValue(cssStyleProperty: string): Promise<string> {
+    promodLogger.engineLog(
+      `[PW] Promod element interface calls method "getCssValue" from wrapped API, args: `,
+      cssStyleProperty,
+    );
+    await this.getElement();
+    return await this._driverElement.evaluate(
+      (el: HTMLElement, prop: string) => window.getComputedStyle(el).getPropertyValue(prop),
+      cssStyleProperty,
+    );
+  }
 
   async getAttribute(attribute: string) {
     await this.getElement();
@@ -754,7 +747,7 @@ class PromodPlaywrightElement {
       if (seleniumKeysAlignment.includes(char)) {
         // TODO - this needs to be done in a better way
         await this.click();
-        await browser.keyDownAndUp(Object.keys(KeysSWD).find((k) => KeysSWD[k] === char));
+        await browser.keyDownAndUp(Object.keys(KeysSWD).find((k) => (KeysSWD as Record<string, string>)[k] === char));
       } else {
         await this._driverElement.pressSequentially(char, { delay: 7 });
       }
@@ -1047,7 +1040,7 @@ class PromodPlaywrightElement {
     return { value: `${locatorValue}${this.selector}` };
   }
 
-  private async isInteractionIntercepted(err) {
+  private async isInteractionIntercepted(err: Error) {
     const strErr: string = err.toString();
 
     return {
@@ -1083,44 +1076,44 @@ function getInitElementRest(
 }
 
 const $ = (
-  selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
-  root?: PromodElementType | any,
-  ...rest: any[]
+  selector: string | TCustomSelector | ((...args: unknown[]) => unknown) | Promise<unknown>,
+  root?: PromodElementType,
+  ...rest: unknown[]
 ): PromodElementType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
 
-  return new PromodPlaywrightElement(selector, browser, ...restArgs) as any;
+  return new PromodPlaywrightElement(selector, browser, ...(restArgs as [(...args: unknown[]) => Promise<unknown>, () => unknown[]])) as any;
 };
 
 const $$ = (
-  selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
-  root?: PromodElementType | any,
-  ...rest: any[]
+  selector: string | TCustomSelector | ((...args: unknown[]) => unknown) | Promise<unknown>,
+  root?: PromodElementType,
+  ...rest: unknown[]
 ): PromodElementsType => {
   const restArgs = getInitElementRest(selector, root, ...rest);
 
-  return new PromodPlaywrightElements(selector, browser, ...restArgs) as any;
+  return new PromodPlaywrightElements(selector, browser, ...(restArgs as [(...args: unknown[]) => Promise<unknown>, () => unknown[]])) as any;
 };
 
-function preBindBrowserInstance(browserThaNeedsToBeBinded) {
+function preBindBrowserInstance(browserThaNeedsToBeBinded: Browser) {
   const $ = (
-    selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
-    root?: PromodElementType | any,
-    ...rest: any[]
+    selector: string | TCustomSelector | ((...args: unknown[]) => unknown) | Promise<unknown>,
+    root?: PromodElementType,
+    ...rest: unknown[]
   ): PromodElementType => {
     const restArgs = getInitElementRest(selector, root, ...rest);
 
-    return new PromodPlaywrightElement(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
+    return new PromodPlaywrightElement(selector, browserThaNeedsToBeBinded, ...(restArgs as [(...args: unknown[]) => Promise<unknown>, () => unknown[]])) as any;
   };
 
   const $$ = (
-    selector: string | TCustomSelector | ((...args: any[]) => any) | Promise<any>,
-    root?: PromodElementType | any,
-    ...rest: any[]
+    selector: string | TCustomSelector | ((...args: unknown[]) => unknown) | Promise<unknown>,
+    root?: PromodElementType,
+    ...rest: unknown[]
   ): PromodElementsType => {
     const restArgs = getInitElementRest(selector, root, ...rest);
 
-    return new PromodPlaywrightElements(selector, browserThaNeedsToBeBinded, ...restArgs) as any;
+    return new PromodPlaywrightElements(selector, browserThaNeedsToBeBinded, ...(restArgs as [(...args: unknown[]) => Promise<unknown>, () => unknown[]])) as any;
   };
 
   return {

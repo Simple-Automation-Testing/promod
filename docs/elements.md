@@ -1,116 +1,176 @@
 # Elements
 
-Elements has "lazy" interface (as it was in protractor)
+Elements has a "lazy" interface (as it was in protractor). The collection is not resolved until an action is performed on it.
 
-- [searchStragegy](#searchstragegy)
+All examples work identically with both `playwrightWD` and `seleniumWD`.
+
+- [Selector strategies](#selector-strategies)
 - [get](#get)
 - [first](#first)
 - [last](#last)
+- [count](#count)
+- [getFirstVisible](#getfirstvisible)
+- [getAllVisible](#getallvisible)
 - [each](#each)
 - [map](#map)
 - [some](#some)
 - [every](#every)
+- [find](#find)
+- [filter](#filter)
+- [getEngineElements](#getengineelements)
 
-## searchStragegy
+---
+
+## Selector strategies
 
 ```js
-const { seleniumWD } = require('promod');
-const { By, $$ } = seleniumWD;
-// css
-const elementsByCss = $$('.class #id div a[href*="link"]'); // css selector
-const elementsByXpath = $$('xpath=.//div[@data-test="id"]/span'); // xpath selector
-const elementsByJS = $$(() => document.querySelectorAll("div>span")); // js selector
-const elementWithByInterface = $$(By.className('class')); // By object interface
+const { playwrightWD } = require('promod');
+const { $$ } = playwrightWD;
+
+const byCss = $$('.class #id div a[href*="link"]');
+const byXpath = $$('xpath=.//div[@data-test="id"]/span');
+const byJS = $$(() => document.querySelectorAll('div > span'));
+const byCustom = $$({ query: 'button', text: 'Submit' });
 ```
 
 ## get
 
-```js
-const { seleniumWD } = require('promod');
-const { $$ } = seleniumWD;
-const someInput = $$('input').get(3);
+Returns a single element from the collection by index. Negative indexes count from the end.
 
-(async () => {
-  await someInput.sendKeys('some value');
-})();
+```js
+const buttons = $$('button');
+
+const first = buttons.get(0);
+const third = buttons.get(2);
+const last = buttons.get(-1);
+
+await first.click();
 ```
 
 ## first
 
-```js
-const { seleniumWD } = require('promod');
-const { $$ } = seleniumWD;
-const someButton = $$('button').first();
+Shorthand for `get(0)`.
 
-(async () => {
-  await someButton.click();
-})();
+```js
+const button = $$('button').first();
+await button.click();
 ```
 
 ## last
 
-```js
-const { seleniumWD } = require('promod');
-const { $$ } = seleniumWD;
-const someButton = $$('button').last();
+Shorthand for `get(-1)`.
 
-(async () => {
-  await someButton.click();
-})();
+```js
+const button = $$('button').last();
+await button.click();
+```
+
+## count
+
+Returns the number of elements matching the selector.
+
+```js
+const count = await $$('button').count();
+```
+
+## getFirstVisible
+
+Returns the first visible (displayed) element in the collection.
+
+```js
+const visibleButton = $$('button').getFirstVisible();
+await visibleButton.click();
+```
+
+## getAllVisible
+
+Returns a new elements collection containing only visible elements.
+
+```js
+const visibleButtons = $$('button').getAllVisible();
+const visibleCount = await visibleButtons.count();
 ```
 
 ## each
 
-```js
-	const {seleniumWD} = require('promod');
-	const {$$} = seleniumWD
-	const someButtons = $$('button');
+Iterates over each element in the collection.
 
-	;(async () => {
-		await someButtons.each((someButton) => {
-			await someButton.click()
-		})
-	})()
+```js
+const buttons = $$('button');
+
+await buttons.each(async (button, index) => {
+  await button.click();
+});
 ```
 
 ## map
 
-```js
-	const {seleniumWD} = require('promod');
-	const {$$} = seleniumWD
-	const someButtons = $$('button');
+Maps each element to a value.
 
-	;(async () => {
-		const allButtonTexts = await someButtons.map((button) => {
-			return await someButton.getText()
-		})
-	})()
+```js
+const buttons = $$('button');
+
+const texts = await buttons.map(async (button) => {
+  return await button.getText();
+});
 ```
 
 ## some
 
-```js
-	const {seleniumWD} = require('promod');
-	const {$$} = seleniumWD
-	const someButtons = $$('button');
+Returns `true` if the callback returns `true` for at least one element.
 
-	;(async () => {
-		const isSomeButtonVisible = await someButtons.some((button) => {
-			return await someButton.isDisplayed()
-		})
-	})()
+```js
+const buttons = $$('button');
+
+const isSomeVisible = await buttons.some(async (button) => {
+  return await button.isDisplayed();
+});
 ```
 
 ## every
 
-```js
-	const {seleniumWD} = require('promod');
-	const {$$} = seleniumWD
-	const someButtons = $$('button');
+Returns `true` if the callback returns `true` for every element.
 
-	;(async () => {
-		const isEveryButtonVisible = await someButtons.every((button) => {
-			return await someButton.isDisplayed()
-		})
-	})()
+```js
+const buttons = $$('button');
+
+const allVisible = await buttons.every(async (button) => {
+  return await button.isDisplayed();
+});
+```
+
+## find
+
+Finds the first element matching the callback condition.
+
+```js
+const buttons = $$('button');
+
+const submitBtn = await buttons.find(async (button) => {
+  return (await button.getText()) === 'Submit';
+});
+
+await submitBtn.click();
+```
+
+## filter
+
+Returns a new elements collection with elements matching the callback condition.
+
+```js
+const buttons = $$('button');
+
+const enabledButtons = buttons.filter(async (button) => {
+  return await button.isEnabled();
+});
+
+const count = await enabledButtons.count();
+```
+
+## getEngineElements
+
+Returns the underlying native engine elements (Playwright `Locator[]` / Selenium `WebElement[]`).
+
+```js
+const nativeElements = await $$('button').getEngineElements();
 ```

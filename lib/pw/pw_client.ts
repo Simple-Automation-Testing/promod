@@ -8,7 +8,6 @@ import {
   asyncSome,
   safeJSONstringify,
   isString,
-  isArray,
   asyncFilter,
 } from 'sat-utils';
 import { compare } from 'sat-compare';
@@ -16,6 +15,7 @@ import { waitFor } from 'sat-wait';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
 import { KeysPW, resolveUrl } from '../mappers';
 import { promodLogger } from '../internals';
+import { validateBrowserCallMethod } from '../shared/validate_browser';
 
 import type { Locator, Browser as PWBrowser, BrowserContext, Page, ElementHandle, Request } from 'playwright-core';
 import type {
@@ -27,34 +27,6 @@ import type {
   PromodElementType,
 } from '../interface';
 
-function validateBrowserCallMethod(browserClass): Browser {
-  const protKeys = Object.getOwnPropertyNames(browserClass.prototype).filter((item) => item !== 'constructor');
-  for (const key of protKeys) {
-    const descriptor = Object.getOwnPropertyDescriptor(browserClass.prototype, key);
-    if (isAsyncFunction(descriptor.value)) {
-      const originalMethod: (...args: any[]) => Promise<any> = descriptor.value;
-
-      // eslint-disable-next-line no-inner-declarations
-      async function decoratedWithChecker(...args) {
-        if (!this._engineDriver) {
-          throw new Error(`
-${key}(): Seems like driver was not initialized,
-or visit https://github.com/Simple-Automation-Testing/promod/blob/master/docs/init.md#getDriver
-					`);
-        }
-
-        return originalMethod.call(this, ...args);
-      }
-
-      Object.defineProperty(decoratedWithChecker, 'name', { value: key });
-
-      descriptor.value = decoratedWithChecker;
-      Object.defineProperty(browserClass.prototype, key, descriptor);
-    }
-  }
-  return new browserClass();
-}
-
 class PageWrapper {
   /** @private */
   private _context: BrowserContext;
@@ -63,7 +35,7 @@ class PageWrapper {
   /** @private */
   private _initialPage: Page;
 
-  _logs: any[];
+  _logs: TLogLevel[];
 
   constructor(context: BrowserContext) {
     this._context = context;
@@ -187,19 +159,19 @@ class ContextWrapper {
     return this._currentPage._logs;
   }
 
-  async runNewContext(browserData: { currentBrowserName?: string; newBrowserName?: string; capabilities?: any } = {}) {
+  async runNewContext(browserData: { currentBrowserName?: string; newBrowserName?: string; capabilities?: Record<string, unknown> } = {}) {
     const { currentBrowserName, newBrowserName, capabilities } = browserData;
     const config = capabilities || this._contextConfig;
-    const { userAgent, isMobile, viewport } = config;
+    const { userAgent, isMobile, viewport } = config as typeof this._contextConfig;
 
     if (isString(currentBrowserName)) {
-      this._currentContext['__promodBrowserName'] = currentBrowserName;
+      (this._currentContext as unknown as Record<string, unknown>)['__promodBrowserName'] = currentBrowserName;
     }
 
     this._currentContext = await this.server.newContext({ userAgent, isMobile, viewport });
 
     if (isString(newBrowserName)) {
-      this._currentContext['__promodBrowserName'] = newBrowserName;
+      (this._currentContext as unknown as Record<string, unknown>)['__promodBrowserName'] = newBrowserName;
     }
 
     if (!this._currentPage) {
@@ -208,10 +180,6 @@ class ContextWrapper {
       await this._currentPage.updateContext(this._currentContext);
     }
 
-    this._currentContext.on('page', async (page) => {
-      // @ts-ignore
-      this._currentContext._pages.add(page);
-    });
   }
 
   async getCurrentContext() {
@@ -227,22 +195,12 @@ class ContextWrapper {
     const contexts = await this.server.contexts();
 
     if (isNumber(index) && contexts[index]) {
-      this._currentContext.removeListener('page', () => {});
       this._currentContext = contexts[index];
-      this._currentContext.on('page', async (page) => {
-        // @ts-ignore
-        this._currentContext._pages.add(page);
-      });
       await this._currentPage.updateContext(this._currentContext);
     }
 
-    if (browserName && contexts.find((item) => item['__promodBrowserName'] === browserName)) {
-      this._currentContext.removeListener('page', () => {});
-      this._currentContext = contexts.find((item) => item['__promodBrowserName'] === browserName);
-      this._currentContext.on('page', async (page) => {
-        // @ts-ignore
-        this._currentContext._pages.add(page);
-      });
+    if (browserName && contexts.find((item) => (item as unknown as Record<string, unknown>)['__promodBrowserName'] === browserName)) {
+      this._currentContext = contexts.find((item) => (item as unknown as Record<string, unknown>)['__promodBrowserName'] === browserName);
       await this._currentPage.updateContext(this._currentContext);
     }
   }
@@ -274,7 +232,7 @@ class ContextWrapper {
 
 type TMockReq = {
   url: string;
-  handler: (request?: Request) => { status?: number; body?: any; headers?: { [k: string]: string } };
+  handler: (request?: Request) => { status?: number; body?: string | Buffer; headers?: { [k: string]: string } };
 };
 class Browser {
   wait = waitFor;
@@ -286,7 +244,7 @@ class Browser {
   /** @private */
   private appBaseUrl: string;
   /** @private */
-  private initialTab: any;
+  private initialTab: Page;
   /** @private */
   private _engineDrivers: PWBrowser[];
   /** @private */
@@ -300,7 +258,11 @@ class Browser {
   }
 
   static getBrowser() {
-    return validateBrowserCallMethod(Browser);
+    return validateBrowserCallMethod(Browser, {
+      driverPropertyName: '_engineDriver',
+      excludedMethods: ['constructor'],
+      errorUrlSuffix: '#getDriver',
+    });
   }
 
   currentClient() {
@@ -319,6 +281,10 @@ class Browser {
     this._requestsMocks.push(mock);
   }
 
+  clearMockRequests() {
+    this._requestsMocks = [];
+  }
+
   injectEngine({ context, page }: { context?: BrowserContext; page?: Page }) {
     if (context) {
       const browser = context.browser();
@@ -331,7 +297,7 @@ class Browser {
     }
   }
 
-  setClient({ driver, lauchNewInstance, baseConfig }: { driver; lauchNewInstance?; baseConfig? } = { driver: null }) {
+  setClient({ driver, lauchNewInstance, baseConfig }: { driver: PWBrowser; lauchNewInstance?: () => Promise<PWBrowser>; baseConfig?: Record<string, unknown> } = { driver: null }) {
     this._engineDriver = driver || this._engineDriver;
     this._contextWrapper = new ContextWrapper(this._engineDriver, baseConfig);
     this._createNewDriver = lauchNewInstance;
@@ -451,11 +417,21 @@ class Browser {
       return;
     }
     await this.closeAllpagesExceptInitial();
+    // switch context back to the remaining initial page
+    await this._contextWrapper.switchPage({ index: 0 });
     // set initialTab to null for further "it" to use
     this.initialTab = null;
   }
 
-  private async closeAllpagesExceptInitial() {}
+  private async closeAllpagesExceptInitial() {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "closeAllpagesExceptInitial" from wrapped API`);
+    const pages = (await this._contextWrapper.getCurrentContext()).pages();
+    for (const page of pages) {
+      if (page !== this.initialTab) {
+        await page.close();
+      }
+    }
+  }
 
   /**
    *
@@ -859,28 +835,29 @@ class Browser {
               async (frame) =>
                 (
                   await frame
-                    .frameLocator(selector)
+                    .locator(selector)
                     .first()
+                    .contentFrame()
                     .locator('*')
                     .all()
-                    .catch(() => [])
+                    .catch((): Locator[] => [])
                 ).length > 0,
             );
 
             for (const [_index, frame] of frames.entries()) {
               const allElements = await frame
-                .frameLocator(selector)
+                .locator(selector)
                 .first()
+                .contentFrame()
                 .locator('*')
                 .all()
-                .catch(() => []);
+                .catch((): Locator[] => []);
 
               const res = await asyncSome(allElements, async (item) => await item.isVisible());
 
               if (res) {
-                return (await (
-                  await frame.frameLocator(selector).first().locator('*').first().elementHandle({ timeout: 25 })
-                ).ownerFrame()) as any as Page;
+                const handle = await frame.locator(selector).first().contentFrame().locator('*').first().evaluateHandle((el) => el);
+                return (await (handle as ElementHandle).ownerFrame()) as any as Page;
               }
             }
           },
@@ -959,23 +936,20 @@ class Browser {
    * const result = await browser.executeScript(() => document.body.offsetHeight);
    *
    * @param {!Function} script scripts that needs to be executed
-   * @param {any|any[]} [args] function args
+   * @param {any[]} [args] function args
    * @returns {Promise<any>}
    */
-  async executeScript(script: ExecuteScriptFn, args?: any | any[]): Promise<any> {
+  async executeScript(script: ExecuteScriptFn, args: any[] = []): Promise<any> {
     promodLogger.engineLog(
       `[PW] Promod client interface calls method "executeScript" from wrapped API, args: `,
       script,
       args,
     );
 
-    let recomposedArgs = await toNativeEngineExecuteScriptArgs(args);
-    if (isArray(recomposedArgs)) {
-      for (const [index, item] of Object.entries(recomposedArgs)) {
-        recomposedArgs[index] = (item as any)?.elementHandle ? await (item as any)?.elementHandle() : item;
-      }
-    } else {
-      recomposedArgs = recomposedArgs?.elementHandle ? await recomposedArgs.elementHandle() : recomposedArgs;
+    const recomposedArgs: any[] = await toNativeEngineExecuteScriptArgs(args);
+    for (let i = 0; i < recomposedArgs.length; i++) {
+      const item = recomposedArgs[i];
+      recomposedArgs[i] = (item as any)?.evaluate ? await (item as any)?.evaluateHandle((node: any) => node) : item;
     }
 
     const result = await waitFor(async () => await (await this.getWorkingContext()).evaluate(script, recomposedArgs), {
@@ -984,7 +958,7 @@ class Browser {
       interval: 500,
     });
 
-    for (const item of toArray(recomposedArgs)) {
+    for (const item of recomposedArgs) {
       (item as any)?.dispose && (await (item as any)?.dispose());
     }
 
@@ -1075,7 +1049,7 @@ class Browser {
     (await this.getCurrentPage()).close();
   }
 
-  async scrollElementByMouseWheel(element: PromodElementType, x, y, deltaX, deltaY, duration) {
+  async scrollElementByMouseWheel(element: PromodElementType, x: number, y: number, deltaX: number, deltaY: number, duration: number) {
     promodLogger.engineLog(
       `[PW] Promod client interface calls method "scrollElementByMouseWheel" from wrapped API, args: `,
       element,
@@ -1092,7 +1066,7 @@ class Browser {
     (await this.getCurrentPage()).mouse.wheel(deltaX, deltaY);
   }
 
-  async scrollByMouseWheel(x, y, deltaX, deltaY, duration) {
+  async scrollByMouseWheel(x: number, y: number, deltaX: number, deltaY: number, duration: number) {
     promodLogger.engineLog(
       `[PW] Promod client interface calls method "scrollByMouseWheel" from wrapped API, args: `,
       x,

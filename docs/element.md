@@ -1,230 +1,303 @@
 # Element
-Element has "lazy" interface (as it was in protractor)
 
-- [searchStragegy](#searchstragegy)
-- [sendKeys](#sendkeys)
+Element has a "lazy" interface (as it was in protractor). The element is not resolved until an action is performed on it.
+
+All examples work identically with both `playwrightWD` and `seleniumWD`.
+
+- [Selector strategies](#selector-strategies)
+- [Child elements](#child-elements)
 - [click](#click)
-- [doubleClick](#doubleClick)
+- [doubleClick](#doubleclick)
+- [sendKeys](#sendkeys)
+- [clear](#clear)
+- [clearViaBackspace](#clearViabackspace)
+- [pressEnter](#pressenter)
 - [hover](#hover)
+- [hoverByElementCoordinate](#hoverbyelementcoordinate)
+- [clickByElementCoordinate](#clickbyelementcoordinate)
+- [getElementCoordinates](#getelementcoordinates)
 - [focus](#focus)
-- [getTagName](#gettagname)
-- [getCssValue](#getcssvalue)
-- [getAttribute](#getattribute)
 - [getText](#gettext)
+- [getTagName](#gettagname)
+- [getAttribute](#getattribute)
+- [getCssValue](#getcssvalue)
 - [getRect](#getrect)
+- [isDisplayed](#isdisplayed)
+- [isPresent](#ispresent)
 - [isEnabled](#isenabled)
 - [isSelected](#isselected)
-- [isPresent](#ispresent)
-- [isDisplayed](#isdisplayed)
 - [submit](#submit)
-- [clear](#clear)
-- [takeScreenshot](#takescreenshot)
+- [selectOption](#selectoption)
 - [scrollIntoView](#scrollintoview)
+- [takeScreenshot](#takescreenshot)
+- [getEngineElement](#getengineelement)
+- [locator](#locator)
 
+---
 
-## searchStragegy
+## Selector strategies
+
 ```js
-	const elementByCss = $('.class #id div a[href*="link"]') // css selector
-	const elementByXpath = $('xpath=.//div[@data-test="id"]/span') // xpath selector
-	const elementByJS = $(() => document.querySelector("div > span")) // js selector
+const { playwrightWD } = require('promod');
+const { $ } = playwrightWD;
+
+const byCss = $('.class #id div a[href*="link"]');
+const byXpath = $('xpath=.//div[@data-test="id"]/span');
+const byJS = $(() => document.querySelector('div > span'));
+const byCustom = $({ query: 'button', text: 'Submit' });
+const byCustomRegex = $({ query: 'button', rg: 'Sub.*' });
 ```
 
-## sendKeys
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someInput = $('input')
+## Child elements
 
-	;(async () => {
-		await someInput.sendKeys('some value')
-	})
+Elements can create child `$` and `$$` from themselves, scoping the search to the parent element.
+
+```js
+const form = $('form');
+const input = form.$('input');           // single child element
+const buttons = form.$$('button');       // child elements collection
 ```
 
 ## click
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
 
-	;(async () => {
-		await someButton.click()
-	})
+```js
+const button = $('button');
+
+await button.click();                                  // regular click
+await button.click({ withScroll: true });              // scroll into view first
+await button.click({ allowForceIfIntercepted: true }); // retry via coordinates if intercepted
+await button.click({ force: true });                   // force click via coordinates
+await button.click({ button: 'right' });               // right click
 ```
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `withScroll` | `boolean` | Scroll element into view before clicking |
+| `allowForceIfIntercepted` | `boolean` | Retry via coordinates if click is intercepted |
+| `force` | `boolean` | Click via coordinates directly |
+| `button` | `'left' \| 'right' \| 'middle'` | Mouse button |
+| `clickCount` | `number` | Number of clicks |
+| `delay` | `number` | Delay between mousedown and mouseup |
+| `modifiers` | `Array<'Alt'\|'Control'\|'Meta'\|'Shift'>` | Modifier keys |
+| `position` | `{ x: number; y: number }` | Click position relative to element |
+| `timeout` | `number` | Timeout in ms |
 
 ## doubleClick
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
 
-	;(async () => {
-		await someButton.doubleClick()
-	})
+```js
+const button = $('button');
+
+await button.doubleClick();
+await button.doubleClick({ withScroll: true });
 ```
 
-## hover
+Accepts the same options as `click` (except `clickCount`).
+
+## sendKeys
+
 ```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
+const input = $('input');
 
-	;(async () => {
-		await someButton.hover()
-	})
-```
-
-## focus
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		await someButton.focus()
-	})
-```
-
-## getTagName
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		const tagName = await someButton.getTagName() // button
-	})
-```
-
-## getCssValue
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		const buttonColor = await someButton.getCssValue('color') // some color
-	})
-```
-
-## getAttribute
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		const buttonAttribute = await someButton.getAttribute('data-id') // value of data-id attribute
-	})
-```
-
-## getText
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		const buttonText = await someButton.getText() // button Text
-	})
-```
-
-## getRect
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		const buttonRect = await someButton.getRect() // {x: number, y: number, width: number, height: number}
-	})
-```
-
-## isEnabled
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		const buttonAvailableToClick = await someButton.isEnabled() // true|false
-	})()
-```
-
-## isPresent
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		const buttonExistsInDOM = await someButton.isPresent() // true|false
-	})()
-```
-
-## isDisplayed
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		const buttonIsVisible = await someButton.isDisplayed() // true|false
-	})()
-```
-
-## isSelected
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		const buttonIsSelected = await someButton.isSelected() // true|false
-	})()
-```
-
-## submit
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someButton = $('button')
-
-	;(async () => {
-		await someButton.submit()
-	})()
+await input.sendKeys('hello world');
+await input.sendKeys(42);
+await input.sendKeys('hello', true); // use fill mode (Playwright: clears first then fills)
 ```
 
 ## clear
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someInput = $('input')
 
-	;(async () => {
-		await someInput.clear()
-	})()
+```js
+const input = $('input');
+await input.clear();
 ```
 
-## takeScreenshot
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someForm = $('form')
+## clearViaBackspace
 
-	;(async () => {
-		await someForm.takeScreenshot()
-	})()
+Clears input by pressing backspace repeatedly.
+
+```js
+const input = $('input');
+await input.sendKeys('hello');
+await input.clearViaBackspace(5, true); // 5 backspaces, focus first
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `repeat` | `number` | Number of backspace presses (default 1) |
+| `focus` | `boolean` | Focus/click element first |
+
+## pressEnter
+
+```js
+const input = $('input');
+await input.sendKeys('search query');
+await input.pressEnter();       // focus first (default)
+await input.pressEnter(false);  // without focusing
+```
+
+## hover
+
+```js
+const button = $('button');
+
+await button.hover();
+await button.hover({ force: true });
+```
+
+## hoverByElementCoordinate
+
+Moves the mouse to a specific position relative to the element.
+
+```js
+const el = $('div');
+await el.hoverByElementCoordinate('center');
+await el.hoverByElementCoordinate('right-top');
+```
+
+Positions: `'center'`, `'center-top'`, `'center-bottom'`, `'center-right'`, `'center-left'`, `'right-top'`, `'right-bottom'`, `'left-top'`, `'left-bottom'`
+
+## clickByElementCoordinate
+
+Clicks at a specific position relative to the element.
+
+```js
+const el = $('div');
+await el.clickByElementCoordinate('center');
+await el.clickByElementCoordinate('left-top');
+```
+
+## getElementCoordinates
+
+Returns the x/y coordinates of a specific position on the element.
+
+```js
+const { x, y } = await $('div').getElementCoordinates('center');
+```
+
+## focus
+
+```js
+const input = $('input');
+await input.focus();
+```
+
+## getText
+
+```js
+const text = await $('h1').getText();
+```
+
+## getTagName
+
+```js
+const tag = await $('h1').getTagName(); // 'h1'
+```
+
+## getAttribute
+
+```js
+const href = await $('a').getAttribute('href');
+const dataId = await $('div').getAttribute('data-id');
+```
+
+## getCssValue
+
+Returns the computed CSS property value.
+
+```js
+const color = await $('button').getCssValue('color');
+const fontSize = await $('h1').getCssValue('font-size');
+```
+
+## getRect
+
+Returns the element bounding box.
+
+```js
+const { x, y, width, height } = await $('div').getRect();
+```
+
+## isDisplayed
+
+```js
+const visible = await $('button').isDisplayed(); // true | false
+```
+
+## isPresent
+
+Checks if the element exists in the DOM.
+
+```js
+const exists = await $('button').isPresent(); // true | false
+```
+
+## isEnabled
+
+```js
+const enabled = await $('button').isEnabled(); // true | false
+```
+
+## isSelected
+
+```js
+const selected = await $('input[type="checkbox"]').isSelected(); // true | false
+```
+
+## submit
+
+```js
+await $('form').submit();
+```
+
+## selectOption
+
+Works with `<select>` elements.
+
+```js
+const select = $('select');
+
+// By visible text
+await select.selectOption('Option text');
+
+// By value attribute
+await select.selectOption({ value: 'opt1' });
+
+// By label attribute
+await select.selectOption({ label: 'Option Label' });
+
+// By index
+await select.selectOption({ index: 2 });
 ```
 
 ## scrollIntoView
-```js
-	const {seleniumWD} = require('promod');
-	const {$} = seleniumWD
-	const someForm = $('form')
 
-	;(async () => {
-		await someForm.scrollIntoView() // default scroll into view
-		await someForm.scrollIntoView('end') // move element to the bottom of the view port
-		await someForm.scrollIntoView('start') // move element to the top of the view port
-	})()
+```js
+const el = $('div');
+
+await el.scrollIntoView();          // default scroll
+await el.scrollIntoView('start');   // scroll to top of viewport
+await el.scrollIntoView('end');     // scroll to bottom of viewport
+await el.scrollIntoView('center');  // scroll to center of viewport
+await el.scrollIntoView('nearest'); // scroll to nearest edge
+```
+
+## takeScreenshot
+
+```js
+const screenshot = await $('form').takeScreenshot();
+```
+
+## getEngineElement
+
+Returns the underlying native engine element (Playwright `Locator` / Selenium `WebElement`).
+
+```js
+const nativeElement = await $('button').getEngineElement();
+```
+
+## locator
+
+Returns the selector information used to find this element.
+
+```js
+const info = $('button').locator(); // { value: 'button' }
 ```

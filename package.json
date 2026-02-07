@@ -1,6 +1,6 @@
 {
   "name": "promod",
-  "version": "2.5.2",
+  "version": "2.5.4",
   "description": "Library for automation testing",
   "bin": "./bin/promod_cli",
   "main": "./built/cjs/index.js",
@@ -16,7 +16,7 @@
     "test:swd": "ENGINE=swd mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
     "test:units": "mocha $(find units -name '*.test.*') --require ts-node/register --timeout 500000",
     "test:debug": "mocha ./specs/async.child.methods.spec.ts --require ts-node/register --timeout 300000",
-    "lint": "eslint --ext .ts ./",
+    "lint": "oxlint -c oxlintrc.json --tsconfig tsconfig.json .",
     "tsc:cjs": "tsc -p tsconfig.json",
     "tsc:esm": "tsc -p tsconfig.esm.json",
     "tsc": "rm -rf ./built && npm run tsc:cjs && npm run tsc:esm"
@@ -35,11 +35,12 @@
   },
   "homepage": "https://github.com/Simple-Automation-Testing/promod#readme",
   "dependencies": {
-    "@types/selenium-webdriver": "^4.1.28",
+    "@types/selenium-webdriver": "^4.35.5",
+    "playwright-core": "^1.58.2",
     "sat-compare": "^0.1.0",
-    "sat-utils": "^3.0.2",
-    "sat-wait": "^0.1.0",
-    "playwright-core": "^1.52.0"
+    "sat-utils": "^3.2.0",
+    "sat-wait": "^0.1.6",
+    "selenium-webdriver": "^4.40.0"
   },
   "keywords": [
     "promod",
@@ -52,18 +53,14 @@
     "playwright mod"
   ],
   "devDependencies": {
-    "@types/mocha": "^10.0.8",
-    "@typescript-eslint/eslint-plugin": "^8.7.0",
-    "@typescript-eslint/parser": "^8.7.0",
+    "@types/mocha": "^10.0.10",
     "assertior": "^0.0.28",
-    "chromedriver": "^135.0.2",
-    "eslint": "^9.11.1",
-    "eslint-plugin-mocha": "^10.5.0",
-    "mocha": "^10.7.3",
-    "playwright": "^1.52.0",
-    "prettier": "^3.3.3",
-    "selenium-webdriver": "^4.31.0",
+    "chromedriver": "^144.0.1",
+    "mocha": "^11.7.5",
+    "oxlint": "^1.43.0",
+    "playwright": "^1.58.2",
+    "prettier": "^3.8.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.9.3"
   }
 }

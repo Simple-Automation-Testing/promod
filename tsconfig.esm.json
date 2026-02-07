@@ -1,12 +1,16 @@
 {
   "compilerOptions": {
-    "module": "NodeNext",
+    "module": "ESNext",
     "target": "ESNext",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "outDir": "built/esm",
     "declaration": true,
     "experimentalDecorators": true,
-    "allowJs": true
+    "allowJs": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "strictNullChecks": false
   },
   "include": [
     "lib"
