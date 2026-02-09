@@ -5,6 +5,7 @@ Promod does not ship its own test runner or browser driver. It wraps [Playwright
 - [Playwright setup](#playwright-setup)
 - [Selenium WebDriver setup](#selenium-webdriver-setup)
 - [Engine switcher](#engine-switcher)
+- [Browser config translation](./config.md) — define settings once, translate to engine-specific config
 
 ## Playwright setup
 

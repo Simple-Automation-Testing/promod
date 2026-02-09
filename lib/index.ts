@@ -1,4 +1,7 @@
 import { seleniumWD } from './swd';
 import { playwrightWD } from './pw';
+import { toPwConfig, toSwdConfig } from './config';
 
-export { seleniumWD, playwrightWD };
+import type { PromodBrowserConfig } from './config';
+
+export { seleniumWD, playwrightWD, toPwConfig, toSwdConfig, PromodBrowserConfig };

@@ -790,12 +790,14 @@ class Browser {
   async get(url: string): Promise<void> {
     const getUrl = resolveUrl(url, this.appBaseUrl);
 
-    (await this._contextWrapper.getCurrentPage()).goto(getUrl) as any;
+    const page = await this.getCurrentPage();
 
-    await (await this._contextWrapper.getCurrentPage())
+    page.goto(getUrl) as any;
+
+    await page
       .waitForLoadState('domcontentloaded', { timeout: 10_000 })
       .catch(console.error);
-    await (await this._contextWrapper.getCurrentPage())
+    await page
       .waitForLoadState('load', { timeout: 10_000 })
       .catch(console.error);
   }
