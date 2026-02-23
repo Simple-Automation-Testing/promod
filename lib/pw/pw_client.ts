@@ -159,7 +159,9 @@ class ContextWrapper {
     return this._currentPage._logs;
   }
 
-  async runNewContext(browserData: { currentBrowserName?: string; newBrowserName?: string; capabilities?: Record<string, unknown> } = {}) {
+  async runNewContext(
+    browserData: { currentBrowserName?: string; newBrowserName?: string; capabilities?: Record<string, unknown> } = {},
+  ) {
     const { currentBrowserName, newBrowserName, capabilities } = browserData;
     const config = capabilities || this._contextConfig;
     const { userAgent, isMobile, viewport } = config as typeof this._contextConfig;
@@ -179,7 +181,6 @@ class ContextWrapper {
     } else {
       await this._currentPage.updateContext(this._currentContext);
     }
-
   }
 
   async getCurrentContext() {
@@ -199,8 +200,13 @@ class ContextWrapper {
       await this._currentPage.updateContext(this._currentContext);
     }
 
-    if (browserName && contexts.find((item) => (item as unknown as Record<string, unknown>)['__promodBrowserName'] === browserName)) {
-      this._currentContext = contexts.find((item) => (item as unknown as Record<string, unknown>)['__promodBrowserName'] === browserName);
+    if (
+      browserName &&
+      contexts.find((item) => (item as unknown as Record<string, unknown>)['__promodBrowserName'] === browserName)
+    ) {
+      this._currentContext = contexts.find(
+        (item) => (item as unknown as Record<string, unknown>)['__promodBrowserName'] === browserName,
+      );
       await this._currentPage.updateContext(this._currentContext);
     }
   }
@@ -297,7 +303,15 @@ class Browser {
     }
   }
 
-  setClient({ driver, lauchNewInstance, baseConfig }: { driver: PWBrowser; lauchNewInstance?: () => Promise<PWBrowser>; baseConfig?: Record<string, unknown> } = { driver: null }) {
+  setClient(
+    {
+      driver,
+      lauchNewInstance,
+      baseConfig,
+    }: { driver: PWBrowser; lauchNewInstance?: () => Promise<PWBrowser>; baseConfig?: Record<string, unknown> } = {
+      driver: null,
+    },
+  ) {
     this._engineDriver = driver || this._engineDriver;
     this._contextWrapper = new ContextWrapper(this._engineDriver, baseConfig);
     this._createNewDriver = lauchNewInstance;
@@ -790,15 +804,13 @@ class Browser {
   async get(url: string): Promise<void> {
     const getUrl = resolveUrl(url, this.appBaseUrl);
 
-    const page = await this.getCurrentPage();
+    (await (await this._contextWrapper.getCurrentPage()).goto(getUrl)) as any;
 
-    page.goto(getUrl) as any;
-
-    await page
-      .waitForLoadState('domcontentloaded', { timeout: 10_000 })
+    await (await this._contextWrapper.getCurrentPage())
+      .waitForLoadState('domcontentloaded', { timeout: 5_000 })
       .catch(console.error);
-    await page
-      .waitForLoadState('load', { timeout: 10_000 })
+    await (await this._contextWrapper.getCurrentPage())
+      .waitForLoadState('load', { timeout: 5_000 })
       .catch(console.error);
   }
 
@@ -858,7 +870,13 @@ class Browser {
               const res = await asyncSome(allElements, async (item) => await item.isVisible());
 
               if (res) {
-                const handle = await frame.locator(selector).first().contentFrame().locator('*').first().evaluateHandle((el) => el);
+                const handle = await frame
+                  .locator(selector)
+                  .first()
+                  .contentFrame()
+                  .locator('*')
+                  .first()
+                  .evaluateHandle((el) => el);
                 return (await (handle as ElementHandle).ownerFrame()) as any as Page;
               }
             }
@@ -1051,7 +1069,14 @@ class Browser {
     (await this.getCurrentPage()).close();
   }
 
-  async scrollElementByMouseWheel(element: PromodElementType, x: number, y: number, deltaX: number, deltaY: number, duration: number) {
+  async scrollElementByMouseWheel(
+    element: PromodElementType,
+    x: number,
+    y: number,
+    deltaX: number,
+    deltaY: number,
+    duration: number,
+  ) {
     promodLogger.engineLog(
       `[PW] Promod client interface calls method "scrollElementByMouseWheel" from wrapped API, args: `,
       element,
