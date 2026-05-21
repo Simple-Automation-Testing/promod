@@ -12,10 +12,10 @@
   },
   "scripts": {
     "pw:install": "playwright install chrome",
-    "test:pw": "ENGINE=pw mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
-    "test:swd": "ENGINE=swd mocha $(find specs -name '*.spec.*') --require ts-node/register --timeout 500000",
-    "test:units": "mocha $(find units -name '*.test.*') --require ts-node/register --timeout 500000",
-    "test:debug": "mocha ./specs/async.child.methods.spec.ts --require ts-node/register --timeout 300000",
+    "test:pw": "ENGINE=pw mocha $(find specs -name '*.spec.*') --require ts-node/register/transpile-only --timeout 500000",
+    "test:swd": "ENGINE=swd mocha $(find specs -name '*.spec.*') --require ts-node/register/transpile-only --timeout 500000",
+    "test:units": "mocha $(find units -name '*.test.*') --require ts-node/register/transpile-only --timeout 500000",
+    "test:debug": "mocha ./specs/async.child.methods.spec.ts --require ts-node/register/transpile-only --timeout 300000",
     "lint": "oxlint -c oxlintrc.json --tsconfig tsconfig.json .",
     "tsc:cjs": "tsc -p tsconfig.json",
     "tsc:esm": "tsc -p tsconfig.esm.json",
@@ -36,11 +36,11 @@
   "homepage": "https://github.com/Simple-Automation-Testing/promod#readme",
   "dependencies": {
     "@types/selenium-webdriver": "^4.35.5",
-    "playwright-core": "^1.58.2",
-    "sat-compare": "^0.1.0",
+    "playwright-core": "^1.59.1",
+    "sat-compare": "^0.3.0",
     "sat-utils": "^3.2.0",
-    "sat-wait": "^0.1.6",
-    "selenium-webdriver": "^4.40.0"
+    "sat-wait": "^0.2.0",
+    "selenium-webdriver": "^4.43.0"
   },
   "keywords": [
     "promod",
@@ -53,14 +53,13 @@
     "playwright mod"
   ],
   "devDependencies": {
-    "@types/mocha": "^10.0.10",
     "assertior": "^0.0.28",
-    "chromedriver": "^144.0.1",
+    "chromedriver": "^147.0.4",
     "mocha": "^11.7.5",
-    "oxlint": "^1.43.0",
-    "playwright": "^1.58.2",
-    "prettier": "^3.8.1",
+    "oxlint": "^1.61.0",
+    "playwright": "^1.59.1",
+    "prettier": "^3.8.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   }
 }

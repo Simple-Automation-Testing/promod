@@ -6,15 +6,12 @@
     "no-console": "error",
     "unicorn/no-null": "off",
     "unicorn/explicit-length-check": "off",
-    "unicorn/prevent-abbreviations": "off",
     "unicorn/prefer-node-protocol": "off",
-    "unicorn/import-style": "off",
     "unicorn/no-this-assignment": "off",
     "unicorn/no-array-for-each": "off",
     "unicorn/no-array-reduce": "off",
     "unicorn/filename-case": "off",
     "unicorn/prefer-module": "off",
-    "unicorn/prefer-spread": "off",
-    "unicorn/consistent-destructuring": "off"
+    "unicorn/prefer-spread": "off"
   }
 }

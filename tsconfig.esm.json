@@ -5,6 +5,7 @@
     "moduleResolution": "bundler",
     "sourceMap": true,
     "outDir": "built/esm",
+    "rootDir": "./lib",
     "declaration": true,
     "experimentalDecorators": true,
     "allowJs": true,

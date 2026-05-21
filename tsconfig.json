@@ -4,6 +4,7 @@
 		"target": "es2020",
 		"sourceMap": true,
 		"outDir": "built/cjs",
+		"rootDir": "./lib",
 		"declaration": true,
 		"experimentalDecorators": true,
 		"allowJs": true,
