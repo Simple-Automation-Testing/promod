@@ -8,3 +8,4 @@ units*
 lib
 .prettierrc
 playground.*
+.claude

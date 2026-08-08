@@ -1,4 +1,15 @@
-import { toArray, isArray, isString, isNumber, safeJSONstringify, isNotEmptyObject } from 'sat-utils';
+import * as fs from 'fs';
+import * as path from 'path';
+import {
+  toArray,
+  isArray,
+  isString,
+  isNumber,
+  isFunction,
+  isAsyncFunction,
+  safeJSONstringify,
+  isNotEmptyObject,
+} from 'sat-utils';
 import { compare } from 'sat-compare';
 import { waitFor } from 'sat-wait';
 import { toNativeEngineExecuteScriptArgs } from '../helpers/execute.script';
@@ -16,6 +27,7 @@ import type {
   TLogLevel,
   TSwitchBrowserTabPage,
   PromodElementType,
+  TDownloadOpts,
 } from '../interface';
 
 type TMockReq = {
@@ -38,6 +50,8 @@ class Browser {
   seleniumDriver: WebDriver;
   /** @private */
   private appBaseUrl: string;
+  /** @private */
+  private _downloadsDir: string;
   /** @private */
   private initialTab: string;
   /** @private */
@@ -516,6 +530,10 @@ class Browser {
   setClient({ driver, lauchNewInstance, baseConfig }: { driver: WebDriver; lauchNewInstance?: (capabilities?: Record<string, unknown>) => Promise<WebDriver>; baseConfig?: Record<string, unknown> } = { driver: null }) {
     this.seleniumDriver = driver || this.seleniumDriver;
     this._createNewDriver = lauchNewInstance;
+
+    if (isString((baseConfig as { downloadsDir?: string })?.downloadsDir)) {
+      this._downloadsDir = (baseConfig as { downloadsDir?: string }).downloadsDir;
+    }
   }
 
   get Key() {
@@ -528,6 +546,109 @@ class Browser {
 
   set baseUrl(url) {
     this.appBaseUrl = url;
+  }
+
+  get downloadsDir() {
+    return this._downloadsDir;
+  }
+
+  set downloadsDir(dirPath: string) {
+    this._downloadsDir = dirPath;
+  }
+
+  /**
+   * @example
+   * const { seleniumWD } = require('promod');
+   * const { browser, $ } = seleniumWD;
+   *
+   * browser.downloadsDir = './downloads'; // or via setClient baseConfig { downloadsDir: './downloads' }
+   * const filePath = await browser.downloadFile($('a.report-link'));
+   * // or with a custom trigger and file name
+   * const filePath = await browser.downloadFile(async () => $('button.export').click(), { fileName: 'report.csv' });
+   *
+   * @param {Function | PromodElementType} action element to click or async function that triggers the download
+   * @param {TDownloadOpts} [opts] downloadsDir overrides config/setter value; fileName renames the stored file; timeout in ms
+   * @return {Promise<string>} absolute path of the downloaded file
+   */
+  async downloadFile(action: (() => Promise<any>) | PromodElementType, opts: TDownloadOpts = {}): Promise<string> {
+    promodLogger.engineLog(`[SWD] Promod client interface calls method "downloadFile" from wrapped API, args: `, opts);
+    const { fileName, timeout = 30_000, downloadsDir = this._downloadsDir } = opts;
+
+    if (!isString(downloadsDir) || !downloadsDir.length) {
+      throw new Error(
+        `downloadFile(): downloads directory is not set, use "downloadsDir" config property, "browser.downloadsDir" setter or "downloadsDir" method option`,
+      );
+    }
+
+    const dirPath = path.resolve(downloadsDir);
+    fs.mkdirSync(dirPath, { recursive: true });
+
+    /**
+     * Chromium based browsers allow to change the download directory at runtime via CDP,
+     * for other browsers the directory has to be set at launch time via capabilities prefs.
+     */
+    try {
+      const cdp = await this.seleniumDriver.createCDPConnection('page');
+
+      const existingPage = this.cdpPages.find((p) => p._wsConnection?._url === cdp._wsConnection?._url);
+      if (existingPage) {
+        await cdp._wsConnection?.close();
+        await existingPage.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dirPath });
+      } else {
+        this.cdpPages.push(cdp);
+        await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dirPath });
+      }
+    } catch (error) {
+      promodLogger.engineLog('[SWD] Failed to set download behavior via CDP:', error);
+    }
+
+    const filesBeforeDownload = new Set(fs.readdirSync(dirPath));
+
+    if (isAsyncFunction(action) || isFunction(action)) {
+      await (action as () => Promise<any>)();
+    } else {
+      await (action as PromodElementType).click();
+    }
+
+    const inProgressExtensions = ['.crdownload', '.part', '.tmp', '.download'];
+    let downloadedFilePath: string;
+
+    await waitFor(
+      async () => {
+        const newFiles = fs
+          .readdirSync(dirPath)
+          .filter((file) => !filesBeforeDownload.has(file))
+          .filter((file) => !inProgressExtensions.some((extension) => file.endsWith(extension)));
+
+        if (!newFiles.length) return false;
+
+        const candidatePath = path.resolve(dirPath, newFiles[0]);
+
+        /**
+         * The file is considered fully downloaded when its size stops growing.
+         */
+        const sizeBefore = fs.statSync(candidatePath).size;
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const sizeAfter = fs.statSync(candidatePath).size;
+
+        if (sizeBefore !== sizeAfter) return false;
+
+        downloadedFilePath = candidatePath;
+        return true;
+      },
+      {
+        timeout,
+        message: (t) => `downloadFile(): file did not appear in "${dirPath}" within ${t}ms`,
+      },
+    );
+
+    if (fileName) {
+      const renamedFilePath = path.resolve(dirPath, fileName);
+      fs.renameSync(downloadedFilePath, renamedFilePath);
+      return renamedFilePath;
+    }
+
+    return downloadedFilePath;
   }
 
   async returnToInitialTab() {

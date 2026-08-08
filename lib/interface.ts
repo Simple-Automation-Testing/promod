@@ -1,4 +1,29 @@
+import type { Locator, PageScreenshotOptions } from 'playwright-core';
+
 export type TCustomSelector = { query: string; text?: string; rg?: string; strict?: boolean };
+
+/**
+ * Promod own action options, layered on top of the engine action options.
+ *
+ * @property {boolean} [withScroll] scroll element into view center before the action
+ * @property {boolean} [allowForceIfIntercepted] re-execute the action when it was intercepted by another element
+ */
+export type TPromodActionOpts = {
+  withScroll?: boolean;
+  allowForceIfIntercepted?: boolean;
+};
+
+/**
+ * Engine action options are derived from playwright-core instead of being listed by hand,
+ * so every option playwright adds (`scroll`, `signal`, ...) is available without a signature update.
+ *
+ * Playwright only options are accepted by the selenium engine, but are ignored by it.
+ */
+export type TClickOpts = NonNullable<Parameters<Locator['click']>[0]> & TPromodActionOpts;
+export type TDoubleClickOpts = NonNullable<Parameters<Locator['dblclick']>[0]> & TPromodActionOpts;
+export type THoverOpts = NonNullable<Parameters<Locator['hover']>[0]>;
+export type TElementScreenshotOpts = NonNullable<Parameters<Locator['screenshot']>[0]>;
+export type TPageScreenshotOpts = PageScreenshotOptions;
 
 export interface PromodElementsType {
   selector: string;
@@ -162,32 +187,12 @@ export interface PromodElementType {
    * await button.doubleClick({ allowForceIfIntercepted: true }); // if regular click is intercepted by another element, click will be re-executed by element x,y center coordinates
    *
    *
-   * @param {object} [opts]
-   * @param {boolean} [opts.withScroll]
-   * @param {boolean} [opts.allowForceIfIntercepted]
-   * @param {boolean} [opts.force]
-   * @param {string} [opts.button]
-   * @param {number} [opts.delay]
-   * @param {string[]} [opts.modifiers]
-   * @param {boolean} [opts.noWaitAfter]
-   * @param {{ x: number; y: number }} [opts.position]
-   * @param {number} [opts.timeout]
-   * @param {boolean} [opts.trial]
+   * @param {TDoubleClickOpts} [opts] promod options (`withScroll`, `allowForceIfIntercepted`) plus any
+   * playwright `locator.dblclick` option, for example `scroll: 'none'` or `signal`
    *
    * @returns {Promise<void>}
    */
-  doubleClick(opts?: {
-    withScroll?: boolean;
-    allowForceIfIntercepted?: boolean;
-    button?: 'left' | 'right' | 'middle';
-    delay?: number;
-    force?: boolean;
-    modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
-    noWaitAfter?: boolean;
-    position?: { x: number; y: number };
-    timeout?: number;
-    trial?: boolean;
-  }): Promise<void>;
+  doubleClick(opts?: TDoubleClickOpts): Promise<void>;
 
   /**
    * @example
@@ -197,61 +202,26 @@ export interface PromodElementType {
    * await button.click({ allowForceIfIntercepted: true }); // if regular click is intercepted by another element, click will be re-executed by element x,y center coordinates
    *
    *
-   * @param {object} [opts]
-   * @param {boolean} [opts.withScroll]
-   * @param {boolean} [opts.allowForceIfIntercepted]
-   * @param {boolean} [opts.force]
-   * @param {string} [opts.button]
-   * @param {number} [opts.clickCount]
-   * @param {number} [opts.delay]
-   * @param {string[]} [opts.modifiers]
-   * @param {boolean} [opts.noWaitAfter]
-   * @param {{ x: number; y: number }} [opts.position]
-   * @param {number} [opts.timeout]
-   * @param {boolean} [opts.trial]
+   * @example
+   * await button.click({ scroll: 'none' }); // opt out of playwright auto scroll into view
+   * await button.click({ signal: controller.signal }); // cancel the action via AbortSignal
+   *
+   * @param {TClickOpts} [opts] promod options (`withScroll`, `allowForceIfIntercepted`) plus any
+   * playwright `locator.click` option, for example `scroll: 'none'` or `signal`
    *
    * @returns {Promise<void>}
    */
-  click(opts?: {
-    withScroll?: boolean;
-    allowForceIfIntercepted?: boolean;
-    button?: 'left' | 'right' | 'middle';
-    clickCount?: number;
-    delay?: number;
-    force?: boolean;
-    modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
-    noWaitAfter?: boolean;
-    position?: { x: number; y: number };
-    timeout?: number;
-    trial?: boolean;
-  }): Promise<void>;
+  click(opts?: TClickOpts): Promise<void>;
 
   /**
    * @example
    * const link = $('a')
    * await link.hover(); // will hover element
    *
-   * @param {object} [opts] clickOpts
-   * @param {boolean} [opts.force] force
-   * @param {Array<'Alt' | 'Control' | 'Meta' | 'Shift'>} [opts.modifiers] modifiers
-   * @param {boolean} [opts.noWaitAfter] noWaitAfter
-   * @param {{ x: number; y: number }} [opts.position] position
-   * @param {number} [opts.timeout] timeout
-   * @param {boolean} [opts.trial] trial
-   * @returns {Promise<void>}
+   * @param {THoverOpts} [opts] any playwright `locator.hover` option, for example `scroll: 'none'` or `signal`
    * @returns {Promise<void>}
    */
-  hover(opts?: {
-    force?: boolean;
-    modifiers?: ('Alt' | 'Control' | 'Meta' | 'Shift')[];
-    noWaitAfter?: boolean;
-    position?: {
-      x: number;
-      y: number;
-    };
-    timeout?: number;
-    trial?: boolean;
-  }): Promise<void>;
+  hover(opts?: THoverOpts): Promise<void>;
 
   /**
    * @example
@@ -363,7 +333,7 @@ export interface PromodElementType {
 
   isDisplayed(): Promise<boolean>;
 
-  takeScreenshot(opts: import('playwright-core').PageScreenshotOptions): Promise<string>;
+  takeScreenshot(opts?: TElementScreenshotOpts): Promise<string>;
 
   getEngineElement<T = unknown>(): Promise<T>;
 
@@ -402,6 +372,12 @@ export type TLogLevel = {
 export type TSwitchToIframe = {
   timeout?: number;
   message?: string;
+};
+
+export type TDownloadOpts = {
+  fileName?: string;
+  timeout?: number;
+  downloadsDir?: string;
 };
 
 export type ExecuteScriptFn = (...data: any[]) => unknown;

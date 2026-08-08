@@ -17,7 +17,7 @@ import { getPositionXY } from '../mappers';
 import { promodLogger } from '../internals';
 
 import type { Browser } from './swd_client';
-import type { PromodElementType, PromodElementsType } from '../interface';
+import type { PromodElementType, PromodElementsType, TClickOpts, TDoubleClickOpts } from '../interface';
 import type { TCustomSelector } from '../mappers';
 
 const SELENIUM_API_METHODS = [
@@ -520,24 +520,17 @@ class PromodSeleniumElement {
     return childElements as any;
   }
 
-  async doubleClick(
-    opts: {
-      withScroll?: boolean;
-      button?: 'left' | 'right' | 'middle';
-      delay?: number;
-      force?: boolean;
-      modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
-      noWaitAfter?: boolean;
-      position?: { x: number; y: number };
-      allowForceIfIntercepted?: boolean;
-      timeout?: number;
-      trial?: boolean;
-    } = { timeout: 500 },
-  ) {
+  /**
+   * @param {TDoubleClickOpts} [opts] promod options (`withScroll`, `allowForceIfIntercepted`) plus any
+   * playwright `locator.dblclick` option. Playwright only options are accepted here for a single
+   * cross engine signature, but the selenium engine ignores them.
+   * @returns {Promise<void>}
+   */
+  async doubleClick(opts: TDoubleClickOpts = { timeout: 500 }) {
     if (!isObject(opts) && !isUndefined(opts)) {
       throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
     }
-    const { withScroll, allowForceIfIntercepted, ...pwOpts } = opts;
+    const { withScroll } = opts;
 
     if (withScroll) {
       await this.scrollIntoView('center');
@@ -558,35 +551,12 @@ class PromodSeleniumElement {
    * await button.click({ withScroll: true }); // first element will be scrolled to view port and then regular click
    * await button.click({ allowForceIfIntercepted: true }); // if regular click is intercepted by another element, click will be re-executed by element x,y center coordinates
    *
-   * @param {object} [opts] clickOpts
-   * @param {boolean} [opts.withScroll] withScroll
-   * @param {'left' | 'right' | 'middle'} [opts.button] button
-   * @param {number} [opts.clickCount] clickCount
-   * @param {number} [opts.delay] delay
-   * @param {boolean} [opts.force] force
-   * @param {Array<'Alt' | 'Control' | 'Meta' | 'Shift'>} [opts.modifiers] modifiers
-   * @param {boolean} [opts.noWaitAfter] noWaitAfter
-   * @param {{ x: number; y: number }} [opts.position] position
-   * @param {number} [opts.timeout] timeout
-   * @param {boolean} [opts.trial] trial
-   * @param {boolean} [opts.allowForceIfIntercepted] allowForceIfIntercepted
+   * @param {TClickOpts} [opts] promod options (`withScroll`, `allowForceIfIntercepted`) plus any
+   * playwright `locator.click` option. Playwright only options are accepted here for a single
+   * cross engine signature, but the selenium engine ignores them.
    * @returns {Promise<void>}
    */
-  async click(
-    opts: {
-      withScroll?: boolean;
-      allowForceIfIntercepted?: boolean;
-      button?: 'left' | 'right' | 'middle';
-      clickCount?: number;
-      delay?: number;
-      force?: boolean;
-      modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
-      noWaitAfter?: boolean;
-      position?: { x: number; y: number };
-      timeout?: number;
-      trial?: boolean;
-    } = { clickCount: 1 },
-  ) {
+  async click(opts: TClickOpts = { clickCount: 1 }) {
     promodLogger.engineLog(`[SWD] Promod element interface calls method "click" from wrapped API, args: `, opts);
     if (!isObject(opts) && !isUndefined(opts)) {
       throw new TypeError(`click(); accepts only object type ${getType(opts)}`);

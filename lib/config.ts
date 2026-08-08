@@ -16,6 +16,7 @@ type PromodBrowserConfig = {
   geolocation?: { latitude: number; longitude: number; accuracy?: number };
   colorScheme?: 'light' | 'dark' | 'no-preference';
   ignoreHTTPSErrors?: boolean;
+  downloadsDir?: string;
 };
 
 type PwBrowserType = 'chromium' | 'firefox' | 'webkit';
@@ -64,6 +65,10 @@ function toPwConfig(config: PromodBrowserConfig): PwConfig {
   if (config.geolocation) contextOptions.geolocation = config.geolocation;
   if (config.colorScheme) contextOptions.colorScheme = config.colorScheme;
   if (config.ignoreHTTPSErrors !== undefined) contextOptions.ignoreHTTPSErrors = config.ignoreHTTPSErrors;
+  if (config.downloadsDir) {
+    launchOptions.downloadsPath = config.downloadsDir;
+    contextOptions.acceptDownloads = true;
+  }
 
   return { browserType, launchOptions, contextOptions };
 }
@@ -120,6 +125,14 @@ function buildChromeOptions(config: PromodBrowserConfig): Record<string, unknown
   const mobileEmulation = buildMobileEmulation(config);
   if (mobileEmulation) options.mobileEmulation = mobileEmulation;
 
+  if (config.downloadsDir) {
+    options.prefs = {
+      'download.default_directory': config.downloadsDir,
+      'download.prompt_for_download': false,
+      'download.directory_upgrade': true,
+    };
+  }
+
   return options;
 }
 
@@ -140,6 +153,11 @@ function buildFirefoxOptions(config: PromodBrowserConfig): Record<string, unknow
   const prefs: Record<string, unknown> = {};
   if (config.userAgent) prefs['general.useragent.override'] = config.userAgent;
   if (config.locale) prefs['intl.accept_languages'] = config.locale;
+  if (config.downloadsDir) {
+    prefs['browser.download.dir'] = config.downloadsDir;
+    prefs['browser.download.folderList'] = 2;
+    prefs['browser.download.useDownloadDir'] = true;
+  }
 
   if (Object.keys(prefs).length > 0) options.prefs = prefs;
 

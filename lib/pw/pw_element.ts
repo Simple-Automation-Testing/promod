@@ -18,7 +18,7 @@ import { promodLogger } from '../internals';
 import { customSelectorFilterFn } from '../shared/custom_selector_filter';
 
 import type { Browser } from './pw_client';
-import type { PromodElementType, PromodElementsType } from '../interface';
+import type { PromodElementType, PromodElementsType, TClickOpts, TDoubleClickOpts, THoverOpts } from '../interface';
 import type { TCustomSelector } from '../mappers';
 import type { Page, Locator, ElementHandle } from 'playwright-core';
 
@@ -560,33 +560,11 @@ class PromodPlaywrightElement {
    * const button = $('button');
    * await button.doubleClick();
    *
-   * @param {object} [opts] clickOpts
-   * @param {boolean} [opts.withScroll] withScroll
-   * @param {'left' | 'right' | 'middle'} [opts.button] button
-   * @param {number} [opts.clickCount] clickCount
-   * @param {number} [opts.delay] delay
-   * @param {boolean} [opts.force] force
-   * @param {Array<'Alt' | 'Control' | 'Meta' | 'Shift'>} [opts.modifiers] modifiers
-   * @param {boolean} [opts.noWaitAfter] noWaitAfter
-   * @param {{ x: number; y: number }} [opts.position] position
-   * @param {number} [opts.timeout] timeout
-   * @param {boolean} [opts.trial] trial
+   * @param {TDoubleClickOpts} [opts] promod options (`withScroll`, `allowForceIfIntercepted`) plus any
+   * playwright `locator.dblclick` option, for example `scroll: 'none'` or `signal`
    * @returns {Promise<void>}
    */
-  async doubleClick(
-    opts: {
-      withScroll?: boolean;
-      button?: 'left' | 'right' | 'middle';
-      delay?: number;
-      force?: boolean;
-      modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
-      noWaitAfter?: boolean;
-      position?: { x: number; y: number };
-      allowForceIfIntercepted?: boolean;
-      timeout?: number;
-      trial?: boolean;
-    } = { timeout: 500 },
-  ) {
+  async doubleClick(opts: TDoubleClickOpts = { timeout: 500 }) {
     promodLogger.engineLog(`[PW] Promod element interface calls method "click" from wrapped API, args: `, opts);
     if (!isObject(opts) && !isUndefined(opts)) {
       throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
@@ -621,34 +599,15 @@ class PromodPlaywrightElement {
    * const button = $('button');
    * await button.click();
    *
-   * @param {object} [opts] clickOpts
-   * @param {boolean} [opts.withScroll] withScroll
-   * @param {'left' | 'right' | 'middle'} [opts.button] button
-   * @param {number} [opts.clickCount] clickCount
-   * @param {number} [opts.delay] delay
-   * @param {boolean} [opts.force] force
-   * @param {Array<'Alt' | 'Control' | 'Meta' | 'Shift'>} [opts.modifiers] modifiers
-   * @param {boolean} [opts.noWaitAfter] noWaitAfter
-   * @param {{ x: number; y: number }} [opts.position] position
-   * @param {number} [opts.timeout] timeout
-   * @param {boolean} [opts.trial] trial
+   * @example
+   * await button.click({ scroll: 'none' }); // opt out of playwright auto scroll into view
+   * await button.click({ signal: controller.signal }); // cancel the action via AbortSignal
+   *
+   * @param {TClickOpts} [opts] promod options (`withScroll`, `allowForceIfIntercepted`) plus any
+   * playwright `locator.click` option, for example `scroll: 'none'` or `signal`
    * @returns {Promise<void>}
    */
-  async click(
-    opts: {
-      withScroll?: boolean;
-      button?: 'left' | 'right' | 'middle';
-      clickCount?: number;
-      delay?: number;
-      force?: boolean;
-      modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
-      noWaitAfter?: boolean;
-      position?: { x: number; y: number };
-      allowForceIfIntercepted?: boolean;
-      timeout?: number;
-      trial?: boolean;
-    } = { clickCount: 1, timeout: 500 },
-  ) {
+  async click(opts: TClickOpts = { clickCount: 1, timeout: 500 }) {
     promodLogger.engineLog(`[PW] Promod element interface calls method "click" from wrapped API, args: `, opts);
     if (!isObject(opts) && !isUndefined(opts)) {
       throw new TypeError(`click(); accepts only object type ${getType(opts)}`);
@@ -759,25 +718,10 @@ class PromodPlaywrightElement {
    * const button = $('button');
    * await button.hover();
    *
-   * @param {object} [opts] clickOpts
-   * @param {boolean} [opts.force] force
-   * @param {Array<'Alt' | 'Control' | 'Meta' | 'Shift'>} [opts.modifiers] modifiers
-   * @param {boolean} [opts.noWaitAfter] noWaitAfter
-   * @param {{ x: number; y: number }} [opts.position] position
-   * @param {number} [opts.timeout] timeout
-   * @param {boolean} [opts.trial] trial
+   * @param {THoverOpts} [opts] any playwright `locator.hover` option, for example `scroll: 'none'` or `signal`
    * @returns {Promise<void>}
    */
-  async hover(
-    opts: {
-      force?: boolean;
-      modifiers?: Array<'Alt' | 'Control' | 'Meta' | 'Shift'>;
-      noWaitAfter?: boolean;
-      position?: { x: number; y: number };
-      timeout?: number;
-      trial?: boolean;
-    } = { force: true, timeout: 500 },
-  ) {
+  async hover(opts: THoverOpts = { force: true, timeout: 500 }) {
     promodLogger.engineLog(`[PW] Promod element interface calls method "hover" from wrapped API`);
     await this.getElement();
     await this._driverElement.hover(opts);

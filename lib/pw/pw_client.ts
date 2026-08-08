@@ -1,14 +1,15 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   toArray,
   isNotEmptyObject,
   isNumber,
   isAsyncFunction,
+  isFunction,
   lengthToIndexesArray,
   asyncForEach,
-  asyncSome,
   safeJSONstringify,
   isString,
-  asyncFilter,
 } from 'sat-utils';
 import { compare } from 'sat-compare';
 import { waitFor } from 'sat-wait';
@@ -17,7 +18,7 @@ import { KeysPW, resolveUrl } from '../mappers';
 import { promodLogger } from '../internals';
 import { validateBrowserCallMethod } from '../shared/validate_browser';
 
-import type { Locator, Browser as PWBrowser, BrowserContext, Page, ElementHandle, Request } from 'playwright-core';
+import type { Locator, Browser as PWBrowser, BrowserContext, Page, Frame, ElementHandle, Request } from 'playwright-core';
 import type {
   TSwitchToIframe,
   ExecuteScriptFn,
@@ -25,6 +26,8 @@ import type {
   TLogLevel,
   TSwitchBrowserTabPage,
   PromodElementType,
+  TPageScreenshotOpts,
+  TDownloadOpts,
 } from '../interface';
 
 class PageWrapper {
@@ -245,10 +248,11 @@ class Browser {
   _engineDriver: PWBrowser;
   _contextWrapper: ContextWrapper;
   _contextFrame: Page | (() => Promise<Page>);
-  _contextFrameHolder: Locator;
 
   /** @private */
   private appBaseUrl: string;
+  /** @private */
+  private _downloadsDir: string;
   /** @private */
   private initialTab: Page;
   /** @private */
@@ -315,12 +319,24 @@ class Browser {
     this._engineDriver = driver || this._engineDriver;
     this._contextWrapper = new ContextWrapper(this._engineDriver, baseConfig);
     this._createNewDriver = lauchNewInstance;
+
+    if (isString((baseConfig as { downloadsDir?: string })?.downloadsDir)) {
+      this._downloadsDir = (baseConfig as { downloadsDir?: string }).downloadsDir;
+    }
   }
 
   /** @private */
   private async getWorkingContext(): Promise<Page> {
-    if (isAsyncFunction(this._contextFrame)) {
+    /**
+     * switchToIframe() stores either a lazy resolver (selector overload, the iframe is searched
+     * on every query) or an already resolved frame (element overload).
+     */
+    if (isAsyncFunction(this._contextFrame) || isFunction(this._contextFrame)) {
       return await (this._contextFrame as () => Promise<Page>)();
+    }
+
+    if (this._contextFrame) {
+      return this._contextFrame as Page;
     }
 
     return await this._contextWrapper.getCurrentPage();
@@ -423,6 +439,56 @@ class Browser {
 
   set baseUrl(url) {
     this.appBaseUrl = url;
+  }
+
+  get downloadsDir() {
+    return this._downloadsDir;
+  }
+
+  set downloadsDir(dirPath: string) {
+    this._downloadsDir = dirPath;
+  }
+
+  /**
+   * @example
+   * const { playwrightWD } = require('promod');
+   * const { browser, $ } = playwrightWD;
+   *
+   * browser.downloadsDir = './downloads'; // or via setClient baseConfig { downloadsDir: './downloads' }
+   * const filePath = await browser.downloadFile($('a.report-link'));
+   * // or with a custom trigger and file name
+   * const filePath = await browser.downloadFile(async () => $('button.export').click(), { fileName: 'report.csv' });
+   *
+   * @param {Function | PromodElementType} action element to click or async function that triggers the download
+   * @param {TDownloadOpts} [opts] downloadsDir overrides config/setter value; fileName renames the stored file; timeout in ms
+   * @return {Promise<string>} absolute path of the downloaded file
+   */
+  async downloadFile(action: (() => Promise<any>) | PromodElementType, opts: TDownloadOpts = {}): Promise<string> {
+    promodLogger.engineLog(`[PW] Promod client interface calls method "downloadFile" from wrapped API, args: `, opts);
+    const { fileName, timeout = 30_000, downloadsDir = this._downloadsDir } = opts;
+
+    if (!isString(downloadsDir) || !downloadsDir.length) {
+      throw new Error(
+        `downloadFile(): downloads directory is not set, use "downloadsDir" config property, "browser.downloadsDir" setter or "downloadsDir" method option`,
+      );
+    }
+
+    fs.mkdirSync(downloadsDir, { recursive: true });
+
+    const page = await this.getCurrentPage();
+    const downloadPromise = page.waitForEvent('download', { timeout });
+
+    if (isAsyncFunction(action) || isFunction(action)) {
+      await (action as () => Promise<any>)();
+    } else {
+      await (action as PromodElementType).click();
+    }
+
+    const download = await downloadPromise;
+    const filePath = path.resolve(downloadsDir, fileName || download.suggestedFilename());
+    await download.saveAs(filePath);
+
+    return filePath;
   }
 
   async returnToInitialTab() {
@@ -629,17 +695,19 @@ class Browser {
   }
 
   /**
-   * @param [opts={ timeout: 2500 }] timeout
+   * @param {TPageScreenshotOpts} [opts={ timeout: 2500 }] any playwright `page.screenshot` option
    *
    * @example
    * const { playwrightWD } = require('promod');
    * const { browser } = playwrightWD;
    *
    * const currentPageScreenshot = await browser.takeScreenshot();
+   * const webp = await browser.takeScreenshot({ type: 'webp', quality: 50 });
+   * const fullPage = await browser.takeScreenshot({ fullPage: true });
    *
    * @returns {Promise<Buffer>}
    */
-  async takeScreenshot(opts = { timeout: 2500 }): Promise<Buffer> {
+  async takeScreenshot(opts: TPageScreenshotOpts = { timeout: 2500 }): Promise<Buffer> {
     promodLogger.engineLog(`[PW] Promod client interface calls method "takeScreenshot" from wrapped API`);
     return (await this._contextWrapper.getCurrentPage()).screenshot(opts).catch((e) => {
       return Buffer.from('');
@@ -837,47 +905,51 @@ class Browser {
       await this.switchToDefauldIframe();
     }
     if (typeof selector === 'string') {
+      /**
+       * Selector overload stays lazy, the iframe is resolved on every query, so switching
+       * to an iframe that does not exist yet keeps working.
+       */
       this._contextFrame = async () => {
         return await waitFor(
           async () => {
-            const page = await this.getCurrentPage();
-            const pageFrames = await page.frames();
-            const frames = await asyncFilter(
-              pageFrames,
-              async (frame) =>
-                (
-                  await frame
-                    .locator(selector)
-                    .first()
-                    .contentFrame()
-                    .locator('*')
-                    .all()
-                    .catch((): Locator[] => [])
-                ).length > 0,
-            );
+            /**
+             * The iframe can be nested, so every frame of the page is searched, not only the main one.
+             */
+            let frameWithoutVisibleContent: Frame = null;
 
-            for (const [_index, frame] of frames.entries()) {
-              const allElements = await frame
-                .locator(selector)
-                .first()
-                .contentFrame()
+            for (const frame of (await this.getCurrentPage()).frames()) {
+              const iframeLocator = frame.locator(selector).first();
+
+              /**
+               * count() resolves immediately, elementHandle() waits for the element, so the
+               * cheap check goes first and frames without the iframe are skipped without a wait.
+               */
+              if ((await iframeLocator.count().catch(() => 0)) === 0) continue;
+
+              const iframeElement = await iframeLocator.elementHandle({ timeout: 500 }).catch((): ElementHandle => null);
+
+              if (!iframeElement) continue;
+
+              const contentFrame = await iframeElement.contentFrame();
+
+              if (!contentFrame) continue;
+
+              /**
+               * A frame that renders something is preferred, a frame without visible content
+               * is used only when no better candidate was found.
+               */
+              const hasVisibleContent = await contentFrame
                 .locator('*')
-                .all()
-                .catch((): Locator[] => []);
+                .first()
+                .isVisible()
+                .catch(() => false);
 
-              const res = await asyncSome(allElements, async (item) => await item.isVisible());
+              if (hasVisibleContent) return contentFrame as any as Page;
 
-              if (res) {
-                const handle = await frame
-                  .locator(selector)
-                  .first()
-                  .contentFrame()
-                  .locator('*')
-                  .first()
-                  .evaluateHandle((el) => el);
-                return (await (handle as ElementHandle).ownerFrame()) as any as Page;
-              }
+              frameWithoutVisibleContent = frameWithoutVisibleContent || contentFrame;
             }
+
+            return frameWithoutVisibleContent as any as Page;
           },
           {
             timeout,
@@ -889,10 +961,25 @@ class Browser {
         );
       };
     }
+
     if ((selector as PromodElementType).getEngineElement) {
-      this._contextFrame = () =>
-        // @ts-expect-error
-        (selector as PromodElementType).getEngineElement().then((el) => el.locator('*').first().ownerFrame());
+      /**
+       * Element overload is resolved eagerly, against the context which is current right now.
+       * A lazy resolver would call getEngineElement(), which asks for the working context back,
+       * and the frame resolution would recurse into itself.
+       */
+      const iframeElement = await (selector as PromodElementType).getEngineElement<Locator>();
+      const contentFrame = await (await iframeElement.elementHandle()).contentFrame();
+
+      if (!contentFrame) {
+        throw new Error(
+          `switchToIframe('${
+            (selector as PromodElementType).selector
+          }'): element was found, but it does not hold an iframe document ${message ? '\n' + message : ''}`,
+        );
+      }
+
+      this._contextFrame = contentFrame as any as Page;
     }
   }
 
@@ -908,7 +995,6 @@ class Browser {
   async switchToDefauldIframe(): Promise<void> {
     promodLogger.engineLog(`[PW] Promod client interface calls method "switchToDefauldIframe" from wrapped API`);
     this._contextFrame = null;
-    this._contextFrameHolder = null;
   }
 
   /**

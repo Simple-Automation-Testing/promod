@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { waitFor, sleep } from 'sat-wait';
 import {
   getEngine,
@@ -14,11 +16,14 @@ import {
   scrollFile,
   invisibleFile,
   visibleFile,
+  downloadFile,
 } from './setup';
 import { KeysSWD } from '../lib/mappers';
 
 describe('Base', () => {
   const { $, $$, browser } = engine;
+
+  const downloadsDir = path.resolve(__dirname, './misc/downloads_tmp');
 
   before(async () => {
     await getEngine();
@@ -26,6 +31,7 @@ describe('Base', () => {
 
   after(async () => {
     await browser.quitAll();
+    fs.rmSync(downloadsDir, { recursive: true, force: true });
   });
 
   it('[P] get only visible elements', async () => {
@@ -639,10 +645,72 @@ describe('Base', () => {
     expect(await $('#main').isDisplayed()).toEqual(true);
   });
 
+  it('[P] iframes switch by element', async () => {
+    await browser.get(iframesFile);
+    await waitFor(() => $('[name="first"]').isDisplayed());
+
+    const list = $('ul').$$('li');
+    /**
+     * switchToIframe() accepts a selector and a promod element, both overloads
+     * have to land in the same iframe.
+     */
+    await browser.switchToIframe($('[name="first"]'));
+    expect(await list.count()).toEqual(3);
+    expect(await $('#toplevel_doc').isPresent()).toEqual(false);
+
+    await browser.switchToDefauldIframe();
+    expect(await list.count()).toEqual(0);
+    expect(await $('#toplevel_doc').isPresent()).toEqual(true);
+  });
+
   it('[P] injectPagePreloadScript', async () => {
     await browser.injectPagePreloadScript(`window._test = '<div>test</div>'`);
     await browser.get('https://google.com');
     const data = await browser.executeScript(() => (window as any)['_test']);
     expect(data).toEqual('<div>test</div>');
+  });
+
+  it('[N] downloadFile without downloads dir', async () => {
+    await browser.get(downloadFile);
+    await waitFor(() => $('#download-link').isDisplayed());
+    browser.downloadsDir = undefined as any;
+
+    let err;
+    try {
+      await browser.downloadFile($('#download-link'), { timeout: 5000 });
+    } catch (error) {
+      err = error;
+    }
+
+    expect(err).toNotEqual(undefined);
+    expect(err.toString()).stringIncludesSubstring('downloads directory is not set');
+  });
+
+  it('[P] downloadFile with downloadsDir setter', async () => {
+    await browser.get(downloadFile);
+    await waitFor(() => $('#download-link').isDisplayed());
+    browser.downloadsDir = downloadsDir;
+
+    const filePath = await browser.downloadFile($('#download-link'));
+
+    expect(browser.downloadsDir).toEqual(downloadsDir);
+    expect(fs.existsSync(filePath)).toEqual(true);
+    expect(path.basename(filePath)).toEqual('promod-download.txt');
+    expect(fs.readFileSync(filePath, 'utf8')).toEqual('promod download content');
+  });
+
+  it('[P] downloadFile with custom trigger, dir and file name', async () => {
+    await browser.get(downloadFile);
+    await waitFor(() => $('#download-link').isDisplayed());
+
+    const filePath = await browser.downloadFile(async () => $('#download-link').click(), {
+      downloadsDir: path.resolve(downloadsDir, './nested'),
+      fileName: 'renamed.txt',
+    });
+
+    expect(fs.existsSync(filePath)).toEqual(true);
+    expect(path.basename(filePath)).toEqual('renamed.txt');
+    expect(path.dirname(filePath)).toEqual(path.resolve(downloadsDir, './nested'));
+    expect(fs.readFileSync(filePath, 'utf8')).toEqual('promod download content');
   });
 });
