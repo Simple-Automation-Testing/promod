@@ -675,7 +675,7 @@ describe('Base', () => {
     await waitFor(() => $('#download-link').isDisplayed());
     browser.downloadsDir = undefined as any;
 
-    let err;
+    let err: any;
     try {
       await browser.downloadFile($('#download-link'), { timeout: 5000 });
     } catch (error) {

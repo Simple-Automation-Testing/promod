@@ -13,6 +13,8 @@ All examples show both Playwright and Selenium WebDriver usage.
 - [back](#back)
 - [forward](#forward)
 - [takeScreenshot](#takescreenshot)
+- [downloadsDir](#downloadsdir)
+- [downloadFile](#downloadfile)
 - [setWindowSize](#setwindowsize)
 - [getWindomSize](#getwindomsize)
 - [maximize](#maximize)
@@ -119,6 +121,48 @@ await browser.forward();
 ```js
 const screenshot = await browser.takeScreenshot();
 ```
+
+## downloadsDir
+
+Folder where `downloadFile` stores downloaded files. Can be set via the setter or via `setClient` base config (`downloadsDir` property, see [config](./config.md)).
+
+```js
+browser.downloadsDir = './downloads'; // setter
+const dir = browser.downloadsDir;     // getter
+
+// or via setClient
+browser.setClient({ driver, baseConfig: { downloadsDir: './downloads' } });
+```
+
+## downloadFile
+
+Triggers a download and saves the file into the downloads folder. The folder is resolved in order: method option → `downloadsDir` setter → `setClient` base config. The folder is created if it does not exist. Returns the absolute path of the downloaded file.
+
+```js
+browser.downloadsDir = './downloads';
+
+// element trigger - the element gets clicked
+const filePath = await browser.downloadFile($('a.report-link'));
+
+// custom trigger with options
+const filePath = await browser.downloadFile(async () => $('button.export').click(), {
+  downloadsDir: './tmp/reports', // overrides setter/config value
+  fileName: 'report.csv',        // renames the stored file
+  timeout: 30000,
+});
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `action` | `PromodElementType \| () => Promise<any>` | Element to click or async function that triggers the download |
+| `opts.downloadsDir` | `string` | Target folder, overrides setter/config value |
+| `opts.fileName` | `string` | Stores the file under this name instead of the browser-suggested one |
+| `opts.timeout` | `number` | Max wait time for the download in ms (default 30000) |
+
+Engine notes:
+
+- Playwright: uses the native `download` event and works out of the box.
+- Selenium: on Chromium-based browsers the folder is applied at runtime via CDP `Browser.setDownloadBehavior`; on Firefox the folder must be set at launch time via `downloadsDir` in [config](./config.md). The downloaded file is detected by watching the folder, so run one download at a time per folder.
 
 ## setWindowSize
 

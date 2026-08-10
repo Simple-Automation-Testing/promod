@@ -41,6 +41,7 @@ const config = {
 | `geolocation` | `{ latitude, longitude, accuracy? }` | Geolocation override |
 | `colorScheme` | `'light' \| 'dark' \| 'no-preference'` | Preferred color scheme |
 | `ignoreHTTPSErrors` | `boolean` | Accept insecure certificates |
+| `downloadsDir` | `string` | Folder for downloaded files, used by `browser.downloadFile` (see [client](./client.md#downloadfile)) |
 
 Only set properties appear in the output — no undefined keys are added.
 
@@ -81,6 +82,8 @@ Browser name mapping:
 Properties routed to `launchOptions`: `headless`, `args`, `executablePath`, `proxy`.
 
 Properties routed to `contextOptions`: `viewport`, `userAgent`, `isMobile`, `deviceScaleFactor`, `locale`, `timezoneId`, `permissions`, `geolocation`, `colorScheme`, `ignoreHTTPSErrors`.
+
+`downloadsDir` is routed to both: `launchOptions.downloadsPath` and `contextOptions.acceptDownloads: true`. Pass it in `setClient({ baseConfig })` so `browser.downloadFile` picks the folder up.
 
 ---
 
@@ -128,6 +131,7 @@ Property mapping — Chrome / Edge:
 | `deviceScaleFactor` | `mobileEmulation.deviceMetrics.pixelRatio` |
 | `locale` | `--lang=...` arg |
 | `ignoreHTTPSErrors` | top-level `acceptInsecureCerts: true` |
+| `downloadsDir` | `prefs['download.default_directory']` + no download prompt |
 | `timezoneId, permissions, geolocation, colorScheme` | not mapped (require CDP at runtime) |
 
 Property mapping — Firefox:
@@ -139,6 +143,7 @@ Property mapping — Firefox:
 | `executablePath` | `binary` |
 | `userAgent` | `prefs['general.useragent.override']` |
 | `locale` | `prefs['intl.accept_languages']` |
+| `downloadsDir` | `prefs['browser.download.dir']` + `folderList: 2`, `useDownloadDir: true` |
 | `ignoreHTTPSErrors` | top-level `acceptInsecureCerts: true` |
 | `proxy, viewport, isMobile, deviceScaleFactor` | not mapped (set at runtime) |
 | `timezoneId, permissions, geolocation, colorScheme` | not mapped |

@@ -14,6 +14,7 @@ async function toNativeEngineExecuteScriptArgs(args: unknown[]): Promise<unknown
   for (const item of argsArray) {
     const resolvedItem: unknown = isPromise(item) ? await item : item;
     if (Array.isArray(resolvedItem)) {
+
       const arrayItems: unknown[] = [];
 
       for (const itemArr of resolvedItem) {
