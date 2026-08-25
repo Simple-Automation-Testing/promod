@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>UPLOAD</title>
+  </head>
+  <body>
+    <input id="upload-input" type="file" multiple />
+    <div id="uploaded-files"></div>
+    <script>
+      document.getElementById('upload-input').addEventListener('change', function () {
+        document.getElementById('uploaded-files').textContent = Array.from(this.files)
+          .map(function (file) {
+            return file.name;
+          })
+          .join(',');
+      });
+    </script>
+  </body>
+</html>

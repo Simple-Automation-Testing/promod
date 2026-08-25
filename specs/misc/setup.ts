@@ -13,6 +13,7 @@ const pressFile = `file://${path.resolve(__dirname, './press.html')}`;
 const invisibleFile = `file://${path.resolve(__dirname, './invisible.html')}`;
 const visibleFile = `file://${path.resolve(__dirname, './visible.html')}`;
 const downloadFile = `file://${path.resolve(__dirname, './download.html')}`;
+const uploadFile = `file://${path.resolve(__dirname, './upload.html')}`;
 
 export {
   scrollFile,
@@ -28,4 +29,5 @@ export {
   invisibleFile,
   visibleFile,
   downloadFile,
+  uploadFile,
 };

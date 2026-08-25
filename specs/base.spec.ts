@@ -17,6 +17,7 @@ import {
   invisibleFile,
   visibleFile,
   downloadFile,
+  uploadFile,
 } from './setup';
 import { KeysSWD } from '../lib/mappers';
 
@@ -712,5 +713,43 @@ describe('Base', () => {
     expect(path.basename(filePath)).toEqual('renamed.txt');
     expect(path.dirname(filePath)).toEqual(path.resolve(downloadsDir, './nested'));
     expect(fs.readFileSync(filePath, 'utf8')).toEqual('promod download content');
+  });
+
+  it('[N] uploadFile with non existing file', async () => {
+    await browser.get(uploadFile);
+    await waitFor(() => $('#upload-input').isPresent());
+
+    let err: any;
+    try {
+      await $('#upload-input').uploadFile(path.resolve(__dirname, './misc/does_not_exist.txt'));
+    } catch (error) {
+      err = error;
+    }
+
+    expect(err).toNotEqual(undefined);
+    expect(err.toString()).stringIncludesSubstring('does not exist');
+  });
+
+  it('[P] uploadFile single file', async () => {
+    await browser.get(uploadFile);
+    await waitFor(() => $('#upload-input').isPresent());
+
+    await $('#upload-input').uploadFile(path.resolve(__dirname, './misc/upload.html'));
+
+    await waitFor(async () => (await $('#uploaded-files').getText()) === 'upload.html', { timeout: 5000 });
+  });
+
+  it('[P] uploadFile multiple files', async () => {
+    await browser.get(uploadFile);
+    await waitFor(() => $('#upload-input').isPresent());
+
+    await $('#upload-input').uploadFile(
+      path.resolve(__dirname, './misc/upload.html'),
+      path.resolve(__dirname, './misc/download.html'),
+    );
+
+    await waitFor(async () => (await $('#uploaded-files').getText()) === 'upload.html,download.html', {
+      timeout: 5000,
+    });
   });
 });

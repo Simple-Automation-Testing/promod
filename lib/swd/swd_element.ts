@@ -1,4 +1,6 @@
 /* eslint-disable max-len */
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   isUndefined,
   isNumber,
@@ -595,6 +597,38 @@ class PromodSeleniumElement {
     }
     await this.getElement();
     await this._driverElement.sendKeys(value);
+  }
+
+  /**
+   * @example
+   * const fileInput = $('input[type="file"]');
+   * await fileInput.uploadFile('/path/to/file.pdf');
+   * await fileInput.uploadFile('/path/to/first.png', '/path/to/second.png');
+   *
+   * @param {...string} filePaths one or more paths to files that should be uploaded
+   * @returns {Promise<void>}
+   */
+  async uploadFile(...filePaths: string[]) {
+    promodLogger.engineLog(`[SWD] Promod element interface calls method "uploadFile" from wrapped API, args: `, filePaths);
+    if (!filePaths.length || !filePaths.every((filePath) => isString(filePath))) {
+      throw new TypeError(`uploadFile(); accepts one or more string file paths`);
+    }
+    const resolvedPaths = filePaths.map((filePath) => path.resolve(filePath));
+    for (const filePath of resolvedPaths) {
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`uploadFile(): file "${filePath}" does not exist`);
+      }
+    }
+    await this.getElement();
+    // selenium sendKeys appends files to the current selection of a multiple file input,
+    // clear it first so the behavior matches playwright setInputFiles which replaces the selection
+    await this._driverElement
+      .getDriver()
+      .executeScript('arguments[0].value = ""', this._driverElement)
+      .catch(() => {
+        /* ignore - element may not support value reset */
+      });
+    await this._driverElement.sendKeys(resolvedPaths.join('\n'));
   }
 
   /**

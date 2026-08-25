@@ -9,6 +9,7 @@ All examples work identically with both `playwrightWD` and `seleniumWD`.
 - [click](#click)
 - [doubleClick](#doubleclick)
 - [sendKeys](#sendkeys)
+- [uploadFile](#uploadfile)
 - [clear](#clear)
 - [clearViaBackspace](#clearViabackspace)
 - [pressEnter](#pressenter)
@@ -102,6 +103,26 @@ await input.sendKeys('hello world');
 await input.sendKeys(42);
 await input.sendKeys('hello', true); // use fill mode (Playwright: clears first then fills)
 ```
+
+## uploadFile
+
+Uploads one or more files via an `<input type="file">` element. Paths are resolved to absolute, and every file must exist — otherwise an error is thrown. Repeated calls replace the current selection in both engines (multiple files require the `multiple` attribute on the input).
+
+```js
+const fileInput = $('input[type="file"]');
+
+await fileInput.uploadFile('/path/to/file.pdf');
+await fileInput.uploadFile('./first.png', './second.png'); // multiple files
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `...filePaths` | `string[]` | One or more paths to files that should be uploaded |
+
+Engine notes:
+
+- Playwright: uses `setInputFiles`, no click on the input happens — the file chooser dialog is never opened.
+- Selenium: sends the file paths to the input via `sendKeys`; works with local browsers and with remote grids that support file detection.
 
 ## clear
 

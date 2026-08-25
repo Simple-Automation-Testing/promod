@@ -1,4 +1,6 @@
 /* eslint-disable max-len */
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   getType,
   isUndefined,
@@ -711,6 +713,30 @@ class PromodPlaywrightElement {
         await this._driverElement.pressSequentially(char, { delay: 7 });
       }
     }
+  }
+
+  /**
+   * @example
+   * const fileInput = $('input[type="file"]');
+   * await fileInput.uploadFile('/path/to/file.pdf');
+   * await fileInput.uploadFile('/path/to/first.png', '/path/to/second.png');
+   *
+   * @param {...string} filePaths one or more paths to files that should be uploaded
+   * @returns {Promise<void>}
+   */
+  async uploadFile(...filePaths: string[]) {
+    promodLogger.engineLog(`[PW] Promod element interface calls method "uploadFile" from wrapped API, args: `, filePaths);
+    if (!filePaths.length || !filePaths.every((filePath) => isString(filePath))) {
+      throw new TypeError(`uploadFile(); accepts one or more string file paths`);
+    }
+    const resolvedPaths = filePaths.map((filePath) => path.resolve(filePath));
+    for (const filePath of resolvedPaths) {
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`uploadFile(): file "${filePath}" does not exist`);
+      }
+    }
+    await this.getElement();
+    await this._driverElement.setInputFiles(resolvedPaths);
   }
 
   /**

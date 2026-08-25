@@ -257,6 +257,18 @@ export interface PromodElementType {
 
   /**
    * @example
+   * const fileInput = $('input[type="file"]');
+   * await fileInput.uploadFile('/path/to/file.pdf');
+   * await fileInput.uploadFile('/path/to/first.png', '/path/to/second.png'); // multiple files
+   *
+   * @param {...string} filePaths one or more paths to files that should be uploaded
+   *
+   * @returns {Promise<void>}
+   */
+  uploadFile(...filePaths: string[]): Promise<void>;
+
+  /**
+   * @example
    * const button = $('button');
    * const buttonTag = await button.getTagName(); // button string
    *
